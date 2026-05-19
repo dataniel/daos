@@ -7,7 +7,7 @@
 cpr_info(
   data,
   cpr_col,
-  add = c("bday", "age", "sex", "pnum", "mod11", "valid"),
+  add = c("bday", "age", "sex", "mod11", "valid"),
   ref_date = Sys.Date()
 )
 }
@@ -32,8 +32,8 @@ object or an ISO-format string (\code{"YYYY-MM-DD"}). Default: \code{Sys.Date()}
 The original data frame with the requested columns appended.
 }
 \description{
-Vectorised extraction of birth date, age, sex, sequential number, and
-validity indicators from Danish CPR (Civil Person Register) numbers.
+Vectorised extraction of birth date, age, sex, and validity indicators
+from Danish CPR (Civil Person Register) numbers.
 Returns the original data frame with the requested columns appended.
 }
 \details{
@@ -41,8 +41,7 @@ Returns the original data frame with the requested columns appended.
    Type \tab Output \tab Description \cr
    \code{"bday"} \tab Date \tab Date of birth \cr
    \code{"age"} \tab integer \tab Age in whole years at \code{ref_date} \cr
-   \code{"sex"} \tab integer \tab \code{1} (mand, odd last digit) or \code{0} (kvinde, even last digit) \cr
-   \code{"pnum"} \tab integer \tab Sequential (running) number (digits 7–10) \cr
+   \code{"sex"} \tab integer \tab \code{1} (male, odd last digit) or \code{0} (female, even last digit) \cr
    \code{"mod11"} \tab logical \tab Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) \cr
    \code{"valid"} \tab logical \tab Format valid \emph{and} birth date parseable \cr
 }

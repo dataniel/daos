@@ -1,7 +1,7 @@
 #' Extract information from Danish CPR numbers
 #'
-#' Vectorised extraction of birth date, age, sex, sequential number, and
-#' validity indicators from Danish CPR (Civil Person Register) numbers.
+#' Vectorised extraction of birth date, age, sex, and validity indicators
+#' from Danish CPR (Civil Person Register) numbers.
 #' Returns the original data frame with the requested columns appended.
 #'
 #' @details
@@ -11,8 +11,7 @@
 #' |------|--------|-------------|
 #' | `"bday"` | Date | Date of birth |
 #' | `"age"` | integer | Age in whole years at `ref_date` |
-#' | `"sex"` | integer | `1` (mand, odd last digit) or `0` (kvinde, even last digit) |
-#' | `"pnum"` | integer | Sequential (running) number (digits 7–10) |
+#' | `"sex"` | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
 #' | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
 #' | `"valid"` | logical | Format valid *and* birth date parseable |
 #'
@@ -61,11 +60,11 @@
 cpr_info <- function(
     data,
     cpr_col,
-    add      = c("bday", "age", "sex", "pnum", "mod11", "valid"),
+    add      = c("bday", "age", "sex", "mod11", "valid"),
     ref_date = Sys.Date()
 ) {
 
-  gyldige_typer <- c("bday", "age", "sex", "pnum", "mod11", "valid")
+  gyldige_typer <- c("bday", "age", "sex", "mod11", "valid")
 
   if (is.null(names(add))) {
     names(add) <- add
@@ -122,7 +121,6 @@ cpr_info <- function(
   dag    <- d1 * 10L + d2
   maaned <- d3 * 10L + d4
   aar2   <- d5 * 10L + d6
-  loebe  <- ((d7 * 10L + d8) * 10L + d9) * 10L + d10
 
   aarhundrede <- dplyr::case_when(
     d7 <= 3L                  ~ 1900L,
@@ -154,7 +152,6 @@ cpr_info <- function(
     bday  = dplyr::if_else(gyldig,    foedselsdato, as.Date(NA)),
     age   = dplyr::if_else(gyldig,    alder,        NA_integer_),
     sex   = dplyr::if_else(gyldig,    koen,         NA_integer_),
-    pnum  = dplyr::if_else(gyldig,    loebe,        NA_integer_),
     mod11 = dplyr::if_else(format_ok, m11_ok,       NA),
     valid = gyldig
   )
