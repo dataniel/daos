@@ -33,7 +33,7 @@ file names.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260519"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-19 10:14"
+#> [1] "2026-05-19 14:09"
 ```
 
 Combine the two for a quick timestamped path:
