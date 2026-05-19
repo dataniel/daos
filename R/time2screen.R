@@ -3,8 +3,9 @@
 #' Launches a Shiny application for visually reviewing time-series data
 #' group by group. All columns that are not `x`, `y`, `series`, or excluded
 #' become grouping dimensions with dropdown selectors. Navigate between
-#' groups with the arrow keys or the `←` / `→` buttons. Press `F` to flag
-#' the current combination. Press `Q` to exit.
+#' groups with the arrow keys (or `A` / `D`). Press `F` to flag the current
+#' combination, `S` to save as PNG, `W` to download as XLSX, `R` to reset
+#' zoom, and `Q` to quit.
 #'
 #' Requires the `shiny` and `highcharter` packages.
 #'
@@ -188,15 +189,33 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
           }
           if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
               || e.target.tagName === 'SELECT') return;
-          if (e.key === 'ArrowLeft')  $('#prev').click();
-          if (e.key === 'ArrowRight') $('#next_btn').click();
+          if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') $('#prev').click();
+          if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') $('#next_btn').click();
           if (e.key === 'f' || e.key === 'F') $('#flag_btn').click();
-          if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('exit_key', Math.random());
-          if (e.key === 'r' || e.key === 'R') Shiny.setInputValue('reset_zoom', Math.random(), {priority: 'event'});
+          if (e.key === 'r' || e.key === 'R') Shiny.setInputValue('reset_zoom',   Math.random(), {priority: 'event'});
+          if (e.key === 's' || e.key === 'S') Shiny.setInputValue('export_png',   Math.random(), {priority: 'event'});
+          if (e.key === 'w' || e.key === 'W') Shiny.setInputValue('export_xlsx',  Math.random(), {priority: 'event'});
+          if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('exit_key',     Math.random());
         });
         Shiny.addCustomMessageHandler('toggle_class', function(msg) {
           if (msg.active) { $(msg.selector).addClass(msg.cls); }
           else            { $(msg.selector).removeClass(msg.cls); }
+        });
+        function getChart() {
+          return Highcharts.charts.find(function(c) {
+            return c && c.renderTo && c.renderTo.id === 'plot';
+          });
+        }
+        Shiny.addCustomMessageHandler('do_export_png', function(msg) {
+          var chart = getChart();
+          if (chart) chart.exportChart(
+            {type: 'image/png', filename: msg.filename},
+            {chart: {backgroundColor: 'white'}, title: {text: msg.title}, subtitle: {text: msg.subtitle}}
+          );
+        });
+        Shiny.addCustomMessageHandler('do_export_xlsx', function(msg) {
+          var chart = getChart();
+          if (chart) chart.downloadXLS();
         });
       "))
     ),
@@ -205,10 +224,12 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         if (!is.null(.title)) .title else "Time series screening"
       ),
       shiny::div(class = "header-hint",
-        "Press ", shiny::tags$kbd("\u2190\u2192"), " to navigate  ",
-        shiny::tags$kbd("F"), " to flag  ",
-        shiny::tags$kbd("R"), " to reset zoom  ",
-        shiny::tags$kbd("Q"), " to exit"
+        shiny::tags$kbd("A"), "/", shiny::tags$kbd("D"), " navigate  ",
+        shiny::tags$kbd("F"), " flag  ",
+        shiny::tags$kbd("S"), " save PNG  ",
+        shiny::tags$kbd("W"), " save XLSX  ",
+        shiny::tags$kbd("R"), " reset zoom  ",
+        shiny::tags$kbd("Q"), " quit"
       )
     ),
     shiny::div(class = "control-bar",
@@ -262,6 +283,22 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
 
     shiny::observeEvent(input$reset_zoom, {
       zoom_range(NULL)
+    }, ignoreInit = TRUE)
+
+    export_args <- shiny::reactive({
+      list(
+        filename = paste(as.character(unlist(current_key())), collapse = "_"),
+        title    = if (!is.null(.title)) .title else "",
+        subtitle = paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
+      )
+    })
+
+    shiny::observeEvent(input$export_png, {
+      session$sendCustomMessage("do_export_png", export_args())
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$export_xlsx, {
+      session$sendCustomMessage("do_export_xlsx", export_args())
     }, ignoreInit = TRUE)
 
     shiny::observeEvent(input$zoom_range, {

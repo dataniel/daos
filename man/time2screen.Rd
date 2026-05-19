@@ -50,8 +50,9 @@ or \code{NULL} if nothing was flagged. Returned invisibly when the app exits.
 Launches a Shiny application for visually reviewing time-series data
 group by group. All columns that are not \code{x}, \code{y}, \code{series}, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
-groups with the arrow keys or the \verb{←} / \verb{→} buttons. Press \code{F} to flag
-the current combination. Press \code{Q} to exit.
+groups with the arrow keys (or \code{A} / \code{D}). Press \code{F} to flag the current
+combination, \code{S} to save as PNG, \code{W} to download as XLSX, \code{R} to reset
+zoom, and \code{Q} to quit.
 }
 \details{
 Requires the \code{shiny} and \code{highcharter} packages.
