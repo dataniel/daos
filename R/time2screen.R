@@ -178,13 +178,6 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         .y-axis-controls .form-group { margin: 0; }
         .y-axis-controls .form-control { height: 30px; font-size: 13px;
                                           padding: 0 8px; border-radius: 6px; }
-        .reset-zoom-btn { height: 30px; padding: 0 10px; background: white;
-                          border: 1px solid #e4e4e7; border-radius: 6px;
-                          font-size: 12px; font-weight: 500; color: #71717a;
-                          cursor: pointer; font-family: inherit;
-                          transition: all 0.15s ease; white-space: nowrap; }
-        .reset-zoom-btn:hover { border-color: #d4d4d8; color: #18181b; }
-        .reset-zoom-btn:disabled { opacity: 0.35; cursor: default; }
       ")),
       shiny::tags$script(shiny::HTML("
         $(document).keydown(function(e) {
@@ -199,13 +192,11 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
           if (e.key === 'ArrowRight') $('#next_btn').click();
           if (e.key === 'f' || e.key === 'F') $('#flag_btn').click();
           if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('exit_key', Math.random());
+          if (e.key === 'r' || e.key === 'R') Shiny.setInputValue('reset_zoom', Math.random(), {priority: 'event'});
         });
         Shiny.addCustomMessageHandler('toggle_class', function(msg) {
           if (msg.active) { $(msg.selector).addClass(msg.cls); }
           else            { $(msg.selector).removeClass(msg.cls); }
-        });
-        Shiny.addCustomMessageHandler('set_btn_disabled', function(msg) {
-          $(msg.selector).prop('disabled', msg.disabled);
         });
       "))
     ),
@@ -216,6 +207,7 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
       shiny::div(class = "header-hint",
         "Press ", shiny::tags$kbd("\u2190\u2192"), " to navigate  ",
         shiny::tags$kbd("F"), " to flag  ",
+        shiny::tags$kbd("R"), " to reset zoom  ",
         shiny::tags$kbd("Q"), " to exit"
       )
     ),
@@ -244,10 +236,6 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
           shiny::div(class = "field",
             shiny::tags$label(class = "field-label", "Y max"),
             shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
-          ),
-          shiny::tags$button(
-            id = "reset_zoom", class = "reset-zoom-btn action-button",
-            disabled = "disabled", "Reset zoom"
           )
         )
       ),
@@ -274,15 +262,10 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
 
     shiny::observeEvent(input$reset_zoom, {
       zoom_range(NULL)
-      session$sendCustomMessage("set_btn_disabled",
-                                list(selector = "#reset_zoom", disabled = TRUE))
     }, ignoreInit = TRUE)
 
     shiny::observeEvent(input$zoom_range, {
       zoom_range(input$zoom_range)
-      has_zoom <- !is.null(input$zoom_range)
-      session$sendCustomMessage("set_btn_disabled",
-                                list(selector = "#reset_zoom", disabled = !has_zoom))
     }, ignoreInit = TRUE)
 
     shiny::observe({
