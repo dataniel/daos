@@ -11,7 +11,7 @@
 #' |------|--------|-------------|
 #' | `"bday"` | Date | Date of birth |
 #' | `"age"` | integer | Age in whole years at `ref_date` |
-#' | `"sex"` | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
+#' | `"sex"` | integer | `1` (mand, odd last digit) or `0` (kvinde, even last digit) |
 #' | `"pnum"` | integer | Sequential (running) number (digits 7–10) |
 #' | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
 #' | `"valid"` | logical | Format valid *and* birth date parseable |

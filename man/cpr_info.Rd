@@ -41,7 +41,7 @@ Returns the original data frame with the requested columns appended.
    Type \tab Output \tab Description \cr
    \code{"bday"} \tab Date \tab Date of birth \cr
    \code{"age"} \tab integer \tab Age in whole years at \code{ref_date} \cr
-   \code{"sex"} \tab character \tab \code{"mand"} (male) or \code{"kvinde"} (female) \cr
+   \code{"sex"} \tab integer \tab \code{1} (mand, odd last digit) or \code{0} (kvinde, even last digit) \cr
    \code{"pnum"} \tab integer \tab Sequential (running) number (digits 7–10) \cr
    \code{"mod11"} \tab logical \tab Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) \cr
    \code{"valid"} \tab logical \tab Format valid \emph{and} birth date parseable \cr
@@ -51,9 +51,10 @@ Returns the original data frame with the requested columns appended.
 \strong{Century detection} follows the official CPR Register rules based on
 digit 7 and the two-digit year component.
 
-\strong{Input tolerance:} dashes and spaces are stripped automatically.
-Nine-digit numbers are zero-padded on the left (recovering values that
-lost a leading zero in Excel).
+\strong{Input tolerance:} dashes and spaces are stripped automatically and
+nine-digit numbers are zero-padded on the left (recovering values that
+lost a leading zero in Excel). The CPR column in the returned data frame
+is always returned in the standardised 10-digit format \code{xxxxxxxxxx}.
 }
 \examples{
 df <- data.frame(
