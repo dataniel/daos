@@ -1,0 +1,41 @@
+Package: daos
+Title: Utility Functions for Statistical Work
+Version: 0.1.0
+Authors@R: person("Daniel", "Madsen", email = "danielmadsen@live.dk",
+    role = c("aut", "cre"))
+Description: A collection of utility functions for day-to-day statistical work.
+    Includes helpers for file I/O across many formats, data validation
+    checkpoints, duplicate detection, CPR number parsing, interactive
+    time-series screening, and various convenience shortcuts for common
+    tidyverse patterns.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    cli,
+    data.table,
+    dplyr,
+    fs,
+    glue,
+    lubridate,
+    pillar,
+    purrr,
+    readr,
+    rlang,
+    tibble
+Suggests:
+    arrow,
+    ggplot2,
+    haven,
+    highcharter,
+    jsonlite,
+    readxl,
+    shiny,
+    testthat (>= 3.0.0),
+    withr,
+    yaml,
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

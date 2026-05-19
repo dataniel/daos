@@ -1,0 +1,19 @@
+# R build artefacts
+*.Rproj.user
+*.Rhistory
+*.RData
+*.Ruserdata
+.Rproj.user/
+
+# Package build
+*.tar.gz
+*.zip
+/doc/
+/Meta/
+/inst/doc/
+
+# devtools check output
+/*.Rcheck/
+
+# Claude Code
+.claude/

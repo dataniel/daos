@@ -1,0 +1,401 @@
+#' Interactive time-series screening dashboard
+#'
+#' Launches a Shiny application for visually reviewing time-series data
+#' group by group. All columns that are not `x`, `y`, `series`, or excluded
+#' become grouping dimensions with dropdown selectors. Navigate between
+#' groups with the arrow keys or the `←` / `→` buttons. Press `Esc` to exit.
+#'
+#' Requires the `shiny` and `highcharter` packages.
+#'
+#' @param data A data frame containing at minimum an x-axis column, a y-axis
+#'   column, and at least one grouping column.
+#' @param x Time (x-axis) variable. Accepts `Date`, `POSIXct`, numeric
+#'   years, or any value coercible to a date. (Unquoted.)
+#' @param y Numeric measurement (y-axis) variable. (Unquoted.)
+#' @param series Optional variable for plotting multiple lines per group
+#'   (e.g. a category). (Unquoted.)
+#' @param .exclude Columns to exclude from becoming grouping dropdowns.
+#'   (Unquoted, tidy-select.)
+#' @param .from_zero If `TRUE`, the y-axis starts at zero. Can also be
+#'   toggled interactively via the "Start at zero" button. Default: `FALSE`.
+#'
+#' @return A Shiny app object. In an interactive session the app is displayed
+#'   immediately; otherwise it is launched in a browser.
+#'
+#' @examples
+#' \dontrun{
+#' library(dplyr)
+#'
+#' # Simple example with economics dataset:
+#' ggplot2::economics_long |>
+#'   time2screen(date, value, series = variable)
+#'
+#' # With a grouping column:
+#' df <- data.frame(
+#'   year    = rep(2010:2020, 3),
+#'   country = rep(c("DK", "SE", "NO"), each = 11),
+#'   gdp     = rnorm(33, 300, 20)
+#' )
+#' time2screen(df, x = year, y = gdp)
+#' }
+#'
+#' @importFrom cli cli_abort
+#' @importFrom rlang enquo quo_is_null as_label syms
+#' @importFrom purrr map_lgl map walk map_chr
+#' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
+#' @export
+time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
+                        .from_zero = FALSE) {
+
+  if (!is.data.frame(data)) {
+    cli::cli_abort("{.arg data} must be a data frame.")
+  }
+  if (!requireNamespace("shiny", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg shiny} is required for {.fn time2screen}.")
+  }
+  if (!requireNamespace("highcharter", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg highcharter} is required for {.fn time2screen}.")
+  }
+
+  x_var      <- rlang::enquo(x)
+  y_var      <- rlang::enquo(y)
+  series_var <- rlang::enquo(series)
+  exclude_var <- rlang::enquo(.exclude)
+
+  has_series <- !rlang::quo_is_null(series_var)
+
+  list_cols <- names(data)[purrr::map_lgl(data, is.list)]
+  if (length(list_cols) > 0) {
+    data <- data |> dplyr::select(-dplyr::all_of(list_cols))
+  }
+
+  used_cols <- c(rlang::as_label(x_var), rlang::as_label(y_var))
+  if (has_series) used_cols <- c(used_cols, rlang::as_label(series_var))
+
+  excluded_cols <- character(0)
+  if (!rlang::quo_is_null(exclude_var)) {
+    excluded_cols <- data |> dplyr::select(!!exclude_var) |> names()
+  }
+
+  by_names <- setdiff(names(data), c(used_cols, excluded_cols))
+
+  if (length(by_names) == 0) {
+    cli::cli_abort(paste0(
+      "No grouping columns found. Data must have at least one column ",
+      "besides {.arg x}, {.arg y}, {.arg series}, and excluded columns."
+    ))
+  }
+
+  by <- rlang::syms(by_names)
+
+  keys <- data |>
+    dplyr::group_by(!!!by) |>
+    dplyr::group_keys()
+
+  dropdowns <- purrr::map(by_names, \(var) {
+    choices <- as.character(unique(keys[[var]]))
+    shiny::div(
+      class = "field",
+      shiny::tags$label(class = "field-label", var),
+      shiny::selectInput(
+        inputId = paste0("group_", var),
+        label   = NULL,
+        choices = as.list(choices),
+        width   = "100%"
+      )
+    )
+  })
+
+  ui <- shiny::fluidPage(
+    shiny::tags$head(
+      shiny::tags$link(
+        rel  = "stylesheet",
+        href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      ),
+      shiny::tags$style(shiny::HTML("
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+               background: #f7f7f8; color: #18181b; margin: 0;
+               -webkit-font-smoothing: antialiased; }
+        .container-fluid { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
+        .header { margin-bottom: 24px; display: flex; align-items: center;
+                  justify-content: space-between; }
+        .header-title { font-size: 13px; font-weight: 600; color: #71717a;
+                        text-transform: uppercase; letter-spacing: 0.08em; }
+        .header-hint { font-size: 12px; color: #a1a1aa; font-weight: 500; }
+        .header-hint kbd { font-family: 'Inter', sans-serif; font-size: 11px;
+                           font-weight: 600; padding: 2px 6px; background: white;
+                           border: 1px solid #e4e4e7; border-radius: 4px;
+                           color: #52525b; margin: 0 2px; }
+        .control-bar { display: flex; align-items: flex-end; gap: 16px;
+                       padding: 20px; background: white; border: 1px solid #e4e4e7;
+                       border-radius: 12px; margin-bottom: 24px; flex-wrap: wrap;
+                       box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+        .nav-group { display: flex; align-items: center; gap: 8px; height: 38px; }
+        .nav-btn { width: 38px; height: 38px; border: 1px solid #e4e4e7;
+                   background: white; border-radius: 8px; font-size: 14px;
+                   color: #52525b; cursor: pointer; transition: all 0.15s ease;
+                   padding: 0; display: flex; align-items: center;
+                   justify-content: center; }
+        .nav-btn:hover { background: #fafafa; border-color: #d4d4d8; color: #18181b; }
+        .nav-btn:active { transform: scale(0.96); }
+        .counter { font-size: 13px; font-weight: 500; color: #71717a;
+                   min-width: 56px; text-align: center;
+                   font-variant-numeric: tabular-nums; }
+        .field { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
+        .field-label { font-size: 11px; font-weight: 600; color: #71717a;
+                       text-transform: uppercase; letter-spacing: 0.06em;
+                       margin: 0; line-height: 1; }
+        .field .form-group { margin: 0; }
+        .field .form-control { background: white; border-radius: 8px;
+                                border: 1px solid #e4e4e7; height: 38px;
+                                font-size: 14px; color: #18181b; padding: 0 12px;
+                                font-family: inherit; font-weight: 500; }
+        .field .form-control:focus { border-color: #a1a1aa;
+                                      box-shadow: 0 0 0 3px rgba(161,161,170,0.15);
+                                      outline: none; }
+        .toggle-btn { margin-left: auto; height: 38px; padding: 0 16px;
+                      background: white; border: 1px solid #e4e4e7;
+                      border-radius: 8px; font-size: 14px; font-weight: 500;
+                      color: #18181b; cursor: pointer; transition: all 0.15s ease;
+                      display: flex; align-items: center; gap: 8px;
+                      font-family: inherit; align-self: flex-end; }
+        .toggle-btn:hover { background: #fafafa; border-color: #d4d4d8; }
+        .toggle-btn.active { background: #18181b; color: white;
+                              border-color: #18181b; }
+        .plot-container { background: white; border: 1px solid #e4e4e7;
+                          border-radius: 12px; padding: 28px 28px 20px;
+                          box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+        .plot-meta { display: flex; align-items: center; gap: 12px;
+                     margin-bottom: 20px; padding-bottom: 16px;
+                     border-bottom: 1px solid #f4f4f5; }
+        .plot-title { font-size: 16px; font-weight: 600; color: #18181b; margin: 0; }
+        .plot-subtitle { font-size: 13px; color: #71717a; font-weight: 500; }
+      ")),
+      shiny::tags$script(shiny::HTML("
+        $(document).keydown(function(e) {
+          if (e.key === 'Escape') {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+                || e.target.tagName === 'SELECT') { e.target.blur(); }
+            Shiny.setInputValue('exit_key', Math.random());
+            return;
+          }
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+              || e.target.tagName === 'SELECT') return;
+          if (e.key === 'ArrowLeft')  $('#prev').click();
+          if (e.key === 'ArrowRight') $('#next_btn').click();
+        });
+        Shiny.addCustomMessageHandler('toggle_class', function(msg) {
+          if (msg.active) { $(msg.selector).addClass(msg.cls); }
+          else            { $(msg.selector).removeClass(msg.cls); }
+        });
+      "))
+    ),
+    shiny::div(class = "header",
+      shiny::div(class = "header-title", "Time series screening"),
+      shiny::div(class = "header-hint",
+        "Press ", shiny::tags$kbd("Esc"), " to exit"
+      )
+    ),
+    shiny::div(class = "control-bar",
+      shiny::div(class = "nav-group",
+        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "\u2190"),
+        shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
+        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192")
+      ),
+      !!!dropdowns,
+      shiny::tags$button(
+        id    = "from_zero",
+        class = paste("toggle-btn action-button", if (.from_zero) "active" else ""),
+        "Start at zero"
+      )
+    ),
+    shiny::div(class = "plot-container",
+      shiny::div(class = "plot-meta",
+        shiny::h2(class = "plot-title",
+                  shiny::textOutput("plot_title", inline = TRUE)),
+        shiny::div(class = "plot-subtitle",
+                   shiny::textOutput("plot_subtitle", inline = TRUE))
+      ),
+      highcharter::highchartOutput("plot", height = "480px")
+    )
+  )
+
+  server <- function(input, output, session) {
+    idx              <- shiny::reactiveVal(1L)
+    from_zero_state  <- shiny::reactiveVal(.from_zero)
+
+    shiny::observeEvent(input$exit_key, shiny::stopApp(), ignoreInit = TRUE)
+
+    shiny::observeEvent(input$from_zero, {
+      new_state <- (input$from_zero %% 2) == 1
+      actual    <- xor(new_state, .from_zero)
+      from_zero_state(if (.from_zero) !actual else actual)
+      session$sendCustomMessage("toggle_class", list(
+        selector = "#from_zero", cls = "active", active = from_zero_state()
+      ))
+    }, ignoreInit = TRUE)
+
+    sync_dropdowns <- function(new_idx) {
+      current_key <- keys[new_idx, , drop = FALSE]
+      for (var in by_names) {
+        shiny::updateSelectInput(session, paste0("group_", var),
+                                 selected = as.character(current_key[[var]]))
+      }
+    }
+
+    find_idx <- function() {
+      current_values <- purrr::map_chr(by_names, \(var) {
+        val <- input[[paste0("group_", var)]]
+        if (is.null(val)) NA_character_ else as.character(val)
+      })
+      matches <- purrr::map_lgl(seq_len(nrow(keys)), \(i) {
+        all(as.character(unlist(keys[i, ])) == current_values)
+      })
+      which(matches)[1]
+    }
+
+    shiny::observeEvent(input$prev, {
+      new_idx <- max(1L, idx() - 1L); idx(new_idx); sync_dropdowns(new_idx)
+    })
+    shiny::observeEvent(input$next_btn, {
+      new_idx <- min(nrow(keys), idx() + 1L); idx(new_idx); sync_dropdowns(new_idx)
+    })
+
+    purrr::walk(by_names, \(var) {
+      shiny::observeEvent(input[[paste0("group_", var)]], {
+        new_idx <- find_idx()
+        if (!is.na(new_idx) && new_idx != idx()) idx(new_idx)
+      }, ignoreInit = TRUE)
+    })
+
+    current_data <- shiny::reactive({
+      target <- keys[idx(), , drop = FALSE]
+      data |>
+        dplyr::semi_join(target, by = names(target)) |>
+        dplyr::arrange(!!x_var)
+    })
+
+    current_key <- shiny::reactive({ keys[idx(), , drop = FALSE] })
+
+    output$counter      <- shiny::renderText(paste0(idx(), " / ", nrow(keys)))
+    output$plot_title   <- shiny::renderText({
+      paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
+    })
+    output$plot_subtitle <- shiny::renderText({
+      n_obs <- nrow(current_data())
+      paste0(n_obs, " observation", if (n_obs == 1) "" else "s")
+    })
+
+    output$plot <- highcharter::renderHighchart({
+      d        <- current_data()
+      use_zero <- from_zero_state()
+      x_values <- dplyr::pull(d, !!x_var)
+
+      to_ms <- function(v) {
+        if (inherits(v, "Date") || inherits(v, "POSIXct")) {
+          as.numeric(as.POSIXct(v)) * 1000
+        } else if (is.numeric(v)) {
+          as.numeric(as.POSIXct(as.Date(paste0(v, "-01-01")))) * 1000
+        } else {
+          as.numeric(as.POSIXct(as.Date(as.character(v)))) * 1000
+        }
+      }
+
+      x_dates <- to_ms(x_values)
+      palette <- c("#18181b", "#6366f1", "#10b981", "#f59e0b",
+                   "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
+
+      hc <- highcharter::highchart() |>
+        highcharter::hc_chart(
+          style = list(fontFamily = "Inter, sans-serif"),
+          backgroundColor = "transparent",
+          spacing = c(8, 0, 8, 0), animation = FALSE, zoomType = "x"
+        ) |>
+        highcharter::hc_credits(enabled = FALSE) |>
+        highcharter::hc_title(text = NULL) |>
+        highcharter::hc_xAxis(
+          type = "datetime", gridLineWidth = 0,
+          lineColor = "#e4e4e7", tickColor = "#e4e4e7", tickWidth = 1,
+          labels = list(style = list(color = "#71717a", fontSize = "11px",
+                                     fontWeight = "500")),
+          dateTimeLabelFormats = list(year = "%Y", month = "%b %Y",
+                                      day = "%e %b %Y")
+        ) |>
+        highcharter::hc_yAxis(
+          min = if (use_zero) 0 else NULL,
+          gridLineColor = "#f4f4f5", lineWidth = 0, tickWidth = 0,
+          labels = list(style = list(color = "#71717a", fontSize = "11px",
+                                     fontWeight = "500"),
+                        align = "right", x = -10)
+        ) |>
+        highcharter::hc_legend(
+          enabled = has_series, align = "left", verticalAlign = "top",
+          itemStyle = list(color = "#18181b", fontWeight = "500",
+                           fontSize = "12px"),
+          itemHoverStyle = list(color = "#52525b"),
+          symbolRadius = 2, symbolHeight = 8, symbolWidth = 8
+        ) |>
+        highcharter::hc_tooltip(
+          shared = TRUE, useHTML = TRUE,
+          backgroundColor = "white", borderColor = "#e4e4e7",
+          borderWidth = 1, borderRadius = 8,
+          style = list(fontFamily = "Inter, sans-serif", fontSize = "12px",
+                       color = "#18181b"),
+          headerFormat = paste0(
+            '<div style="font-size:11px;color:#71717a;font-weight:600;',
+            'text-transform:uppercase;letter-spacing:0.04em;',
+            'margin-bottom:4px;">{point.key}</div>'
+          ),
+          pointFormat = paste0(
+            '<div style="display:flex;align-items:center;gap:8px;margin:2px 0;">',
+            '<span style="width:8px;height:8px;background:{series.color};',
+            'border-radius:2px;display:inline-block;"></span>',
+            '<span style="color:#52525b;font-weight:500;">{series.name}</span>',
+            '<span style="color:#18181b;font-weight:600;margin-left:auto;">',
+            '{point.y:,.2f}</span></div>'
+          )
+        ) |>
+        highcharter::hc_plotOptions(
+          series = list(
+            animation = FALSE,
+            marker = list(enabled = TRUE, radius = 3, symbol = "circle",
+                          lineWidth = 0,
+                          states = list(hover = list(radius = 5, lineWidth = 2,
+                                                     lineColor = "white"))),
+            lineWidth = 2,
+            states = list(hover = list(lineWidthPlus = 0,
+                                       halo = list(size = 0)))
+          )
+        )
+
+      if (has_series) {
+        series_data <- d |> dplyr::group_by(!!series_var) |> dplyr::group_split()
+        for (i in seq_along(series_data)) {
+          gd          <- series_data[[i]]
+          series_name <- as.character(dplyr::pull(gd, !!series_var)[1])
+          x_ts        <- to_ms(dplyr::pull(gd, !!x_var))
+          y_vals      <- dplyr::pull(gd, !!y_var)
+          hc <- hc |> highcharter::hc_add_series(
+            data  = purrr::map2(x_ts, y_vals, \(x, y) list(x, y)),
+            name  = series_name,
+            type  = "line",
+            color = palette[((i - 1) %% length(palette)) + 1]
+          )
+        }
+      } else {
+        y_values <- dplyr::pull(d, !!y_var)
+        hc <- hc |> highcharter::hc_add_series(
+          data  = purrr::map2(x_dates, y_values, \(x, y) list(x, y)),
+          name  = rlang::as_label(y_var),
+          type  = "line",
+          color = "#18181b"
+        )
+      }
+
+      hc
+    })
+  }
+
+  app <- shiny::shinyApp(ui, server)
+  if (interactive()) app else shiny::runApp(app, launch.browser = TRUE)
+}
