@@ -160,15 +160,22 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         .field .form-control:focus { border-color: #a1a1aa;
                                       box-shadow: 0 0 0 3px rgba(161,161,170,0.15);
                                       outline: none; }
-        .y-axis-field { min-width: 80px; max-width: 100px; }
         .plot-container { background: white; border: 1px solid #e4e4e7;
                           border-radius: 12px; padding: 28px 28px 20px;
                           box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
         .plot-meta { display: flex; align-items: center; gap: 12px;
                      margin-bottom: 20px; padding-bottom: 16px;
                      border-bottom: 1px solid #f4f4f5; }
+        .plot-meta-left { flex: 1; display: flex; align-items: center; gap: 12px; }
         .plot-title { font-size: 16px; font-weight: 600; color: #18181b; margin: 0; }
         .plot-subtitle { font-size: 13px; color: #71717a; font-weight: 500; }
+        .y-axis-controls { display: flex; align-items: center; gap: 8px;
+                           margin-left: auto; flex-shrink: 0; }
+        .y-axis-controls .field { min-width: 72px; max-width: 88px; }
+        .y-axis-controls .field-label { font-size: 10px; }
+        .y-axis-controls .form-group { margin: 0; }
+        .y-axis-controls .form-control { height: 30px; font-size: 13px;
+                                          padding: 0 8px; border-radius: 6px; }
       ")),
       shiny::tags$script(shiny::HTML("
         $(document).keydown(function(e) {
@@ -199,22 +206,26 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
         shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192")
       ),
-      !!!dropdowns,
-      shiny::div(class = "field y-axis-field",
-        shiny::tags$label(class = "field-label", "Y min"),
-        shiny::numericInput("y_min", label = NULL, value = .y_min, width = "100%")
-      ),
-      shiny::div(class = "field y-axis-field",
-        shiny::tags$label(class = "field-label", "Y max"),
-        shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
-      )
+      !!!dropdowns
     ),
     shiny::div(class = "plot-container",
       shiny::div(class = "plot-meta",
-        shiny::h2(class = "plot-title",
-                  shiny::textOutput("plot_title", inline = TRUE)),
-        shiny::div(class = "plot-subtitle",
-                   shiny::textOutput("plot_subtitle", inline = TRUE))
+        shiny::div(class = "plot-meta-left",
+          shiny::h2(class = "plot-title",
+                    shiny::textOutput("plot_title", inline = TRUE)),
+          shiny::div(class = "plot-subtitle",
+                     shiny::textOutput("plot_subtitle", inline = TRUE))
+        ),
+        shiny::div(class = "y-axis-controls",
+          shiny::div(class = "field",
+            shiny::tags$label(class = "field-label", "Y min"),
+            shiny::numericInput("y_min", label = NULL, value = .y_min, width = "100%")
+          ),
+          shiny::div(class = "field",
+            shiny::tags$label(class = "field-label", "Y max"),
+            shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
+          )
+        )
       ),
       highcharter::highchartOutput("plot", height = "480px")
     )
