@@ -43,14 +43,15 @@ upper bound of the y-axis globally across all groups. Leave \code{NULL} for
 automatic scaling.}
 }
 \value{
-A Shiny app object. In an interactive session the app is displayed
-immediately; otherwise it is launched in a browser.
+A data frame of flagged group combinations (the key columns only),
+or \code{NULL} if nothing was flagged. Returned invisibly when the app exits.
 }
 \description{
 Launches a Shiny application for visually reviewing time-series data
 group by group. All columns that are not \code{x}, \code{y}, \code{series}, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
-groups with the arrow keys or the \verb{←} / \verb{→} buttons. Press \code{Esc} to exit.
+groups with the arrow keys or the \verb{←} / \verb{→} buttons. Press \code{F} to flag
+the current combination. Press \code{Q} to exit.
 }
 \details{
 Requires the \code{shiny} and \code{highcharter} packages.
@@ -60,7 +61,7 @@ Requires the \code{shiny} and \code{highcharter} packages.
 library(dplyr)
 
 # Simple example with economics dataset:
-ggplot2::economics_long |>
+flagged <- ggplot2::economics_long |>
   time2screen(date, value, series = variable)
 
 # With a grouping column:
@@ -69,7 +70,7 @@ df <- data.frame(
   country = rep(c("DK", "SE", "NO"), each = 11),
   gdp     = rnorm(33, 300, 20)
 )
-time2screen(df, x = year, y = gdp)
+flagged <- time2screen(df, x = year, y = gdp)
 }
 
 }

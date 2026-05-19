@@ -3,7 +3,8 @@
 #' Launches a Shiny application for visually reviewing time-series data
 #' group by group. All columns that are not `x`, `y`, `series`, or excluded
 #' become grouping dimensions with dropdown selectors. Navigate between
-#' groups with the arrow keys or the `←` / `→` buttons. Press `Esc` to exit.
+#' groups with the arrow keys or the `←` / `→` buttons. Press `F` to flag
+#' the current combination. Press `Q` to exit.
 #'
 #' Requires the `shiny` and `highcharter` packages.
 #'
@@ -26,15 +27,15 @@
 #'   upper bound of the y-axis globally across all groups. Leave `NULL` for
 #'   automatic scaling.
 #'
-#' @return A Shiny app object. In an interactive session the app is displayed
-#'   immediately; otherwise it is launched in a browser.
+#' @return A data frame of flagged group combinations (the key columns only),
+#'   or `NULL` if nothing was flagged. Returned invisibly when the app exits.
 #'
 #' @examples
 #' \dontrun{
 #' library(dplyr)
 #'
 #' # Simple example with economics dataset:
-#' ggplot2::economics_long |>
+#' flagged <- ggplot2::economics_long |>
 #'   time2screen(date, value, series = variable)
 #'
 #' # With a grouping column:
@@ -43,12 +44,12 @@
 #'   country = rep(c("DK", "SE", "NO"), each = 11),
 #'   gdp     = rnorm(33, 300, 20)
 #' )
-#' time2screen(df, x = year, y = gdp)
+#' flagged <- time2screen(df, x = year, y = gdp)
 #' }
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang enquo quo_is_null as_label syms
-#' @importFrom purrr map_lgl map walk map_chr
+#' @importFrom purrr map_lgl map walk map_chr map2
 #' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
 #' @export
 time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
@@ -64,9 +65,9 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
     cli::cli_abort("Package {.pkg highcharter} is required for {.fn time2screen}.")
   }
 
-  x_var      <- rlang::enquo(x)
-  y_var      <- rlang::enquo(y)
-  series_var <- rlang::enquo(series)
+  x_var       <- rlang::enquo(x)
+  y_var       <- rlang::enquo(y)
+  series_var  <- rlang::enquo(series)
   exclude_var <- rlang::enquo(.exclude)
 
   has_series <- !rlang::quo_is_null(series_var)
@@ -145,6 +146,7 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
                    justify-content: center; }
         .nav-btn:hover { background: #fafafa; border-color: #d4d4d8; color: #18181b; }
         .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
         .counter { font-size: 13px; font-weight: 500; color: #71717a;
                    min-width: 56px; text-align: center;
                    font-variant-numeric: tabular-nums; }
@@ -169,26 +171,41 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         .plot-meta-left { flex: 1; display: flex; align-items: center; gap: 12px; }
         .plot-title { font-size: 16px; font-weight: 600; color: #18181b; margin: 0; }
         .plot-subtitle { font-size: 13px; color: #71717a; font-weight: 500; }
-        .y-axis-controls { display: flex; align-items: center; gap: 8px;
+        .y-axis-controls { display: flex; align-items: flex-end; gap: 8px;
                            margin-left: auto; flex-shrink: 0; }
         .y-axis-controls .field { min-width: 72px; max-width: 88px; }
         .y-axis-controls .field-label { font-size: 10px; }
         .y-axis-controls .form-group { margin: 0; }
         .y-axis-controls .form-control { height: 30px; font-size: 13px;
                                           padding: 0 8px; border-radius: 6px; }
+        .reset-zoom-btn { height: 30px; padding: 0 10px; background: white;
+                          border: 1px solid #e4e4e7; border-radius: 6px;
+                          font-size: 12px; font-weight: 500; color: #71717a;
+                          cursor: pointer; font-family: inherit;
+                          transition: all 0.15s ease; white-space: nowrap; }
+        .reset-zoom-btn:hover { border-color: #d4d4d8; color: #18181b; }
+        .reset-zoom-btn:disabled { opacity: 0.35; cursor: default; }
       ")),
       shiny::tags$script(shiny::HTML("
         $(document).keydown(function(e) {
           if (e.key === 'Escape') {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
                 || e.target.tagName === 'SELECT') { e.target.blur(); }
-            Shiny.setInputValue('exit_key', Math.random());
             return;
           }
           if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
               || e.target.tagName === 'SELECT') return;
           if (e.key === 'ArrowLeft')  $('#prev').click();
           if (e.key === 'ArrowRight') $('#next_btn').click();
+          if (e.key === 'f' || e.key === 'F') $('#flag_btn').click();
+          if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('exit_key', Math.random());
+        });
+        Shiny.addCustomMessageHandler('toggle_class', function(msg) {
+          if (msg.active) { $(msg.selector).addClass(msg.cls); }
+          else            { $(msg.selector).removeClass(msg.cls); }
+        });
+        Shiny.addCustomMessageHandler('set_btn_disabled', function(msg) {
+          $(msg.selector).prop('disabled', msg.disabled);
         });
       "))
     ),
@@ -197,14 +214,17 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         if (!is.null(.title)) .title else "Time series screening"
       ),
       shiny::div(class = "header-hint",
-        "Press ", shiny::tags$kbd("Esc"), " to exit"
+        "Press ", shiny::tags$kbd("\u2190\u2192"), " to navigate  ",
+        shiny::tags$kbd("F"), " to flag  ",
+        shiny::tags$kbd("Q"), " to exit"
       )
     ),
     shiny::div(class = "control-bar",
       shiny::div(class = "nav-group",
         shiny::tags$button(id = "prev",     class = "nav-btn action-button", "\u2190"),
         shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
-        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192")
+        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192"),
+        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "\u2605")
       ),
       !!!dropdowns
     ),
@@ -224,6 +244,10 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
           shiny::div(class = "field",
             shiny::tags$label(class = "field-label", "Y max"),
             shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
+          ),
+          shiny::tags$button(
+            id = "reset_zoom", class = "reset-zoom-btn action-button",
+            disabled = "disabled", "Reset zoom"
           )
         )
       ),
@@ -232,9 +256,40 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
   )
 
   server <- function(input, output, session) {
-    idx <- shiny::reactiveVal(1L)
+    idx        <- shiny::reactiveVal(1L)
+    flagged    <- shiny::reactiveVal(integer(0))
+    zoom_range <- shiny::reactiveVal(NULL)
 
-    shiny::observeEvent(input$exit_key, shiny::stopApp(), ignoreInit = TRUE)
+    shiny::observeEvent(input$exit_key, {
+      f <- flagged()
+      result <- if (length(f) > 0) keys[sort(f), , drop = FALSE] else NULL
+      shiny::stopApp(result)
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$flag_btn, {
+      i       <- idx()
+      current <- flagged()
+      flagged(if (i %in% current) setdiff(current, i) else union(current, i))
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$reset_zoom, {
+      zoom_range(NULL)
+      session$sendCustomMessage("set_btn_disabled",
+                                list(selector = "#reset_zoom", disabled = TRUE))
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$zoom_range, {
+      zoom_range(input$zoom_range)
+      has_zoom <- !is.null(input$zoom_range)
+      session$sendCustomMessage("set_btn_disabled",
+                                list(selector = "#reset_zoom", disabled = !has_zoom))
+    }, ignoreInit = TRUE)
+
+    shiny::observe({
+      session$sendCustomMessage("toggle_class", list(
+        selector = "#flag_btn", cls = "active", active = idx() %in% flagged()
+      ))
+    })
 
     y_min_val <- shiny::reactive({ v <- input$y_min; if (is.null(v) || is.na(v)) NULL else v })
     y_max_val <- shiny::reactive({ v <- input$y_max; if (is.null(v) || is.na(v)) NULL else v })
@@ -281,8 +336,12 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
 
     current_key <- shiny::reactive({ keys[idx(), , drop = FALSE] })
 
-    output$counter      <- shiny::renderText(paste0(idx(), " / ", nrow(keys)))
-    output$plot_title   <- shiny::renderText({
+    output$counter <- shiny::renderText({
+      n_flagged <- length(flagged())
+      flag_str  <- if (n_flagged > 0) paste0("  \u2605", n_flagged) else ""
+      paste0(idx(), " / ", nrow(keys), flag_str)
+    })
+    output$plot_title <- shiny::renderText({
       paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
     })
     output$plot_subtitle <- shiny::renderText({
@@ -306,6 +365,7 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
     output$plot <- highcharter::renderHighchart({
       d        <- current_data()
       x_values <- dplyr::pull(d, !!x_var)
+      zr       <- zoom_range()
 
       to_ms <- function(v) {
         if (inherits(v, "Date") || inherits(v, "POSIXct")) {
@@ -325,7 +385,18 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         highcharter::hc_chart(
           style = list(fontFamily = "Inter, sans-serif"),
           backgroundColor = "transparent",
-          spacing = c(8, 0, 8, 0), animation = FALSE, zoomType = "x"
+          spacing = c(8, 0, 8, 0), animation = FALSE, zoomType = "x",
+          events = list(
+            selection = highcharter::JS("function(e) {
+              if (e.resetSelection) {
+                Shiny.setInputValue('zoom_range', null, {priority: 'event'});
+              } else if (e.xAxis && e.xAxis[0]) {
+                Shiny.setInputValue('zoom_range',
+                  {min: e.xAxis[0].min, max: e.xAxis[0].max},
+                  {priority: 'event'});
+              }
+            }")
+          )
         ) |>
         highcharter::hc_credits(enabled = FALSE) |>
         highcharter::hc_title(text = NULL) |>
@@ -361,6 +432,8 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         ) |>
         highcharter::hc_xAxis(
           type = "datetime", gridLineWidth = 0,
+          min  = if (!is.null(zr)) zr$min else NULL,
+          max  = if (!is.null(zr)) zr$max else NULL,
           lineColor = "#e4e4e7", tickColor = "#e4e4e7", tickWidth = 1,
           labels = list(style = list(color = "#71717a", fontSize = "11px",
                                      fontWeight = "500")),
@@ -443,6 +516,5 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
     })
   }
 
-  app <- shiny::shinyApp(ui, server)
-  if (interactive()) app else shiny::runApp(app, launch.browser = TRUE)
+  invisible(shiny::runApp(shiny::shinyApp(ui, server)))
 }
