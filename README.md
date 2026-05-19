@@ -156,6 +156,14 @@ ggplot2::economics_long |>
 
 ## Vignette
 
+To build the vignette, install with:
+
+```r
+remotes::install_github("dataniel/daos", build_vignettes = TRUE)
+```
+
+Then open it with:
+
 ```r
 vignette("daos")
 ```
