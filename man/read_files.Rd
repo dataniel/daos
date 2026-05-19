@@ -2,34 +2,69 @@
 % Please edit documentation in R/read_files.R
 \name{read_files}
 \alias{read_files}
-\title{Read one or more files with automatic format detection}
+\title{Read one or more files}
 \usage{
-read_files(paths, ...)
+read_files(
+  paths,
+  names = NULL,
+  reader = "auto",
+  out = NULL,
+  .envir = parent.frame(),
+  .id = "source",
+  .overwrite = FALSE,
+  ...
+)
 }
 \arguments{
-\item{paths}{A single file path or a character vector of file paths. If
-the vector is unnamed, file names (without extension) are used as list
-names.}
+\item{paths}{A character vector of file paths. Glue syntax (\code{{}}) is
+supported for compact range expansion.}
 
-\item{...}{Additional arguments forwarded to the underlying reader.}
+\item{names}{Optional names for the result. Defaults to file names without
+extension. Numeric values are converted to character.}
+
+\item{reader}{\code{"auto"} (default) to detect the format from the file
+extension, or a function \verb{\\(path, ...) ...} to use a custom reader.}
+
+\item{out}{Controls what is returned after reading:
+\itemize{
+\item \code{NULL} (default): the object directly for a single file; a named list
+for multiple files.
+\item \code{"bind"}: row-bind all data frames into a single tibble. A \code{source}
+column (see \code{.id}) records the origin. Column types are always
+reconciled with \code{\link[readr:type_convert]{readr::type_convert()}}.
+\item \code{"unpack"}: assign each element as a named variable in \code{.envir}.
+}}
+
+\item{.envir}{Environment used for glue interpolation and (when
+\code{out = "unpack"}) the target for assignment. Default is the calling frame.}
+
+\item{.id}{Name of the source column added when \code{out = "bind"}.
+Default \code{"source"}.}
+
+\item{.overwrite}{If \code{FALSE} (default), aborts when any name already exists
+in \code{.envir} and \code{out = "unpack"}. Set to \code{TRUE} to allow overwrites.}
+
+\item{...}{Additional arguments forwarded to the reader function.}
 }
 \value{
-For a single path: the object returned by the reader. For multiple
-paths: a named list of objects.
+Depends on \code{out}:
+\itemize{
+\item \code{NULL}: the object (single file) or a named list (multiple files).
+\item \code{"bind"}: a single tibble.
+\item \code{"unpack"}: the named list, invisibly.
+}
 }
 \description{
-Detects the file format from the extension and dispatches to the
-appropriate reader. Supports a wide range of tabular, statistical, and
-structured formats. When multiple paths are supplied, a named list is
-returned and a progress bar is shown.
+Expands paths using \code{\link[glue:glue]{glue::glue()}} (so \code{{0:9}} generates ten paths),
+checks that every file exists, reads them with automatic format detection
+or a custom reader, and optionally row-binds or unpacks the result.
 }
 \details{
-\strong{Supported formats:}
+\strong{Supported formats (when \code{reader = "auto"}):}
 
-\strong{Note on CSV:} \code{read_files()} uses \code{readr::read_csv2()} for \code{.csv} files,
-which expects \strong{semicolon-separated} values and a comma as the decimal mark
-(the Danish/European convention). If your CSV uses commas as separators,
-pass the file directly to \code{readr::read_csv()} instead.\tabular{ll}{
+\strong{Note on CSV:} uses \code{readr::read_csv2()} which expects semicolon-separated
+values and a comma as the decimal mark (Danish/European convention). For
+comma-separated files, pass a custom reader: \code{reader = readr::read_csv}.\tabular{ll}{
    Extension \tab Reader \cr
    \code{csv} \tab \code{readr::read_csv2()} (semicolon-separated, European format) \cr
    \code{tsv} \tab \code{readr::read_tsv()} \cr
@@ -48,19 +83,27 @@ Packages for non-base formats (\code{arrow}, \code{haven}, \code{readxl}, \code{
 }
 \examples{
 \dontrun{
-# Single file
+# Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
-# Multiple files — returns a named list
-files <- read_files(c("data/a.csv", "data/b.csv"))
+# Multiple files with glue expansion:
+lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
 
-# Pipeline with require_files() and bind_files():
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  bind_files()
+# Custom reader:
+lst <- read_files(
+  "data/dat{0:9}.parquet",
+  reader = \(x) arrow::read_parquet(x, col_select = 1:5)
+)
+
+# Read and bind into one tibble:
+df <- read_files("data/dat{0:9}.parquet", names = 0:9, out = "bind")
+
+# Read and unpack into individual variables (dat0, dat1, ...):
+read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
+summon("^dat\\\\d+$")
 }
 
 }
 \seealso{
-\code{\link[=require_files]{require_files()}}, \code{\link[=bind_files]{bind_files()}}, \code{\link[=unpack_files]{unpack_files()}}
+\code{\link[=summon]{summon()}}, \code{\link[=view_types]{view_types()}}
 }

@@ -29,5 +29,5 @@ summon("^dat\\\\d+$")
 
 }
 \seealso{
-\code{\link[=unpack_files]{unpack_files()}}, \code{\link[=split_by]{split_by()}}
+\code{\link[=read_files]{read_files()}}, \code{\link[=split_by]{split_by()}}
 }

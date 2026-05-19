@@ -104,71 +104,51 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 
 ## File workflows
 
-### `require_files()` — validate paths before reading
+### `read_files()` — validate, read, and collect
 
-`require_files()` expands [glue syntax](https://glue.tidyverse.org/) in
-path strings and aborts immediately with a clear message if any file is
-missing. It returns a named character vector ready to pipe into
-`read_files()`.
-
-```{r, eval = FALSE}
-# Expand {0:9} into ten paths and verify they all exist:
-require_files("data/dat{0:9}.parquet")
-```
-
-### `read_files()` — format-agnostic file reading
-
-`read_files()` detects the format from the extension and dispatches to
-the right reader. A single path returns the object directly; multiple
-paths return a named list with a progress bar.
+`read_files()` expands [glue syntax](https://glue.tidyverse.org/) in
+path strings, aborts immediately if any file is missing, and reads all
+files with automatic format detection. A single path returns the object
+directly; multiple paths return a named list with a progress bar.
 
 ```{r, eval = FALSE}
-# Single file:
+# Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
-# Multiple files — returns a named list:
-files <- read_files(c("data/a.csv", "data/b.csv"))
+# Multiple files with glue expansion — returns a named list:
+lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
 ```
 
 Supported formats: `csv`, `tsv`, `parquet`, `feather`, `xlsx`, `xls`,
 `rds`, `sas7bdat`, `sav`, `por`, `xpt`, `dta`, `json`, `ndjson`,
 `jsonl`, `yaml`, `yml`, `txt`.
 
-### `bind_files()` — row-bind a list of data frames
-
-After reading multiple files into a list, `bind_files()` combines them
-row-wise. A `source` column (or whatever `.id` names it) records where
-each row came from.
-
-```{r}
-df1 <- data.frame(year = 2020L, value = 10.5)
-df2 <- data.frame(year = 2021L, value = 11.2)
-bind_files(list(a = df1, b = df2))
-```
-
-When types differ, set `.guess = TRUE` to auto-convert:
+Supply a custom reader to override auto-detection or add arguments:
 
 ```{r, eval = FALSE}
-bind_files(list_of_files, .guess = TRUE)
+read_files(
+  "data/dat{0:9}.parquet",
+  reader = \(x) arrow::read_parquet(x, col_select = 1:5)
+)
 ```
 
-### Full pipeline
+### Binding into one tibble
+
+Set `out = "bind"` to row-bind all files into a single tibble. A
+`source` column records the origin of each row. Column types are always
+reconciled automatically.
 
 ```{r, eval = FALSE}
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  bind_files()
+df <- read_files("data/dat{0:9}.parquet", names = 0:9, out = "bind")
 ```
 
-### `unpack_files()` — assign list elements as variables
+### Unpacking into individual variables
 
-Instead of binding, you can unpack a list into individual named objects
-in your environment:
+Set `out = "unpack"` to assign each file as its own named variable in
+the calling environment:
 
 ```{r, eval = FALSE}
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  unpack_files()
+read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
 # dat0, dat1, ..., dat9 are now in your environment
 ```
 
@@ -200,8 +180,7 @@ df <- read_ta("ta.file")
 ### `view_types()` — compare column types across data frames
 
 `view_types()` shows the `pillar::type_sum()` type of each column for
-every dataset supplied. Invaluable before joins or before calling
-`bind_files()`.
+every dataset supplied. Invaluable before joins or before binding with `read_files(out = "bind")`.
 
 ```{r}
 df_a <- data.frame(x = 1L,  y = "a", z = TRUE)

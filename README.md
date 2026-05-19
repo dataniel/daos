@@ -35,10 +35,7 @@ pak::pak("dataniel/daos")
 
 | Function | Description |
 |----------|-------------|
-| `read_files()` | Auto-detect format and read one or more files |
-| `require_files()` | Validate paths (with glue expansion) before reading |
-| `bind_files()` | Row-bind a list of data frames with helpful type-mismatch errors |
-| `unpack_files()` | Assign list elements as individual variables |
+| `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 
 ### Data wrangling
 

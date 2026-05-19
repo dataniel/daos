@@ -1,7 +1,7 @@
 #' Compare column types across data frames
 #'
 #' Shows the column types of one or more data frames side-by-side. Useful
-#' for diagnosing type mismatches before a join or a call to [daos::bind_files()].
+#' for diagnosing type mismatches before a join or before binding with [daos::read_files()].
 #'
 #' @param ... Data frames to compare (unquoted). Names are inferred from the
 #'   expressions passed.
@@ -23,7 +23,7 @@
 #' view_types(df1, df2, diff = TRUE)
 #' view_types(df1, df2, focus = c(x = "int"))
 #'
-#' @seealso [daos::bind_files()]
+#' @seealso [daos::read_files()]
 #'
 #' @importFrom rlang list2 enexprs .data
 #' @importFrom purrr map_chr map_lgl imap reduce

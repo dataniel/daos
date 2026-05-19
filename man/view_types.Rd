@@ -24,7 +24,7 @@ showing the \code{\link[pillar:type_sum]{pillar::type_sum()}} type string.
 }
 \description{
 Shows the column types of one or more data frames side-by-side. Useful
-for diagnosing type mismatches before a join or a call to \code{\link[=bind_files]{bind_files()}}.
+for diagnosing type mismatches before a join or before binding with \code{\link[=read_files]{read_files()}}.
 }
 \examples{
 df1 <- data.frame(x = 1L, y = "a")
@@ -36,5 +36,5 @@ view_types(df1, df2, focus = c(x = "int"))
 
 }
 \seealso{
-\code{\link[=bind_files]{bind_files()}}
+\code{\link[=read_files]{read_files()}}
 }

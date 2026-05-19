@@ -17,7 +17,7 @@
 #' dat3 <- data.frame(x = 3)
 #' summon("^dat\\d+$")
 #'
-#' @seealso [daos::unpack_files()], [daos::split_by()]
+#' @seealso [daos::read_files()], [daos::split_by()]
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang set_names

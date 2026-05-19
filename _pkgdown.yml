@@ -27,10 +27,7 @@ reference:
 
   - title: File workflow
     contents:
-      - require_files
       - read_files
-      - bind_files
-      - unpack_files
       - summon
       - read_ta
 
