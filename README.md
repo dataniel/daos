@@ -129,13 +129,18 @@ df               # print as usual — now available as .last.df
 
 ```r
 # Parse CPR numbers
-cpr_info(c("1111111118", "111111-1118"))
+df <- data.frame(pnr = c("1111111118", "111111-1118"))
+cpr_info(df, pnr)
 
 # Read a TA file
 df <- read_ta("ta.file")
 
 # Find which items should be positive/negative to sum to a total
-find_signs(c(100, 200, 50), total = 150)
+items <- data.frame(
+  label = c("revenue", "costs", "depreciation", "total"),
+  value = c(100, 40, 10, 50)
+)
+find_signs(items, label, value, total_label = "total")
 ```
 
 ### Interactive
