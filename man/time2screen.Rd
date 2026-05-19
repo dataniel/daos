@@ -4,7 +4,16 @@
 \alias{time2screen}
 \title{Interactive time-series screening dashboard}
 \usage{
-time2screen(data, x, y, series = NULL, .exclude = NULL, .from_zero = FALSE)
+time2screen(
+  data,
+  x,
+  y,
+  series = NULL,
+  .exclude = NULL,
+  .title = NULL,
+  .y_min = NULL,
+  .y_max = NULL
+)
 }
 \arguments{
 \item{data}{A data frame containing at minimum an x-axis column, a y-axis
@@ -21,8 +30,17 @@ years, or any value coercible to a date. (Unquoted.)}
 \item{.exclude}{Columns to exclude from becoming grouping dropdowns.
 (Unquoted, tidy-select.)}
 
-\item{.from_zero}{If \code{TRUE}, the y-axis starts at zero. Can also be
-toggled interactively via the "Start at zero" button. Default: \code{FALSE}.}
+\item{.title}{Optional title string shown in the app header and in
+downloaded figures. The group combination (\verb{a · b · c}) is always shown
+separately and is not affected.}
+
+\item{.y_min}{Optional numeric. Pre-fills the Y min input, fixing the
+lower bound of the y-axis globally across all groups. Leave \code{NULL} for
+automatic scaling. Set to \code{0} to replicate the old "start at zero" behaviour.}
+
+\item{.y_max}{Optional numeric. Pre-fills the Y max input, fixing the
+upper bound of the y-axis globally across all groups. Leave \code{NULL} for
+automatic scaling.}
 }
 \value{
 A Shiny app object. In an interactive session the app is displayed

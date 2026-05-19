@@ -16,8 +16,15 @@
 #'   (e.g. a category). (Unquoted.)
 #' @param .exclude Columns to exclude from becoming grouping dropdowns.
 #'   (Unquoted, tidy-select.)
-#' @param .from_zero If `TRUE`, the y-axis starts at zero. Can also be
-#'   toggled interactively via the "Start at zero" button. Default: `FALSE`.
+#' @param .title Optional title string shown in the app header and in
+#'   downloaded figures. The group combination (`a · b · c`) is always shown
+#'   separately and is not affected.
+#' @param .y_min Optional numeric. Pre-fills the Y min input, fixing the
+#'   lower bound of the y-axis globally across all groups. Leave `NULL` for
+#'   automatic scaling. Set to `0` to replicate the old "start at zero" behaviour.
+#' @param .y_max Optional numeric. Pre-fills the Y max input, fixing the
+#'   upper bound of the y-axis globally across all groups. Leave `NULL` for
+#'   automatic scaling.
 #'
 #' @return A Shiny app object. In an interactive session the app is displayed
 #'   immediately; otherwise it is launched in a browser.
@@ -45,7 +52,7 @@
 #' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
 #' @export
 time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
-                        .from_zero = FALSE) {
+                        .title = NULL, .y_min = NULL, .y_max = NULL) {
 
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame.")
@@ -153,15 +160,7 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         .field .form-control:focus { border-color: #a1a1aa;
                                       box-shadow: 0 0 0 3px rgba(161,161,170,0.15);
                                       outline: none; }
-        .toggle-btn { margin-left: auto; height: 38px; padding: 0 16px;
-                      background: white; border: 1px solid #e4e4e7;
-                      border-radius: 8px; font-size: 14px; font-weight: 500;
-                      color: #18181b; cursor: pointer; transition: all 0.15s ease;
-                      display: flex; align-items: center; gap: 8px;
-                      font-family: inherit; align-self: flex-end; }
-        .toggle-btn:hover { background: #fafafa; border-color: #d4d4d8; }
-        .toggle-btn.active { background: #18181b; color: white;
-                              border-color: #18181b; }
+        .y-axis-field { min-width: 80px; max-width: 100px; }
         .plot-container { background: white; border: 1px solid #e4e4e7;
                           border-radius: 12px; padding: 28px 28px 20px;
                           box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
@@ -184,14 +183,12 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
           if (e.key === 'ArrowLeft')  $('#prev').click();
           if (e.key === 'ArrowRight') $('#next_btn').click();
         });
-        Shiny.addCustomMessageHandler('toggle_class', function(msg) {
-          if (msg.active) { $(msg.selector).addClass(msg.cls); }
-          else            { $(msg.selector).removeClass(msg.cls); }
-        });
       "))
     ),
     shiny::div(class = "header",
-      shiny::div(class = "header-title", "Time series screening"),
+      shiny::div(class = "header-title",
+        if (!is.null(.title)) .title else "Time series screening"
+      ),
       shiny::div(class = "header-hint",
         "Press ", shiny::tags$kbd("Esc"), " to exit"
       )
@@ -203,10 +200,13 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192")
       ),
       !!!dropdowns,
-      shiny::tags$button(
-        id    = "from_zero",
-        class = paste("toggle-btn action-button", if (.from_zero) "active" else ""),
-        "Start at zero"
+      shiny::div(class = "field y-axis-field",
+        shiny::tags$label(class = "field-label", "Y min"),
+        shiny::numericInput("y_min", label = NULL, value = .y_min, width = "100%")
+      ),
+      shiny::div(class = "field y-axis-field",
+        shiny::tags$label(class = "field-label", "Y max"),
+        shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
       )
     ),
     shiny::div(class = "plot-container",
@@ -221,19 +221,12 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
   )
 
   server <- function(input, output, session) {
-    idx              <- shiny::reactiveVal(1L)
-    from_zero_state  <- shiny::reactiveVal(.from_zero)
+    idx <- shiny::reactiveVal(1L)
 
     shiny::observeEvent(input$exit_key, shiny::stopApp(), ignoreInit = TRUE)
 
-    shiny::observeEvent(input$from_zero, {
-      new_state <- (input$from_zero %% 2) == 1
-      actual    <- xor(new_state, .from_zero)
-      from_zero_state(if (.from_zero) !actual else actual)
-      session$sendCustomMessage("toggle_class", list(
-        selector = "#from_zero", cls = "active", active = from_zero_state()
-      ))
-    }, ignoreInit = TRUE)
+    y_min_val <- shiny::reactive({ v <- input$y_min; if (is.null(v) || is.na(v)) NULL else v })
+    y_max_val <- shiny::reactive({ v <- input$y_max; if (is.null(v) || is.na(v)) NULL else v })
 
     sync_dropdowns <- function(new_idx) {
       current_key <- keys[new_idx, , drop = FALSE]
@@ -282,13 +275,25 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
       paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
     })
     output$plot_subtitle <- shiny::renderText({
-      n_obs <- nrow(current_data())
-      paste0(n_obs, " observation", if (n_obs == 1) "" else "s")
+      d <- current_data()
+      if (has_series) {
+        counts    <- tapply(seq_len(nrow(d)), dplyr::pull(d, !!series_var), length)
+        n_series  <- length(counts)
+        obs_range <- range(counts)
+        obs_str   <- if (obs_range[1] == obs_range[2]) {
+          paste0(obs_range[1], " observations each")
+        } else {
+          paste0(obs_range[1], "\u2013", obs_range[2], " observations")
+        }
+        paste0(n_series, " series \u00b7 ", obs_str)
+      } else {
+        n_obs <- nrow(d)
+        paste0(n_obs, " observation", if (n_obs == 1) "" else "s")
+      }
     })
 
     output$plot <- highcharter::renderHighchart({
       d        <- current_data()
-      use_zero <- from_zero_state()
       x_values <- dplyr::pull(d, !!x_var)
 
       to_ms <- function(v) {
@@ -313,6 +318,36 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
         ) |>
         highcharter::hc_credits(enabled = FALSE) |>
         highcharter::hc_title(text = NULL) |>
+        highcharter::hc_exporting(
+          enabled      = TRUE,
+          filename     = paste(as.character(unlist(current_key())), collapse = "_"),
+          buttons      = list(
+            contextButton = list(
+              menuItems = list(
+                "downloadPNG", "downloadJPEG", "downloadPDF", "downloadSVG",
+                "separator",
+                "downloadCSV",
+                list(
+                  text    = "Download XLSX",
+                  onclick = highcharter::JS("function() { this.downloadXLS(); }")
+                )
+              )
+            )
+          ),
+          chartOptions = list(
+            chart    = list(backgroundColor = "white"),
+            title    = list(
+              text  = if (!is.null(.title)) .title else "",
+              style = list(fontSize = "16px", fontWeight = "600", color = "#18181b",
+                           fontFamily = "Inter, sans-serif")
+            ),
+            subtitle = list(
+              text  = paste(as.character(unlist(current_key())), collapse = " \u00b7 "),
+              style = list(fontSize = "13px", color = "#71717a",
+                           fontFamily = "Inter, sans-serif")
+            )
+          )
+        ) |>
         highcharter::hc_xAxis(
           type = "datetime", gridLineWidth = 0,
           lineColor = "#e4e4e7", tickColor = "#e4e4e7", tickWidth = 1,
@@ -322,7 +357,8 @@ time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
                                       day = "%e %b %Y")
         ) |>
         highcharter::hc_yAxis(
-          min = if (use_zero) 0 else NULL,
+          min = y_min_val(),
+          max = y_max_val(),
           gridLineColor = "#f4f4f5", lineWidth = 0, tickWidth = 0,
           labels = list(style = list(color = "#71717a", fontSize = "11px",
                                      fontWeight = "500"),
