@@ -24,14 +24,8 @@
 
 ## File workflow
 
-- [`require_files()`](https://dataniel.github.io/daos/reference/require_files.md)
-  : Validate and resolve file paths
 - [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-  : Read one or more files with automatic format detection
-- [`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md)
-  : Row-bind a list of data frames
-- [`unpack_files()`](https://dataniel.github.io/daos/reference/unpack_files.md)
-  : Unpack a named list into individual variables
+  : Read one or more files
 - [`summon()`](https://dataniel.github.io/daos/reference/summon.md) :
   Retrieve objects matching a pattern from an environment
 - [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :

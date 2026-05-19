@@ -3,13 +3,22 @@
 Launches a Shiny application for visually reviewing time-series data
 group by group. All columns that are not `x`, `y`, `series`, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
-groups with the arrow keys or the `←` / `→` buttons. Press `Esc` to
-exit.
+groups with the arrow keys. Press `Space` to flag the current
+combination, `R` to reset zoom, and `Q` to quit.
 
 ## Usage
 
 ``` r
-time2screen(data, x, y, series = NULL, .exclude = NULL, .from_zero = FALSE)
+time2screen(
+  data,
+  x,
+  y,
+  series = NULL,
+  .exclude = NULL,
+  .title = NULL,
+  .y_min = NULL,
+  .y_max = NULL
+)
 ```
 
 ## Arguments
@@ -38,15 +47,28 @@ time2screen(data, x, y, series = NULL, .exclude = NULL, .from_zero = FALSE)
   Columns to exclude from becoming grouping dropdowns. (Unquoted,
   tidy-select.)
 
-- .from_zero:
+- .title:
 
-  If `TRUE`, the y-axis starts at zero. Can also be toggled
-  interactively via the "Start at zero" button. Default: `FALSE`.
+  Optional title string shown in the app header and in downloaded
+  figures. The group combination (`a · b · c`) is always shown
+  separately and is not affected.
+
+- .y_min:
+
+  Optional numeric. Pre-fills the Y min input, fixing the lower bound of
+  the y-axis globally across all groups. Leave `NULL` for automatic
+  scaling. Set to `0` to replicate the old "start at zero" behaviour.
+
+- .y_max:
+
+  Optional numeric. Pre-fills the Y max input, fixing the upper bound of
+  the y-axis globally across all groups. Leave `NULL` for automatic
+  scaling.
 
 ## Value
 
-A Shiny app object. In an interactive session the app is displayed
-immediately; otherwise it is launched in a browser.
+A data frame of flagged group combinations (the key columns only), or
+`NULL` if nothing was flagged. Returned invisibly when the app exits.
 
 ## Details
 
@@ -59,7 +81,7 @@ if (FALSE) { # \dontrun{
 library(dplyr)
 
 # Simple example with economics dataset:
-ggplot2::economics_long |>
+flagged <- ggplot2::economics_long |>
   time2screen(date, value, series = variable)
 
 # With a grouping column:
@@ -68,6 +90,6 @@ df <- data.frame(
   country = rep(c("DK", "SE", "NO"), each = 11),
   gdp     = rnorm(33, 300, 20)
 )
-time2screen(df, x = year, y = gdp)
+flagged <- time2screen(df, x = year, y = gdp)
 } # }
 ```

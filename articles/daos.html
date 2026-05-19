@@ -87,7 +87,7 @@ Useful for building timestamped file names.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20260519"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-05-19 14:09"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-05-19 23:42"</span></span></code></pre></div>
 <p>Combine the two for a quick timestamped path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/pipeline.log"</span><span class="op">)</span></span></code></pre></div>
@@ -182,74 +182,49 @@ empty strings and all-<code>NA</code> vectors as blank.</p>
 <h2 id="file-workflows">File workflows<a class="anchor" aria-label="anchor" href="#file-workflows"></a>
 </h2>
 <div class="section level3">
-<h3 id="require_files-validate-paths-before-reading">
-<code>require_files()</code> — validate paths before reading<a class="anchor" aria-label="anchor" href="#require_files-validate-paths-before-reading"></a>
+<h3 id="read_files-validate-read-and-collect">
+<code>read_files()</code> — validate, read, and collect<a class="anchor" aria-label="anchor" href="#read_files-validate-read-and-collect"></a>
 </h3>
-<p><code><a href="../reference/require_files.html">require_files()</a></code> expands <a href="https://glue.tidyverse.org/" class="external-link">glue syntax</a> in path strings and
-aborts immediately with a clear message if any file is missing. It
-returns a named character vector ready to pipe into
-<code><a href="../reference/read_files.html">read_files()</a></code>.</p>
+<p><code><a href="../reference/read_files.html">read_files()</a></code> expands <a href="https://glue.tidyverse.org/" class="external-link">glue syntax</a> in path strings,
+aborts immediately if any file is missing, and reads all files with
+automatic format detection. A single path returns the object directly;
+multiple paths return a named list with a progress bar.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Expand {0:9} into ten paths and verify they all exist:</span></span>
-<span><span class="fu"><a href="../reference/require_files.html">require_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="read_files-format-agnostic-file-reading">
-<code>read_files()</code> — format-agnostic file reading<a class="anchor" aria-label="anchor" href="#read_files-format-agnostic-file-reading"></a>
-</h3>
-<p><code><a href="../reference/read_files.html">read_files()</a></code> detects the format from the extension and
-dispatches to the right reader. A single path returns the object
-directly; multiple paths return a named list with a progress bar.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Single file:</span></span>
+<code class="sourceCode R"><span><span class="co"># Single file (returns object directly):</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/results.parquet"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Multiple files — returns a named list:</span></span>
-<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data/a.csv"</span>, <span class="st">"data/b.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Multiple files with glue expansion — returns a named list:</span></span>
+<span><span class="va">lst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span>, names <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span></span></code></pre></div>
 <p>Supported formats: <code>csv</code>, <code>tsv</code>,
 <code>parquet</code>, <code>feather</code>, <code>xlsx</code>,
 <code>xls</code>, <code>rds</code>, <code>sas7bdat</code>,
 <code>sav</code>, <code>por</code>, <code>xpt</code>, <code>dta</code>,
 <code>json</code>, <code>ndjson</code>, <code>jsonl</code>,
 <code>yaml</code>, <code>yml</code>, <code>txt</code>.</p>
+<p>Supply a custom reader to override auto-detection or add
+arguments:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span></span>
+<span>  <span class="st">"data/dat{0:9}.parquet"</span>,</span>
+<span>  reader <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu">arrow</span><span class="fu">::</span><span class="fu"><a href="https://arrow.apache.org/docs/r/reference/read_parquet.html" class="external-link">read_parquet</a></span><span class="op">(</span><span class="va">x</span>, col_select <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="bind_files-row-bind-a-list-of-data-frames">
-<code>bind_files()</code> — row-bind a list of data frames<a class="anchor" aria-label="anchor" href="#bind_files-row-bind-a-list-of-data-frames"></a>
+<h3 id="binding-into-one-tibble">Binding into one tibble<a class="anchor" aria-label="anchor" href="#binding-into-one-tibble"></a>
 </h3>
-<p>After reading multiple files into a list, <code><a href="../reference/bind_files.html">bind_files()</a></code>
-combines them row-wise. A <code>source</code> column (or whatever
-<code>.id</code> names it) records where each row came from.</p>
+<p>Set <code>out = "bind"</code> to row-bind all files into a single
+tibble. A <code>source</code> column records the origin of each row.
+Column types are always reconciled automatically.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2020L</span>, value <span class="op">=</span> <span class="fl">10.5</span><span class="op">)</span></span>
-<span><span class="va">df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2021L</span>, value <span class="op">=</span> <span class="fl">11.2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/bind_files.html">bind_files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">df1</span>, b <span class="op">=</span> <span class="va">df2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   source year value</span></span>
-<span><span class="co">#&gt; 1      a 2020  10.5</span></span>
-<span><span class="co">#&gt; 2      b 2021  11.2</span></span></code></pre></div>
-<p>When types differ, set <code>.guess = TRUE</code> to
-auto-convert:</p>
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span>, names <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">9</span>, out <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="unpacking-into-individual-variables">Unpacking into individual variables<a class="anchor" aria-label="anchor" href="#unpacking-into-individual-variables"></a>
+</h3>
+<p>Set <code>out = "unpack"</code> to assign each file as its own named
+variable in the calling environment:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/bind_files.html">bind_files</a></span><span class="op">(</span><span class="va">list_of_files</span>, .guess <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="full-pipeline">Full pipeline<a class="anchor" aria-label="anchor" href="#full-pipeline"></a>
-</h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/require_files.html">require_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/bind_files.html">bind_files</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="unpack_files-assign-list-elements-as-variables">
-<code>unpack_files()</code> — assign list elements as variables<a class="anchor" aria-label="anchor" href="#unpack_files-assign-list-elements-as-variables"></a>
-</h3>
-<p>Instead of binding, you can unpack a list into individual named
-objects in your environment:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/require_files.html">require_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/unpack_files.html">unpack_files</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span>, names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"dat"</span>, <span class="fl">0</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span>, out <span class="op">=</span> <span class="st">"unpack"</span><span class="op">)</span></span>
 <span><span class="co"># dat0, dat1, ..., dat9 are now in your environment</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -257,7 +232,7 @@ objects in your environment:</p>
 <code>summon()</code> — retrieve objects by name pattern<a class="anchor" aria-label="anchor" href="#summon-retrieve-objects-by-name-pattern"></a>
 </h3>
 <p>Collect objects whose names match a regex back into a list:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">dat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">dat3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
@@ -271,7 +246,7 @@ objects in your environment:</p>
 <code>read_ta()</code> — read Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-read-greenlandic-ta-files"></a>
 </h3>
 <p>For Greenlandic TA files:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ta.html">read_ta</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -286,8 +261,8 @@ frames<a class="anchor" aria-label="anchor" href="#view_types-compare-column-typ
 </h3>
 <p><code><a href="../reference/view_types.html">view_types()</a></code> shows the <code><a href="https://pillar.r-lib.org/reference/type_sum.html" class="external-link">pillar::type_sum()</a></code>
 type of each column for every dataset supplied. Invaluable before joins
-or before calling <code><a href="../reference/bind_files.html">bind_files()</a></code>.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+or before binding with <code>read_files(out = "bind")</code>.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>,  y <span class="op">=</span> <span class="st">"a"</span>, z <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">df_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1.0</span>, y <span class="op">=</span> <span class="st">"b"</span>, z <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
@@ -299,7 +274,7 @@ or before calling <code><a href="../reference/bind_files.html">bind_files()</a><
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      int   dbl  </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> y      chr   chr  </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> z      lgl   int</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Only columns where types differ:</span></span>
 <span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
@@ -307,7 +282,7 @@ or before calling <code><a href="../reference/bind_files.html">bind_files()</a><
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      int   dbl  </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> z      lgl   int</span></span></code></pre></div>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check that a specific column has the expected type:</span></span>
 <span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"int"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
@@ -320,24 +295,22 @@ or before calling <code><a href="../reference/bind_files.html">bind_files()</a><
 <h3 id="size_env-object-sizes-in-an-environment">
 <code>size_env()</code> — object sizes in an environment<a class="anchor" aria-label="anchor" href="#size_env-object-sizes-in-an-environment"></a>
 </h3>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">big</span>   <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">1e6</span></span>
 <span><span class="va">small</span> <span class="op">&lt;-</span> <span class="va">letters</span></span>
 <span><span class="fu"><a href="../reference/size_env.html">size_env</a></span><span class="op">(</span><span class="op">)</span>        <span class="co"># all objects, largest first</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 11 × 3</span></span></span>
-<span><span class="co">#&gt;    name      size      pretty</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fs::bytes&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> big    4<span style="text-decoration: underline;">000</span>048       3.81M</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> result    <span style="text-decoration: underline;">2</span>648       2.59K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> small     <span style="text-decoration: underline;">1</span>712       1.67K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> df_a      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> df_b      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> df1        864         864</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> df2        864         864</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> dat1       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> dat2       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> dat3       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> year        56          56</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 3</span></span></span>
+<span><span class="co">#&gt;   name      size      pretty</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fs::bytes&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> big    4<span style="text-decoration: underline;">000</span>048       3.81M</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> result    <span style="text-decoration: underline;">2</span>648       2.59K</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> small     <span style="text-decoration: underline;">1</span>712       1.67K</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> df_a      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> df_b      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> dat1       736         736</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> dat2       736         736</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> dat3       736         736</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> year        56          56</span></span>
 <span><span class="fu"><a href="../reference/size_env.html">size_env</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>   <span class="co"># top 2 only</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   name      size      pretty</span></span>
@@ -358,7 +331,7 @@ or before calling <code><a href="../reference/bind_files.html">bind_files()</a><
 succeeds silently when the data frame has no rows, warns when it has
 rows (unless <code>abort_msg</code> is set, in which case it
 aborts).</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Success:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>success_msg <span class="op">=</span> <span class="st">"All good — no rows"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All good — no rows</span></span>
@@ -367,13 +340,13 @@ aborts).</p>
 <span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">cyl</span> <span class="op">&lt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Unexpected: negative cylinder count"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> The dataset is empty.</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Hard error:</span></span>
 <span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span>, <span class="va">height</span> <span class="op">&lt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>abort_msg <span class="op">=</span> <span class="st">"Impossible: negative height"</span><span class="op">)</span></span></code></pre></div>
 <p>The <code>log</code> argument writes a timestamped entry to a file —
 useful in automated pipelines where you want a minimal audit trail:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/checks.log"</span><span class="op">)</span></span>
 <span><span class="va">checker</span>  <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/partial.html" class="external-link">partial</a></span><span class="op">(</span><span class="va">expect_empty</span>, log <span class="op">=</span> <span class="va">log_path</span><span class="op">)</span></span>
 <span></span>
@@ -391,7 +364,7 @@ rows<a class="anchor" aria-label="anchor" href="#flag_duplicates-detect-and-labe
 <p><code><a href="../reference/flag_duplicates.html">flag_duplicates()</a></code> prepends two columns:
 <code>isdup</code> (logical) and <code>dupid</code> (an integer group
 identifier, <code>0</code> for unique rows).</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 234 × 13</span></span></span>
 <span><span class="co">#&gt;    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy</span></span>
@@ -408,7 +381,7 @@ identifier, <code>0</code> for unique rows).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> FALSE     0 audi         a4 quattro   2    <span style="text-decoration: underline;">2</span>008     4 manu… 4        20    28</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 224 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check specific columns:</span></span>
 <span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span>, <span class="va">model</span>, <span class="va">year</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -430,7 +403,7 @@ identifier, <code>0</code> for unique rows).</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
 <p>Combine with <code><a href="../reference/expect_empty.html">expect_empty()</a></code> for a pipeline validation
 gate:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -448,7 +421,7 @@ gate:</p>
 </h3>
 <p><code><a href="../reference/split_by.html">split_by()</a></code> is a named version of
 <code><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">dplyr::group_split()</a></code>:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "audi"      "chevrolet" "dodge"     "ford"      "honda"</span></span>
@@ -463,7 +436,7 @@ gate:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 auto(l5)   f        16    26 p     compa…</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 manual(m5) f        18    26 p     compa…</span></span></code></pre></div>
 <p>Multiple grouping columns are joined with <code>.sep</code>:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">cyl</span>, <span class="va">drv</span>, .sep <span class="op">=</span> <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts2</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "4-4" "4-f" "5-f" "6-4"</span></span></code></pre></div>
@@ -477,7 +450,7 @@ algorithm to find the sign assignment (<code>+1</code>, <code>-1</code>,
 or <code>0</code>) for a set of values such that their signed sum equals
 a specified total. Useful when importing accounting data where sign
 conventions are unknown.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"revenue"</span>, <span class="st">"costs"</span>, <span class="st">"tax"</span>, <span class="st">"total"</span><span class="op">)</span>,</span>
 <span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">400</span>, <span class="fl">100</span>, <span class="fl">500</span><span class="op">)</span></span>
@@ -487,7 +460,7 @@ conventions are unknown.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 0</span></span></span></code></pre></div>
 <p>You can pin known signs and allow at most <code>max_zeros</code>
 items to be excluded:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/find_signs.html">find_signs</a></span><span class="op">(</span></span>
 <span>  <span class="va">items</span>,</span>
 <span>  <span class="va">label</span>, <span class="va">value</span>,</span>
@@ -511,31 +484,31 @@ validity<a class="anchor" aria-label="anchor" href="#cpr_info-extract-birth-date
 frame using official CPR Register century-detection rules. Dashes and
 spaces are stripped automatically; nine-digit numbers are zero-padded to
 recover values that lost a leading zero in Excel.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span>, <span class="st">"111111118"</span><span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/cpr_info.html">cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span><span class="op">)</span></span>
-<span><span class="co">#&gt;           pnr       bday age    sex pnum mod11 valid</span></span>
-<span><span class="co">#&gt; 1  1111111118 1911-11-11 114 kvinde 1118  TRUE  TRUE</span></span>
-<span><span class="co">#&gt; 2 111111-1118 1911-11-11 114 kvinde 1118  TRUE  TRUE</span></span>
-<span><span class="co">#&gt; 3   111111118 1911-11-01 114 kvinde 1118 FALSE  TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;          pnr       bday age sex mod11 valid</span></span>
+<span><span class="co">#&gt; 1 1111111118 1911-11-11 114   0  TRUE  TRUE</span></span>
+<span><span class="co">#&gt; 2 1111111118 1911-11-11 114   0  TRUE  TRUE</span></span>
+<span><span class="co">#&gt; 3 0111111118 1911-11-01 114   0 FALSE  TRUE</span></span></code></pre></div>
 <p>Choose a subset of columns and optionally rename them:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cpr_info.html">cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>birth_date <span class="op">=</span> <span class="st">"bday"</span>, years_old <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;           pnr birth_date years_old</span></span>
-<span><span class="co">#&gt; 1  1111111118 1911-11-11       114</span></span>
-<span><span class="co">#&gt; 2 111111-1118 1911-11-11       114</span></span>
-<span><span class="co">#&gt; 3   111111118 1911-11-01       114</span></span></code></pre></div>
+<span><span class="co">#&gt;          pnr birth_date years_old</span></span>
+<span><span class="co">#&gt; 1 1111111118 1911-11-11       114</span></span>
+<span><span class="co">#&gt; 2 1111111118 1911-11-11       114</span></span>
+<span><span class="co">#&gt; 3 0111111118 1911-11-01       114</span></span></code></pre></div>
 <p>A custom reference date shifts the age calculation:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cpr_info.html">cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="st">"age"</span>, ref_date <span class="op">=</span> <span class="st">"2000-01-01"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;           pnr age</span></span>
-<span><span class="co">#&gt; 1  1111111118  88</span></span>
-<span><span class="co">#&gt; 2 111111-1118  88</span></span>
-<span><span class="co">#&gt; 3   111111118  88</span></span></code></pre></div>
+<span><span class="co">#&gt;          pnr age</span></span>
+<span><span class="co">#&gt; 1 1111111118  88</span></span>
+<span><span class="co">#&gt; 2 1111111118  88</span></span>
+<span><span class="co">#&gt; 3 0111111118  88</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -550,7 +523,7 @@ frame<a class="anchor" aria-label="anchor" href="#track_last_df-auto-save-the-la
 <p>Enable to automatically capture any data frame returned to the
 console as <code>.last.df</code> in the global environment. Handy when
 you forget to assign an intermediate result.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/track_last_df.html">track_last_df</a></span><span class="op">(</span><span class="op">)</span>          <span class="co"># enable</span></span>
 <span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
@@ -570,7 +543,7 @@ automatically become dropdown filters. Navigate with the keyboard
 (<code>←</code> / <code>→</code>) or click buttons. Press
 <code>Esc</code> to exit.</p>
 <p>Requires <code>shiny</code> and <code>highcharter</code>.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.posit.co/" class="external-link">shiny</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jkunst.com/highcharter/" class="external-link">highcharter</a></span><span class="op">)</span></span>
 <span></span>

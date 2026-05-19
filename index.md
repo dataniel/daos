@@ -34,12 +34,9 @@ pak::pak("dataniel/daos")
 
 ### File workflow
 
-| Function                                                                        | Description                                                      |
-|---------------------------------------------------------------------------------|------------------------------------------------------------------|
-| [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)       | Auto-detect format and read one or more files                    |
-| [`require_files()`](https://dataniel.github.io/daos/reference/require_files.md) | Validate paths (with glue expansion) before reading              |
-| [`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md)       | Row-bind a list of data frames with helpful type-mismatch errors |
-| [`unpack_files()`](https://dataniel.github.io/daos/reference/unpack_files.md)   | Assign list elements as individual variables                     |
+| Function                                                                  | Description                                                                       |
+|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md) | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 
 ### Data wrangling
 

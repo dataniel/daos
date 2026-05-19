@@ -1,43 +1,96 @@
-# Read one or more files with automatic format detection
+# Read one or more files
 
-Detects the file format from the extension and dispatches to the
-appropriate reader. Supports a wide range of tabular, statistical, and
-structured formats. When multiple paths are supplied, a named list is
-returned and a progress bar is shown.
+Expands paths using
+[`glue::glue()`](https://glue.tidyverse.org/reference/glue.html) (so
+`{0:9}` generates ten paths), checks that every file exists, reads them
+with automatic format detection or a custom reader, and optionally
+row-binds or unpacks the result.
 
 ## Usage
 
 ``` r
-read_files(paths, ...)
+read_files(
+  paths,
+  names = NULL,
+  reader = "auto",
+  out = NULL,
+  .envir = parent.frame(),
+  .id = "source",
+  .overwrite = FALSE,
+  ...
+)
 ```
 
 ## Arguments
 
 - paths:
 
-  A single file path or a character vector of file paths. If the vector
-  is unnamed, file names (without extension) are used as list names.
+  A character vector of file paths. Glue syntax
+  ([`{}`](https://rdrr.io/r/base/Paren.html)) is supported for compact
+  range expansion.
+
+- names:
+
+  Optional names for the result. Defaults to file names without
+  extension. Numeric values are converted to character.
+
+- reader:
+
+  `"auto"` (default) to detect the format from the file extension, or a
+  function `\(path, ...) ...` to use a custom reader.
+
+- out:
+
+  Controls what is returned after reading:
+
+  - `NULL` (default): the object directly for a single file; a named
+    list for multiple files.
+
+  - `"bind"`: row-bind all data frames into a single tibble. A `source`
+    column (see `.id`) records the origin. Column types are always
+    reconciled with
+    [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
+
+  - `"unpack"`: assign each element as a named variable in `.envir`.
+
+- .envir:
+
+  Environment used for glue interpolation and (when `out = "unpack"`)
+  the target for assignment. Default is the calling frame.
+
+- .id:
+
+  Name of the source column added when `out = "bind"`. Default
+  `"source"`.
+
+- .overwrite:
+
+  If `FALSE` (default), aborts when any name already exists in `.envir`
+  and `out = "unpack"`. Set to `TRUE` to allow overwrites.
 
 - ...:
 
-  Additional arguments forwarded to the underlying reader.
+  Additional arguments forwarded to the reader function.
 
 ## Value
 
-For a single path: the object returned by the reader. For multiple
-paths: a named list of objects.
+Depends on `out`:
+
+- `NULL`: the object (single file) or a named list (multiple files).
+
+- `"bind"`: a single tibble.
+
+- `"unpack"`: the named list, invisibly.
 
 ## Details
 
-**Supported formats:**
+**Supported formats (when `reader = "auto"`):**
 
-**Note on CSV:** `read_files()` uses
+**Note on CSV:** uses
 [`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html)
-for `.csv` files, which expects **semicolon-separated** values and a
-comma as the decimal mark (the Danish/European convention). If your CSV
-uses commas as separators, pass the file directly to
-[`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
-instead.
+which expects semicolon-separated values and a comma as the decimal mark
+(Danish/European convention). For comma-separated files, pass a custom
+reader: `reader = readr::read_csv`.
 
 |                                        |                                                                                                                                                                                         |
 |----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -57,23 +110,30 @@ Packages for non-base formats (`arrow`, `haven`, `readxl`, `jsonlite`,
 
 ## See also
 
-[`require_files()`](https://dataniel.github.io/daos/reference/require_files.md),
-[`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md),
-[`unpack_files()`](https://dataniel.github.io/daos/reference/unpack_files.md)
+[`summon()`](https://dataniel.github.io/daos/reference/summon.md),
+[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Single file
+# Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
-# Multiple files — returns a named list
-files <- read_files(c("data/a.csv", "data/b.csv"))
+# Multiple files with glue expansion:
+lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
 
-# Pipeline with require_files() and bind_files():
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  bind_files()
+# Custom reader:
+lst <- read_files(
+  "data/dat{0:9}.parquet",
+  reader = \(x) arrow::read_parquet(x, col_select = 1:5)
+)
+
+# Read and bind into one tibble:
+df <- read_files("data/dat{0:9}.parquet", names = 0:9, out = "bind")
+
+# Read and unpack into individual variables (dat0, dat1, ...):
+read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
+summon("^dat\\d+$")
 } # }
 ```

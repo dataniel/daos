@@ -1,8 +1,8 @@
 # Compare column types across data frames
 
 Shows the column types of one or more data frames side-by-side. Useful
-for diagnosing type mismatches before a join or a call to
-[`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md).
+for diagnosing type mismatches before a join or before binding with
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
 
 ## Usage
 
@@ -38,7 +38,7 @@ type string.
 
 ## See also
 
-[`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md)
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 
 ## Examples
 

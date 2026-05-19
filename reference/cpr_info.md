@@ -1,8 +1,8 @@
 # Extract information from Danish CPR numbers
 
-Vectorised extraction of birth date, age, sex, sequential number, and
-validity indicators from Danish CPR (Civil Person Register) numbers.
-Returns the original data frame with the requested columns appended.
+Vectorised extraction of birth date, age, sex, and validity indicators
+from Danish CPR (Civil Person Register) numbers. Returns the original
+data frame with the requested columns appended.
 
 ## Usage
 
@@ -10,7 +10,7 @@ Returns the original data frame with the requested columns appended.
 cpr_info(
   data,
   cpr_col,
-  add = c("bday", "age", "sex", "pnum", "mod11", "valid"),
+  add = c("bday", "age", "sex", "mod11", "valid"),
   ref_date = Sys.Date()
 )
 ```
@@ -51,22 +51,22 @@ The original data frame with the requested columns appended.
 
 **Supported info types** (`add` values):
 
-|           |           |                                                |
-|-----------|-----------|------------------------------------------------|
-| Type      | Output    | Description                                    |
-| `"bday"`  | Date      | Date of birth                                  |
-| `"age"`   | integer   | Age in whole years at `ref_date`               |
-| `"sex"`   | character | `"mand"` (male) or `"kvinde"` (female)         |
-| `"pnum"`  | integer   | Sequential (running) number (digits 7–10)      |
-| `"mod11"` | logical   | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
-| `"valid"` | logical   | Format valid *and* birth date parseable        |
+|           |         |                                                             |
+|-----------|---------|-------------------------------------------------------------|
+| Type      | Output  | Description                                                 |
+| `"bday"`  | Date    | Date of birth                                               |
+| `"age"`   | integer | Age in whole years at `ref_date`                            |
+| `"sex"`   | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
+| `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1)              |
+| `"valid"` | logical | Format valid *and* birth date parseable                     |
 
 **Century detection** follows the official CPR Register rules based on
 digit 7 and the two-digit year component.
 
-**Input tolerance:** dashes and spaces are stripped automatically.
-Nine-digit numbers are zero-padded on the left (recovering values that
-lost a leading zero in Excel).
+**Input tolerance:** dashes and spaces are stripped automatically and
+nine-digit numbers are zero-padded on the left (recovering values that
+lost a leading zero in Excel). The CPR column in the returned data frame
+is always returned in the standardised 10-digit format `xxxxxxxxxx`.
 
 ## Examples
 
@@ -78,22 +78,22 @@ df <- data.frame(
 
 # Default: add all columns
 cpr_info(df, pnr)
-#>           pnr       bday age    sex pnum mod11 valid
-#> 1  1111111118 1911-11-11 114 kvinde 1118  TRUE  TRUE
-#> 2 111111-1118 1911-11-11 114 kvinde 1118  TRUE  TRUE
-#> 3   111111118 1911-11-01 114 kvinde 1118 FALSE  TRUE
+#>          pnr       bday age sex mod11 valid
+#> 1 1111111118 1911-11-11 114   0  TRUE  TRUE
+#> 2 1111111118 1911-11-11 114   0  TRUE  TRUE
+#> 3 0111111118 1911-11-01 114   0 FALSE  TRUE
 
 # Custom column names:
 cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
-#>           pnr birth_date years_old
-#> 1  1111111118 1911-11-11       114
-#> 2 111111-1118 1911-11-11       114
-#> 3   111111118 1911-11-01       114
+#>          pnr birth_date years_old
+#> 1 1111111118 1911-11-11       114
+#> 2 1111111118 1911-11-11       114
+#> 3 0111111118 1911-11-01       114
 
 # Unnamed — uses type names directly:
 cpr_info(df, pnr, add = c("bday", "sex"))
-#>           pnr       bday    sex
-#> 1  1111111118 1911-11-11 kvinde
-#> 2 111111-1118 1911-11-11 kvinde
-#> 3   111111118 1911-11-01 kvinde
+#>          pnr       bday sex
+#> 1 1111111118 1911-11-11   0
+#> 2 1111111118 1911-11-11   0
+#> 3 0111111118 1911-11-01   0
 ```

@@ -33,7 +33,7 @@ file names.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260519"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-19 14:09"
+#> [1] "2026-05-19 23:42"
 ```
 
 Combine the two for a quick timestamped path:
@@ -131,77 +131,52 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 
 ## File workflows
 
-### `require_files()` — validate paths before reading
-
-[`require_files()`](https://dataniel.github.io/daos/reference/require_files.md)
-expands [glue syntax](https://glue.tidyverse.org/) in path strings and
-aborts immediately with a clear message if any file is missing. It
-returns a named character vector ready to pipe into
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
-
-``` r
-# Expand {0:9} into ten paths and verify they all exist:
-require_files("data/dat{0:9}.parquet")
-```
-
-### `read_files()` — format-agnostic file reading
+### `read_files()` — validate, read, and collect
 
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-detects the format from the extension and dispatches to the right
-reader. A single path returns the object directly; multiple paths return
-a named list with a progress bar.
+expands [glue syntax](https://glue.tidyverse.org/) in path strings,
+aborts immediately if any file is missing, and reads all files with
+automatic format detection. A single path returns the object directly;
+multiple paths return a named list with a progress bar.
 
 ``` r
-# Single file:
+# Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
-# Multiple files — returns a named list:
-files <- read_files(c("data/a.csv", "data/b.csv"))
+# Multiple files with glue expansion — returns a named list:
+lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
 ```
 
 Supported formats: `csv`, `tsv`, `parquet`, `feather`, `xlsx`, `xls`,
 `rds`, `sas7bdat`, `sav`, `por`, `xpt`, `dta`, `json`, `ndjson`,
 `jsonl`, `yaml`, `yml`, `txt`.
 
-### `bind_files()` — row-bind a list of data frames
-
-After reading multiple files into a list,
-[`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md)
-combines them row-wise. A `source` column (or whatever `.id` names it)
-records where each row came from.
+Supply a custom reader to override auto-detection or add arguments:
 
 ``` r
-df1 <- data.frame(year = 2020L, value = 10.5)
-df2 <- data.frame(year = 2021L, value = 11.2)
-bind_files(list(a = df1, b = df2))
-#>   source year value
-#> 1      a 2020  10.5
-#> 2      b 2021  11.2
+read_files(
+  "data/dat{0:9}.parquet",
+  reader = \(x) arrow::read_parquet(x, col_select = 1:5)
+)
 ```
 
-When types differ, set `.guess = TRUE` to auto-convert:
+### Binding into one tibble
+
+Set `out = "bind"` to row-bind all files into a single tibble. A
+`source` column records the origin of each row. Column types are always
+reconciled automatically.
 
 ``` r
-bind_files(list_of_files, .guess = TRUE)
+df <- read_files("data/dat{0:9}.parquet", names = 0:9, out = "bind")
 ```
 
-### Full pipeline
+### Unpacking into individual variables
+
+Set `out = "unpack"` to assign each file as its own named variable in
+the calling environment:
 
 ``` r
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  bind_files()
-```
-
-### `unpack_files()` — assign list elements as variables
-
-Instead of binding, you can unpack a list into individual named objects
-in your environment:
-
-``` r
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  unpack_files()
+read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
 # dat0, dat1, ..., dat9 are now in your environment
 ```
 
@@ -237,8 +212,7 @@ df <- read_ta("ta.file")
 shows the
 [`pillar::type_sum()`](https://pillar.r-lib.org/reference/type_sum.html)
 type of each column for every dataset supplied. Invaluable before joins
-or before calling
-[`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md).
+or before binding with `read_files(out = "bind")`.
 
 ``` r
 df_a <- data.frame(x = 1L,  y = "a", z = TRUE)
@@ -280,20 +254,18 @@ view_types(df_a, df_b, focus = c(x = "int"))
 big   <- 1:1e6
 small <- letters
 size_env()        # all objects, largest first
-#> # A tibble: 11 × 3
-#>    name      size      pretty
-#>    <chr>    <dbl> <fs::bytes>
-#>  1 big    4000048       3.81M
-#>  2 result    2648       2.59K
-#>  3 small     1712       1.67K
-#>  4 df_a      1064       1.04K
-#>  5 df_b      1064       1.04K
-#>  6 df1        864         864
-#>  7 df2        864         864
-#>  8 dat1       736         736
-#>  9 dat2       736         736
-#> 10 dat3       736         736
-#> 11 year        56          56
+#> # A tibble: 9 × 3
+#>   name      size      pretty
+#>   <chr>    <dbl> <fs::bytes>
+#> 1 big    4000048       3.81M
+#> 2 result    2648       2.59K
+#> 3 small     1712       1.67K
+#> 4 df_a      1064       1.04K
+#> 5 df_b      1064       1.04K
+#> 6 dat1       736         736
+#> 7 dat2       736         736
+#> 8 dat3       736         736
+#> 9 year        56          56
 size_env(n = 2)   # top 2 only
 #> # A tibble: 2 × 3
 #>   name      size      pretty
@@ -489,30 +461,30 @@ df <- data.frame(
 )
 
 cpr_info(df, pnr)
-#>           pnr       bday age    sex pnum mod11 valid
-#> 1  1111111118 1911-11-11 114 kvinde 1118  TRUE  TRUE
-#> 2 111111-1118 1911-11-11 114 kvinde 1118  TRUE  TRUE
-#> 3   111111118 1911-11-01 114 kvinde 1118 FALSE  TRUE
+#>          pnr       bday age sex mod11 valid
+#> 1 1111111118 1911-11-11 114   0  TRUE  TRUE
+#> 2 1111111118 1911-11-11 114   0  TRUE  TRUE
+#> 3 0111111118 1911-11-01 114   0 FALSE  TRUE
 ```
 
 Choose a subset of columns and optionally rename them:
 
 ``` r
 cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
-#>           pnr birth_date years_old
-#> 1  1111111118 1911-11-11       114
-#> 2 111111-1118 1911-11-11       114
-#> 3   111111118 1911-11-01       114
+#>          pnr birth_date years_old
+#> 1 1111111118 1911-11-11       114
+#> 2 1111111118 1911-11-11       114
+#> 3 0111111118 1911-11-01       114
 ```
 
 A custom reference date shifts the age calculation:
 
 ``` r
 cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
-#>           pnr age
-#> 1  1111111118  88
-#> 2 111111-1118  88
-#> 3   111111118  88
+#>          pnr age
+#> 1 1111111118  88
+#> 2 1111111118  88
+#> 3 0111111118  88
 ```
 
 ------------------------------------------------------------------------
