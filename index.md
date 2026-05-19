@@ -10,20 +10,13 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 > I kept wishing R had out of the box, patterns I found myself
 > repeating, and new ideas I wanted to try out. Rather than letting them
 > accumulate as loose scripts, I packaged them up properly with the help
-> of [Claude Code](https://claude.ai/code) to get a solid starting
-> point: documentation, tests, and a vignette from the start. Consider
-> it a living experiment.
+> of Claude Code to get a solid starting point: documentation, tests,
+> and a vignette from the start. Consider it a living experiment.
 
 ## Installation
 
 ``` r
 pak::pak("dataniel/daos")
-```
-
-Or from a local clone:
-
-``` r
-devtools::install()
 ```
 
 ## Functions
@@ -39,22 +32,6 @@ devtools::install()
 | [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)         | Formatted current timestamp, e.g. for file names                                                      |
 | [`quiet()`](https://dataniel.github.io/daos/reference/quiet.md)       | Suppress messages and warnings during evaluation                                                      |
 
-``` r
-# Use a fallback when a value is missing or empty
-x <- NULL
-x %??% "default"
-
-# Regex that keeps NA as NA
-c("apple", NA, "banana") %like% "^a"
-
-# String interpolation
-name <- "world"
-f("Hello {name}")
-
-# Timestamped file name
-saveRDS(df, f("output_{nowf()}.rds"))
-```
-
 ### File workflow
 
 | Function                                                                        | Description                                                      |
@@ -63,18 +40,6 @@ saveRDS(df, f("output_{nowf()}.rds"))
 | [`require_files()`](https://dataniel.github.io/daos/reference/require_files.md) | Validate paths (with glue expansion) before reading              |
 | [`bind_files()`](https://dataniel.github.io/daos/reference/bind_files.md)       | Row-bind a list of data frames with helpful type-mismatch errors |
 | [`unpack_files()`](https://dataniel.github.io/daos/reference/unpack_files.md)   | Assign list elements as individual variables                     |
-
-``` r
-# Validate → read → combine
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  bind_files()
-
-# Or unpack into separate variables
-require_files("data/dat{0:9}.parquet") |>
-  read_files() |>
-  unpack_files()
-```
 
 ### Data wrangling
 
@@ -85,22 +50,6 @@ require_files("data/dat{0:9}.parquet") |>
 | [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)       | Pipeline checkpoint — warn or abort if data frame is non-empty |
 | [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)               | Split a data frame into a named list by grouping columns       |
 
-``` r
-# Check for type mismatches before binding
-view_types(df1, df2, df3)
-
-# Mark duplicate rows
-flag_duplicates(df, id, date)
-
-# Assert no unexpected rows survive a filter
-df |>
-  filter(status == "error") |>
-  expect_empty("Unexpected errors found")
-
-# Split by group
-split_by(df, year, region)
-```
-
 ### Environment
 
 | Function                                                                        | Description                                                   |
@@ -108,18 +57,6 @@ split_by(df, year, region)
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md)               | Retrieve objects matching a regex pattern from an environment |
 | [`size_env()`](https://dataniel.github.io/daos/reference/size_env.md)           | Show object sizes in an environment                           |
 | [`track_last_df()`](https://dataniel.github.io/daos/reference/track_last_df.md) | Auto-save the last printed data frame as `.last.df`           |
-
-``` r
-# Collect all data frames loaded earlier
-summon("^dat\\d+$")
-
-# See what's eating memory
-size_env()
-
-# Auto-capture the last printed data frame
-track_last_df()  # call once at session start
-df               # print as usual — now available as .last.df
-```
 
 ### Domain-specific
 
@@ -129,43 +66,8 @@ df               # print as usual — now available as .last.df
 | [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)       | Read Greenlandic TA files                                          |
 | [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md) | Find sign assignments that reconcile a set of values to a total    |
 
-``` r
-# Parse CPR numbers
-df <- data.frame(pnr = c("1111111118", "111111-1118"))
-cpr_info(df, pnr)
-
-# Read a TA file
-df <- read_ta("ta.file")
-
-# Find which items should be positive/negative to sum to a total
-items <- data.frame(
-  label = c("revenue", "costs", "depreciation", "total"),
-  value = c(100, 40, 10, 50)
-)
-find_signs(items, label, value, total_label = "total")
-```
-
 ### Interactive
 
 | Function                                                                    | Description                                                |
 |-----------------------------------------------------------------------------|------------------------------------------------------------|
 | [`time2screen()`](https://dataniel.github.io/daos/reference/time2screen.md) | Interactive Shiny dashboard for screening time-series data |
-
-``` r
-ggplot2::economics_long |>
-  time2screen(x = date, y = value, .exclude = value01)
-```
-
-## Vignette
-
-To build the vignette, install with:
-
-``` r
-remotes::install_github("dataniel/daos", build_vignettes = TRUE)
-```
-
-Then open it with:
-
-``` r
-vignette("daos")
-```

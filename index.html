@@ -47,16 +47,13 @@
 
 <p><a href="https://github.com/dataniel/daos/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/dataniel/daos/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://dataniel.github.io/daos"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="pkgdown"></a></p>
 <blockquote>
-<p><strong>Experimental.</strong> This package is a personal collection of utility functions that have grown out of day-to-day statistical work — things I kept wishing R had out of the box, patterns I found myself repeating, and new ideas I wanted to try out. Rather than letting them accumulate as loose scripts, I packaged them up properly with the help of <a href="https://claude.ai/code" class="external-link">Claude Code</a> to get a solid starting point: documentation, tests, and a vignette from the start. Consider it a living experiment.</p>
+<p><strong>Experimental.</strong> This package is a personal collection of utility functions that have grown out of day-to-day statistical work — things I kept wishing R had out of the box, patterns I found myself repeating, and new ideas I wanted to try out. Rather than letting them accumulate as loose scripts, I packaged them up properly with the help of Claude Code to get a solid starting point: documentation, tests, and a vignette from the start. Consider it a living experiment.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"dataniel/daos"</span><span class="op">)</span></span></code></pre></div>
-<p>Or from a local clone:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a>
@@ -101,20 +98,6 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use a fallback when a value is missing or empty</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
-<span><span class="va">x</span> <span class="op"><a href="reference/grapes-help-help-grapes.html">%??%</a></span> <span class="st">"default"</span></span>
-<span></span>
-<span><span class="co"># Regex that keeps NA as NA</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"apple"</span>, <span class="cn">NA</span>, <span class="st">"banana"</span><span class="op">)</span> <span class="op"><a href="reference/grapes-like-grapes.html">%like%</a></span> <span class="st">"^a"</span></span>
-<span></span>
-<span><span class="co"># String interpolation</span></span>
-<span><span class="va">name</span> <span class="op">&lt;-</span> <span class="st">"world"</span></span>
-<span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"Hello {name}"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Timestamped file name</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"output_{nowf()}.rds"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="file-workflow">File workflow<a class="anchor" aria-label="anchor" href="#file-workflow"></a>
@@ -147,16 +130,6 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Validate → read → combine</span></span>
-<span><span class="fu"><a href="reference/require_files.html">require_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/read_files.html">read_files</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/bind_files.html">bind_files</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or unpack into separate variables</span></span>
-<span><span class="fu"><a href="reference/require_files.html">require_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/read_files.html">read_files</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/unpack_files.html">unpack_files</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="data-wrangling">Data wrangling<a class="anchor" aria-label="anchor" href="#data-wrangling"></a>
@@ -189,20 +162,6 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Check for type mismatches before binding</span></span>
-<span><span class="fu"><a href="reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df1</span>, <span class="va">df2</span>, <span class="va">df3</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Mark duplicate rows</span></span>
-<span><span class="fu"><a href="reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">id</span>, <span class="va">date</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Assert no unexpected rows survive a filter</span></span>
-<span><span class="va">df</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">status</span> <span class="op">==</span> <span class="st">"error"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/expect_empty.html">expect_empty</a></span><span class="op">(</span><span class="st">"Unexpected errors found"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Split by group</span></span>
-<span><span class="fu"><a href="reference/split_by.html">split_by</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">region</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="environment">Environment<a class="anchor" aria-label="anchor" href="#environment"></a>
@@ -232,16 +191,6 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Collect all data frames loaded earlier</span></span>
-<span><span class="fu"><a href="reference/summon.html">summon</a></span><span class="op">(</span><span class="st">"^dat\\d+$"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># See what's eating memory</span></span>
-<span><span class="fu"><a href="reference/size_env.html">size_env</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Auto-capture the last printed data frame</span></span>
-<span><span class="fu"><a href="reference/track_last_df.html">track_last_df</a></span><span class="op">(</span><span class="op">)</span>  <span class="co"># call once at session start</span></span>
-<span><span class="va">df</span>               <span class="co"># print as usual — now available as .last.df</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="domain-specific">Domain-specific<a class="anchor" aria-label="anchor" href="#domain-specific"></a>
@@ -270,20 +219,6 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Parse CPR numbers</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/cpr_info.html">cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Read a TA file</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_ta.html">read_ta</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Find which items should be positive/negative to sum to a total</span></span>
-<span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"revenue"</span>, <span class="st">"costs"</span>, <span class="st">"depreciation"</span>, <span class="st">"total"</span><span class="op">)</span>,</span>
-<span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">40</span>, <span class="fl">10</span>, <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/find_signs.html">find_signs</a></span><span class="op">(</span><span class="va">items</span>, <span class="va">label</span>, <span class="va">value</span>, total_label <span class="op">=</span> <span class="st">"total"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="interactive">Interactive<a class="anchor" aria-label="anchor" href="#interactive"></a>
@@ -302,20 +237,7 @@
 <td>Interactive Shiny dashboard for screening time-series data</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/economics.html" class="external-link">economics_long</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/time2screen.html">time2screen</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">date</span>, y <span class="op">=</span> <span class="va">value</span>, .exclude <span class="op">=</span> <span class="va">value01</span><span class="op">)</span></span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="vignette">Vignette<a class="anchor" aria-label="anchor" href="#vignette"></a>
-</h2>
-<p>To build the vignette, install with:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"dataniel/daos"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>Then open it with:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"daos"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
