@@ -1,0 +1,62 @@
+url: https://dataniel.github.io/daos
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [github]
+  components:
+    github:
+      icon: fab fa-github
+      href: https://github.com/dataniel/daos
+
+home:
+  strip_header: true
+
+reference:
+  - title: General utilities
+    contents:
+      - f
+      - nowf
+      - quiet
+      - is_blank
+      - "%??%"
+      - "%like%"
+
+  - title: File workflow
+    contents:
+      - require_files
+      - read_files
+      - bind_files
+      - unpack_files
+      - summon
+      - read_ta
+
+  - title: Data wrangling
+    contents:
+      - view_types
+      - flag_duplicates
+      - expect_empty
+      - split_by
+      - find_signs
+
+  - title: Environment
+    contents:
+      - size_env
+      - track_last_df
+
+  - title: Interactive
+    contents:
+      - time2screen
+
+  - title: Domain-specific
+    contents:
+      - cpr_info
+
+articles:
+  - title: Get started
+    navbar: ~
+    contents:
+      - daos
