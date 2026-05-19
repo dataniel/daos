@@ -11,7 +11,7 @@
 #' |------|--------|-------------|
 #' | `"bday"` | Date | Date of birth |
 #' | `"age"` | integer | Age in whole years at `ref_date` |
-#' | `"sex"` | character | `"mand"` (male) or `"kvinde"` (female) |
+#' | `"sex"` | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
 #' | `"pnum"` | integer | Sequential (running) number (digits 7–10) |
 #' | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
 #' | `"valid"` | logical | Format valid *and* birth date parseable |
@@ -19,9 +19,10 @@
 #' **Century detection** follows the official CPR Register rules based on
 #' digit 7 and the two-digit year component.
 #'
-#' **Input tolerance:** dashes and spaces are stripped automatically.
-#' Nine-digit numbers are zero-padded on the left (recovering values that
-#' lost a leading zero in Excel).
+#' **Input tolerance:** dashes and spaces are stripped automatically and
+#' nine-digit numbers are zero-padded on the left (recovering values that
+#' lost a leading zero in Excel). The CPR column in the returned data frame
+#' is always returned in the standardised 10-digit format `xxxxxxxxxx`.
 #'
 #' @param data A tibble or data frame.
 #' @param cpr_col Name of the CPR column (unquoted).
@@ -136,7 +137,7 @@ cpr_info <- function(
 
   aar          <- aarhundrede + aar2
   foedselsdato <- as.Date(ISOdate(aar, maaned, dag, tz = "UTC"))
-  koen         <- ifelse(d10 %% 2L == 1L, "mand", "kvinde")
+  koen         <- as.integer(d10 %% 2L == 1L)
 
   sum_m11 <- d1 * 4L + d2 * 3L + d3 * 2L +
     d4 * 7L + d5 * 6L + d6 * 5L +
@@ -152,11 +153,13 @@ cpr_info <- function(
   alle <- list(
     bday  = dplyr::if_else(gyldig,    foedselsdato, as.Date(NA)),
     age   = dplyr::if_else(gyldig,    alder,        NA_integer_),
-    sex   = dplyr::if_else(gyldig,    koen,         NA_character_),
+    sex   = dplyr::if_else(gyldig,    koen,         NA_integer_),
     pnum  = dplyr::if_else(gyldig,    loebe,        NA_integer_),
     mod11 = dplyr::if_else(format_ok, m11_ok,       NA),
     valid = gyldig
   )
+
+  data[[cpr_navn]] <- cpr_clean
 
   valgt <- alle[unname(add)]
   names(valgt) <- names(add)

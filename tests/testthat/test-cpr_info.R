@@ -8,11 +8,11 @@ test_that("cpr_info() appends bday correctly", {
   expect_equal(result$bday, as.Date("2000-01-01"))
 })
 
-test_that("cpr_info() appends sex correctly", {
+test_that("cpr_info() appends sex as 1/0", {
   df <- data.frame(pnr = c("0101004007", "111111-1118"), stringsAsFactors = FALSE)
   result <- cpr_info(df, pnr, add = "sex")
-  # "0101004007" d10=7 (odd) → mand; "111111-1118" d10=8 (even) → kvinde
-  expect_equal(result$sex, c("mand", "kvinde"))
+  # "0101004007" d10=7 (odd) → 1; "111111-1118" d10=8 (even) → 0
+  expect_equal(result$sex, c(1L, 0L))
 })
 
 test_that("cpr_info() appends mod11 correctly", {
@@ -27,6 +27,12 @@ test_that("cpr_info() auto-pads 9-digit CPR numbers", {
   df <- data.frame(pnr = "101004007", stringsAsFactors = FALSE)
   result <- cpr_info(df, pnr, add = "bday")
   expect_equal(result$bday, as.Date("2000-01-01"))
+})
+
+test_that("cpr_info() standardises CPR column to 10-digit format", {
+  df <- data.frame(pnr = c("0101004007", "111111-1118", "101004007"), stringsAsFactors = FALSE)
+  result <- cpr_info(df, pnr, add = "valid")
+  expect_equal(result$pnr, c("0101004007", "1111111118", "0101004007"))
 })
 
 test_that("cpr_info() marks invalid formats with valid = FALSE and NA dates", {
