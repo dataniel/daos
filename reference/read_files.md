@@ -15,8 +15,9 @@ read_files(
   reader = "auto",
   out = NULL,
   .envir = parent.frame(),
-  .id = "source",
+  .id = NULL,
   .overwrite = FALSE,
+  .lowercase = TRUE,
   ...
 )
 ```
@@ -32,7 +33,8 @@ read_files(
 - names:
 
   Optional names for the result. Defaults to file names without
-  extension. Numeric values are converted to character.
+  extension. If numeric, the `.id` column (when `out = "bind"`) will
+  also be numeric.
 
 - reader:
 
@@ -46,10 +48,10 @@ read_files(
   - `NULL` (default): the object directly for a single file; a named
     list for multiple files.
 
-  - `"bind"`: row-bind all data frames into a single tibble. A `source`
-    column (see `.id`) records the origin. Column types are always
-    reconciled with
+  - `"bind"`: row-bind all data frames into a single tibble. If column
+    types differ, a warning is issued and types are reconciled with
     [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
+    A source column is added when `.id` is set.
 
   - `"unpack"`: assign each element as a named variable in `.envir`.
 
@@ -60,13 +62,18 @@ read_files(
 
 - .id:
 
-  Name of the source column added when `out = "bind"`. Default
-  `"source"`.
+  Name of a source column added when `out = "bind"`. If `NULL`
+  (default), no source column is added.
 
 - .overwrite:
 
   If `FALSE` (default), aborts when any name already exists in `.envir`
   and `out = "unpack"`. Set to `TRUE` to allow overwrites.
+
+- .lowercase:
+
+  If `TRUE` (default), column names are converted to lowercase after
+  reading. Set to `FALSE` to preserve original casing.
 
 - ...:
 

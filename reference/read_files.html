@@ -49,8 +49,9 @@ or a custom reader, and optionally row-binds or unpacks the result.</p>
 <span>  reader <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  out <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">parent.frame</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  .id <span class="op">=</span> <span class="st">"source"</span>,</span>
+<span>  .id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .lowercase <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -66,7 +67,8 @@ supported for compact range expansion.</p></dd>
 
 <dt id="arg-names">names<a class="anchor" aria-label="anchor" href="#arg-names"></a></dt>
 <dd><p>Optional names for the result. Defaults to file names without
-extension. Numeric values are converted to character.</p></dd>
+extension. If numeric, the <code>.id</code> column (when <code>out = "bind"</code>) will also be
+numeric.</p></dd>
 
 
 <dt id="arg-reader">reader<a class="anchor" aria-label="anchor" href="#arg-reader"></a></dt>
@@ -77,9 +79,9 @@ extension, or a function <code>\(path, ...) ...</code> to use a custom reader.</
 <dt id="arg-out">out<a class="anchor" aria-label="anchor" href="#arg-out"></a></dt>
 <dd><p>Controls what is returned after reading:</p><ul><li><p><code>NULL</code> (default): the object directly for a single file; a named list
 for multiple files.</p></li>
-<li><p><code>"bind"</code>: row-bind all data frames into a single tibble. A <code>source</code>
-column (see <code>.id</code>) records the origin. Column types are always
-reconciled with <code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>.</p></li>
+<li><p><code>"bind"</code>: row-bind all data frames into a single tibble. If column
+types differ, a warning is issued and types are reconciled with
+<code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>. A source column is added when <code>.id</code> is set.</p></li>
 <li><p><code>"unpack"</code>: assign each element as a named variable in <code>.envir</code>.</p></li>
 </ul></dd>
 
@@ -90,13 +92,18 @@ reconciled with <code><a href="https://readr.tidyverse.org/reference/type_conver
 
 
 <dt id="arg--id">.id<a class="anchor" aria-label="anchor" href="#arg--id"></a></dt>
-<dd><p>Name of the source column added when <code>out = "bind"</code>.
-Default <code>"source"</code>.</p></dd>
+<dd><p>Name of a source column added when <code>out = "bind"</code>. If <code>NULL</code>
+(default), no source column is added.</p></dd>
 
 
 <dt id="arg--overwrite">.overwrite<a class="anchor" aria-label="anchor" href="#arg--overwrite"></a></dt>
 <dd><p>If <code>FALSE</code> (default), aborts when any name already exists
 in <code>.envir</code> and <code>out = "unpack"</code>. Set to <code>TRUE</code> to allow overwrites.</p></dd>
+
+
+<dt id="arg--lowercase">.lowercase<a class="anchor" aria-label="anchor" href="#arg--lowercase"></a></dt>
+<dd><p>If <code>TRUE</code> (default), column names are converted to
+lowercase after reading. Set to <code>FALSE</code> to preserve original casing.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
