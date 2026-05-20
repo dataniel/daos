@@ -29,7 +29,8 @@
 #' @param paths A character vector of file paths. Glue syntax (`{}`) is
 #'   supported for compact range expansion.
 #' @param names Optional names for the result. Defaults to file names without
-#'   extension. Numeric values are converted to character.
+#'   extension. If numeric, the `.id` column (when `out = "bind"`) will also be
+#'   numeric.
 #' @param reader `"auto"` (default) to detect the format from the file
 #'   extension, or a function `\(path, ...) ...` to use a custom reader.
 #' @param out Controls what is returned after reading:
@@ -45,6 +46,8 @@
 #'   (default), no source column is added.
 #' @param .overwrite If `FALSE` (default), aborts when any name already exists
 #'   in `.envir` and `out = "unpack"`. Set to `TRUE` to allow overwrites.
+#' @param .lowercase If `TRUE` (default), column names are converted to
+#'   lowercase after reading. Set to `FALSE` to preserve original casing.
 #' @param ... Additional arguments forwarded to the reader function.
 #'
 #' @return Depends on `out`:
@@ -86,7 +89,8 @@
 #' @importFrom readr type_convert
 #' @export
 read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
-                       .envir = parent.frame(), .id = NULL, .overwrite = FALSE, ...) {
+                       .envir = parent.frame(), .id = NULL, .overwrite = FALSE,
+                       .lowercase = TRUE, ...) {
 
   if (!is.null(out) && !out %in% c("bind", "unpack")) {
     cli::cli_abort('{.arg out} must be {.val NULL}, {.val "bind"}, or {.val "unpack"}.')
@@ -111,6 +115,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   }
 
   # Resolve names: explicit > input vector names > filenames
+  id_type <- if (!is.null(names) && is.numeric(names)) "numeric" else "character"
   file_names <- if (!is.null(names)) {
     as.character(names)
   } else if (!is.null(input_names) && length(input_names) == length(files)) {
@@ -131,17 +136,22 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   } else {
     function(path) reader(path, ...)
   }
+  maybe_lower <- if (.lowercase) {
+    function(x) { if (is.data.frame(x)) base::names(x) <- tolower(base::names(x)); x }
+  } else {
+    identity
+  }
 
   # Read into named list
   if (length(files) == 1) {
-    result <- stats::setNames(list(read_one(files[[1]])), base::names(files))
+    result <- stats::setNames(list(maybe_lower(read_one(files[[1]]))), base::names(files))
   } else {
     result <- vector("list", length(files))
     base::names(result) <- base::names(files)
     cli::cli_progress_bar("Reading files", total = length(files))
     for (i in seq_along(files)) {
       cli::cli_progress_update(status = fs::path_file(files[[i]]))
-      result[[i]] <- read_one(files[[i]])
+      result[[i]] <- maybe_lower(read_one(files[[i]]))
     }
     cli::cli_progress_done()
   }
@@ -154,16 +164,26 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
 
   if (out == "bind") {
     names_to <- if (is.null(.id)) rlang::zap() else .id
+    coerce_id <- function(df) {
+      if (!is.null(.id) && id_type == "numeric") df[[.id]] <- as.numeric(df[[.id]])
+      df
+    }
     bound <- tryCatch(purrr::list_rbind(result, names_to = names_to), error = function(e) e)
-    if (!inherits(bound, "error")) return(bound)
+    if (!inherits(bound, "error")) return(coerce_id(bound))
     cli::cli_warn(c(
       "Column types differ across files — coercing to character and re-typing with {.fun readr::type_convert}.",
       "i" = "Use {.fun daos::view_types} to inspect the differences."
     ))
+    id_col_spec <- if (!is.null(.id)) {
+      do.call(readr::cols, stats::setNames(list(readr::col_character()), .id))
+    } else {
+      readr::cols()
+    }
     return(
       purrr::map(result, \(d) dplyr::mutate(d, dplyr::across(dplyr::everything(), as.character))) |>
         purrr::list_rbind(names_to = names_to) |>
-        readr::type_convert()
+        readr::type_convert(col_types = id_col_spec) |>
+        coerce_id()
     )
   }
 

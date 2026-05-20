@@ -10,8 +10,9 @@ read_files(
   reader = "auto",
   out = NULL,
   .envir = parent.frame(),
-  .id = "source",
+  .id = NULL,
   .overwrite = FALSE,
+  .lowercase = TRUE,
   ...
 )
 }
@@ -20,7 +21,8 @@ read_files(
 supported for compact range expansion.}
 
 \item{names}{Optional names for the result. Defaults to file names without
-extension. Numeric values are converted to character.}
+extension. If numeric, the \code{.id} column (when \code{out = "bind"}) will also be
+numeric.}
 
 \item{reader}{\code{"auto"} (default) to detect the format from the file
 extension, or a function \verb{\\(path, ...) ...} to use a custom reader.}
@@ -29,20 +31,23 @@ extension, or a function \verb{\\(path, ...) ...} to use a custom reader.}
 \itemize{
 \item \code{NULL} (default): the object directly for a single file; a named list
 for multiple files.
-\item \code{"bind"}: row-bind all data frames into a single tibble. A \code{source}
-column (see \code{.id}) records the origin. Column types are always
-reconciled with \code{\link[readr:type_convert]{readr::type_convert()}}.
+\item \code{"bind"}: row-bind all data frames into a single tibble. If column
+types differ, a warning is issued and types are reconciled with
+\code{\link[readr:type_convert]{readr::type_convert()}}. A source column is added when \code{.id} is set.
 \item \code{"unpack"}: assign each element as a named variable in \code{.envir}.
 }}
 
 \item{.envir}{Environment used for glue interpolation and (when
 \code{out = "unpack"}) the target for assignment. Default is the calling frame.}
 
-\item{.id}{Name of the source column added when \code{out = "bind"}.
-Default \code{"source"}.}
+\item{.id}{Name of a source column added when \code{out = "bind"}. If \code{NULL}
+(default), no source column is added.}
 
 \item{.overwrite}{If \code{FALSE} (default), aborts when any name already exists
 in \code{.envir} and \code{out = "unpack"}. Set to \code{TRUE} to allow overwrites.}
+
+\item{.lowercase}{If \code{TRUE} (default), column names are converted to
+lowercase after reading. Set to \code{FALSE} to preserve original casing.}
 
 \item{...}{Additional arguments forwarded to the reader function.}
 }
