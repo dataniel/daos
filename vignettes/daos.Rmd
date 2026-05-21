@@ -376,9 +376,9 @@ dplyr::starwars |> head(3)
 track_last_df(FALSE)     # disable
 ```
 
-### `time2screen()` — Shiny time-series screening dashboard
+### `screen_timeseries()` — Shiny time-series screening dashboard
 
-`time2screen()` launches an interactive Shiny app for reviewing time
+`screen_timeseries()` launches an interactive Shiny app for reviewing time
 series group by group. All columns that are not `x`, `y`, `series`, or
 excluded automatically become dropdown filters. Navigate with the
 keyboard (`←` / `→`) or click buttons. Press `Esc` to exit.
@@ -396,9 +396,9 @@ df <- expand.grid(
 )
 df$gdp <- rnorm(nrow(df), mean = 300, sd = 30)
 
-time2screen(df, x = year, y = gdp)
+screen_timeseries(df, x = year, y = gdp)
 
 # With a series dimension for multiple lines per group:
 ggplot2::economics_long |>
-  time2screen(date, value, series = variable)
+  screen_timeseries(date, value, series = variable)
 ```

@@ -18,52 +18,30 @@
 ```r
 pak::pak("dataniel/daos")
 ```
-## Functions
 
-### General utilities
+## Functions
 
 | Function | Description |
 |----------|-------------|
 | `%??%` | Null-coalescing operator — returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
-| `is_blank()` | Test whether a value is blank in the broadest sense |
+| `accounts_pdf_to_txt()` | Convert PDF financial statements to text files |
+| `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
+| `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| `expect_empty()` | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
+| `find_signs()` | Find sign assignments that reconcile a set of values to a total |
+| `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
+| `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `quiet()` | Suppress messages and warnings during evaluation |
-
-### File workflow
-
-| Function | Description |
-|----------|-------------|
+| `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
-
-### Data wrangling
-
-| Function | Description |
-|----------|-------------|
-| `view_types()` | Compare column types across multiple data frames |
-| `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
-| `expect_empty()` | Pipeline checkpoint — warn or abort if data frame is non-empty |
-| `split_by()` | Split a data frame into a named list by grouping columns |
-
-### Environment
-
-| Function | Description |
-|----------|-------------|
-| `summon()` | Retrieve objects matching a regex pattern from an environment |
-| `size_env()` | Show object sizes in an environment |
-| `track_last_df()` | Auto-save the last printed data frame as `.last.df` |
-
-### Domain-specific
-
-| Function | Description |
-|----------|-------------|
-| `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |
 | `read_ta()` | Read Greenlandic TA files |
-| `find_signs()` | Find sign assignments that reconcile a set of values to a total |
-
-### Interactive
-
-| Function | Description |
-|----------|-------------|
-| `time2screen()` | Interactive Shiny dashboard for screening time-series data |
+| `read_xbrl()` | Parse an XBRL file into a tidy tibble |
+| `screen_timeseries()` | Interactive Shiny dashboard for screening time-series data group by group |
+| `size_env()` | Show object sizes in an environment |
+| `split_by()` | Split a data frame into a named list by grouping columns |
+| `summon()` | Retrieve objects matching a regex pattern from an environment |
+| `track_last_df()` | Auto-save the last printed data frame as `.last.df` |
+| `view_types()` | Compare column types across multiple data frames |

@@ -36,7 +36,7 @@
 #'
 #' # Simple example with economics dataset:
 #' flagged <- ggplot2::economics_long |>
-#'   time2screen(date, value, series = variable)
+#'   screen_timeseries(date, value, series = variable)
 #'
 #' # With a grouping column:
 #' df <- data.frame(
@@ -44,7 +44,7 @@
 #'   country = rep(c("DK", "SE", "NO"), each = 11),
 #'   gdp     = rnorm(33, 300, 20)
 #' )
-#' flagged <- time2screen(df, x = year, y = gdp)
+#' flagged <- screen_timeseries(df, x = year, y = gdp)
 #' }
 #'
 #' @importFrom cli cli_abort
@@ -52,17 +52,17 @@
 #' @importFrom purrr map_lgl map walk map_chr map2
 #' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
 #' @export
-time2screen <- function(data, x, y, series = NULL, .exclude = NULL,
+screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
                         .title = NULL, .y_min = NULL, .y_max = NULL) {
 
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame.")
   }
   if (!requireNamespace("shiny", quietly = TRUE)) {
-    cli::cli_abort("Package {.pkg shiny} is required for {.fn time2screen}.")
+    cli::cli_abort("Package {.pkg shiny} is required for {.fn screen_timeseries}.")
   }
   if (!requireNamespace("highcharter", quietly = TRUE)) {
-    cli::cli_abort("Package {.pkg highcharter} is required for {.fn time2screen}.")
+    cli::cli_abort("Package {.pkg highcharter} is required for {.fn screen_timeseries}.")
   }
 
   x_var       <- rlang::enquo(x)

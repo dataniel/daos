@@ -27,6 +27,8 @@ Suggests:
     arrow,
     DBI,
     odbc,
+    pdftools,
+    writexl,
     ggplot2,
     haven,
     highcharter,
