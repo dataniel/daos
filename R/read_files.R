@@ -171,7 +171,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     bound <- tryCatch(purrr::list_rbind(result, names_to = names_to), error = function(e) e)
     if (!inherits(bound, "error")) return(coerce_id(bound))
     cli::cli_warn(c(
-      "Column types differ across files — coercing to character and re-typing with {.fun readr::type_convert}.",
+      "Column types differ across files -- coercing to character and re-typing with {.fun readr::type_convert}.",
       "i" = "Use {.fun daos::view_types} to inspect the differences."
     ))
     id_col_spec <- if (!is.null(.id)) {

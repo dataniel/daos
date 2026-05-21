@@ -22,7 +22,10 @@ Imports:
     purrr,
     readr,
     rlang,
-    tibble
+    stringr,
+    tibble,
+    tidyr,
+    xml2
 Suggests:
     arrow,
     rstudioapi,

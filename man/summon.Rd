@@ -19,7 +19,7 @@ A named list of matching objects.
 Searches an environment for objects whose names match a regular expression
 and returns them as a named list. Useful for collecting a family of
 similarly-named objects (e.g. \code{dat0} through \code{dat9}) after unpacking a
-list with \code{\link[=unpack_files]{unpack_files()}}.
+list with \code{out = "unpack"} in \code{\link[=read_files]{read_files()}}.
 }
 \examples{
 dat1 <- data.frame(x = 1)

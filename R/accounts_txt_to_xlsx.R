@@ -16,13 +16,13 @@
 #'
 #' Amounts must be in whole kroner (periods as thousands separators are stripped
 #' automatically). If the previous year is absent, the third field may be empty
-#' — it becomes `NA`.
+#' -- it becomes `NA`.
 #'
 #' Appending ` statnatio` to a category line negates all values in that
 #' category (useful when costs appear with a positive sign in notes).
 #'
 #' File names are used as identifiers in the `cvr` column. A trailing `_spec`
-#' suffix is stripped automatically (e.g. `12345678_spec.txt` → `12345678`).
+#' suffix is stripped automatically (e.g. `12345678_spec.txt` -> `12345678`).
 #'
 #' @param txt_dir Path to the directory containing `.txt` files.
 #' @param out_file Path to the output `.xlsx` file.
@@ -79,7 +79,7 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
   # Validate: no commas in value columns
   purrr::map(raw, ~ dplyr::filter(.x, stringr::str_detect(V2, ",") | stringr::str_detect(V3, ","))) |>
     purrr::list_rbind(names_to = "cvr") |>
-    expect_empty(abort_msg = "Comma detected in value columns — check text file formatting.")
+    expect_empty(abort_msg = "Comma detected in value columns -- check text file formatting.")
 
   # Parse
   data <- purrr::map(raw, function(d) {
@@ -102,11 +102,11 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
 
   # Validate: no NAs in note or elementid
   dplyr::filter(data, is.na(note) | is.na(elementid)) |>
-    expect_empty(abort_msg = "NA in note or elementid — check text file formatting.")
+    expect_empty(abort_msg = "NA in note or elementid -- check text file formatting.")
 
   # Validate: no NAs in current year values
   dplyr::filter(data, is.na(val) & year == year_val) |>
-    expect_empty(abort_msg = "NA values in current year — check text file formatting.")
+    expect_empty(abort_msg = "NA values in current year -- check text file formatting.")
 
   writexl::write_xlsx(data, out_file)
 
