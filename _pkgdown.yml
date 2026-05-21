@@ -30,7 +30,7 @@ reference:
       - read_files
       - summon
       - read_ta
-      - write_prettier_xlsx
+      - write_pretty_xlsx
 
   - title: Data wrangling
     contents:

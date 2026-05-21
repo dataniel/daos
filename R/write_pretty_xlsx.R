@@ -27,25 +27,25 @@
 #' @examples
 #' \dontrun{
 #' # New file with one sheet
-#' write_prettier_xlsx(mtcars, "out.xlsx")
+#' write_pretty_xlsx(mtcars, "out.xlsx")
 #'
 #' # New file with multiple sheets
-#' write_prettier_xlsx(list(Cars = mtcars, Iris = iris), "out.xlsx")
+#' write_pretty_xlsx(list(Cars = mtcars, Iris = iris), "out.xlsx")
 #'
 #' # Append a sheet to an existing file
-#' write_prettier_xlsx(append = list(Extra = airquality), path = "out.xlsx")
+#' write_pretty_xlsx(append = list(Extra = airquality), path = "out.xlsx")
 #'
 #' # Create file and append in one call
-#' write_prettier_xlsx(list(Hoved = mtcars), "out.xlsx", append = list(Bilag = iris))
+#' write_pretty_xlsx(list(Hoved = mtcars), "out.xlsx", append = list(Bilag = iris))
 #'
 #' # Insert as Excel table
-#' write_prettier_xlsx(mtcars, "out.xlsx", as_table = TRUE)
+#' write_pretty_xlsx(mtcars, "out.xlsx", as_table = TRUE)
 #' }
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang %||%
 #' @export
-write_prettier_xlsx <- function(
+write_pretty_xlsx <- function(
     data         = NULL,
     path,
     append       = NULL,
