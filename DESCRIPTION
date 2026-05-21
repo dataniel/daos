@@ -32,6 +32,7 @@ Suggests:
     DBI,
     odbc,
     pdftools,
+    openxlsx2,
     writexl,
     ggplot2,
     haven,

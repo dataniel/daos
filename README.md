@@ -47,3 +47,4 @@ pak::pak("dataniel/daos")
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `track_last_df()` | Auto-save the last printed data frame as `.last.df` |
 | `view_types()` | Compare column types across multiple data frames |
+| `write_prettier_xlsx()` | Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs |
