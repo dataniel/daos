@@ -1,0 +1,9 @@
+Name: Text to vector
+Description: Convert selected lines to an R character vector expression c("a", "b", "c"). Empty lines are ignored.
+Binding: addin_text_to_vector
+Interactive: false
+
+Name: Fix Windows paths
+Description: Replace backslashes with forward slashes in Windows-style paths. Operates on the selected text, or the entire file if nothing is selected.
+Binding: addin_fix_path
+Interactive: false

@@ -25,6 +25,7 @@ Imports:
     tibble
 Suggests:
     arrow,
+    rstudioapi,
     DBI,
     odbc,
     pdftools,
