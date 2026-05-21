@@ -26,6 +26,8 @@ pak::pak("dataniel/daos")
 | `%??%` | Null-coalescing operator — returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `accounts_pdf_to_txt()` | Convert PDF financial statements to text files |
+| `addin_fix_path()` | RStudio addin: replace backslashes with forward slashes in Windows paths |
+| `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
 | `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |
 | `expect_empty()` | Pipeline checkpoint — warn or abort if a data frame is non-empty |
