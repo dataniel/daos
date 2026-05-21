@@ -46,11 +46,24 @@ reference:
 
   - title: Interactive
     contents:
-      - time2screen
+      - screen_timeseries
 
   - title: Domain-specific
     contents:
       - cpr_info
+      - read_ta
+
+  - title: File readers
+    contents:
+      - read_access
+      - read_xbrl
+      - accounts_pdf_to_txt
+      - accounts_txt_to_xlsx
+
+  - title: RStudio addins
+    contents:
+      - addin_fix_path
+      - addin_text_to_vector
 
 articles:
   - title: Get started
