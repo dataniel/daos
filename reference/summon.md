@@ -3,7 +3,8 @@
 Searches an environment for objects whose names match a regular
 expression and returns them as a named list. Useful for collecting a
 family of similarly-named objects (e.g. `dat0` through `dat9`) after
-unpacking a list with `unpack_files()`.
+unpacking a list with `out = "unpack"` in
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
 
 ## Usage
 

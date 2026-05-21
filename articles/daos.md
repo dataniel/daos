@@ -8,12 +8,13 @@ with short, self-contained examples.
 
 ## Convenience shorthands
 
-### `f()` — string interpolation
+### `f()` – string interpolation
 
-[`f()`](https://dataniel.github.io/daos/reference/f.md) is an alias for
-[`glue::glue()`](https://glue.tidyverse.org/reference/glue.html). It
-interpolates R expressions embedded in
-[`{}`](https://rdrr.io/r/base/Paren.html) inside a string.
+[`f()`](https://dataniel.github.io/daos/reference/f.md) is a short alias
+for [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html),
+inspired by Python’s f-string syntax. The name is deliberately brief –
+not self-explanatory, but fast to type and visually unobtrusive in a
+pipeline.
 
 ``` r
 year <- 2026
@@ -23,41 +24,49 @@ f("1 + 1 = {1 + 1}")
 #> 1 + 1 = 2
 ```
 
-### `nowf()` — formatted timestamp
+### `nowf()` – formatted timestamp
 
-[`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) returns
-the current time as a formatted string. Useful for building timestamped
-file names.
+[`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) combines
+[`format()`](https://rdrr.io/r/base/format.html) and
+[`Sys.time()`](https://rdrr.io/r/base/Sys.time.html) into a single call.
+The motivation is simple: when timestamping an export, you want to write
+[`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) inline
+without stopping to think about the `format(Sys.time(), ...)` signature.
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20260520"
+#> [1] "20260521"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-20 22:22"
+#> [1] "2026-05-21 09:54"
 ```
 
-Combine the two for a quick timestamped path:
+A common pattern – timestamping an export file:
 
 ``` r
-f("log/{nowf()}/pipeline.log")
+iris |>
+  writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
 ```
 
-### `quiet()` — suppress messages and warnings
+### `quiet()` – suppress messages and warnings
+
+A shorthand for `suppressMessages(suppressWarnings(...))`. Useful when
+you grow tired of tidyverse startup banners, or when running R scripts
+as CLI tools (e.g. with `rapp`) or in presentation tools like
+`presenterm` where console output must be clean.
 
 ``` r
 quiet(message("this will not appear"))
 quiet(warning("neither will this"))
-
-# Useful when loading packages without the startup banner:
-# quiet(library(tidyverse))
 ```
 
-### `is_blank()` — comprehensive blank test
+### `is_blank()` – comprehensive blank test
 
-Unlike
-[`rlang::is_empty()`](https://rlang.r-lib.org/reference/is_empty.html),
+[`is.na()`](https://rdrr.io/r/base/NA.html) only catches `NA`.
+[`rlang::is_empty()`](https://rlang.r-lib.org/reference/is_empty.html)
+only catches `NULL` and zero-length vectors.
 [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
-treats empty strings and all-`NA` vectors as blank.
+covers all three plus empty strings – useful when validating input that
+may arrive in any of these forms.
 
 ``` r
 is_blank(NULL)        # TRUE
@@ -74,11 +83,12 @@ is_blank("text")      # FALSE
 #> [1] FALSE
 ```
 
-### `%??%` — null-coalescing with blank detection
+### `%??%` – null-coalescing with blank detection
 
-Returns the right-hand side whenever the left-hand side is blank (using
-the same logic as
-[`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)).
+Like `rlang::%||%` but uses
+[`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
+instead of [`is.null()`](https://rdrr.io/r/base/NULL.html), so it also
+triggers on `NA`, `""`, and empty vectors.
 
 ``` r
 NULL %??% "default"
@@ -91,10 +101,14 @@ NA   %??% 0
 #> [1] 42
 ```
 
-### `%like%` — regex matching with NA preservation
+### `%like%` – regex matching with NA preservation
 
-`%like%` wraps [`grepl()`](https://rdrr.io/r/base/grep.html) but keeps
-`NA` values as `NA` rather than converting them to `FALSE`.
+`%like%` is intended as a more readable replacement for `str_detect()`.
+The infix form reads naturally in a
+[`filter()`](https://dplyr.tidyverse.org/reference/filter.html) call,
+and unlike [`grepl()`](https://rdrr.io/r/base/grep.html), `NA` values
+are preserved as `NA` rather than silently coerced to `FALSE` – which
+matters when filtering on optional fields.
 
 ``` r
 c("sedan", "SUV", NA, "truck") %like% "^S"
@@ -131,25 +145,40 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 
 ## File workflows
 
-### `read_files()` — validate, read, and collect
+### `read_files()` – validate, read, and collect
 
+Reading a set of files in base R or tidyverse requires a pipeline of
+[`list.files()`](https://rdrr.io/r/base/list.files.html),
+[`lapply()`](https://rdrr.io/r/base/lapply.html) or
+[`purrr::map()`](https://purrr.tidyverse.org/reference/map.html), and
+manual naming. As a statistician you want one function for one thing.
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-expands [glue syntax](https://glue.tidyverse.org/) in path strings,
-aborts immediately if any file is missing, and reads all files with
-automatic format detection. A single path returns the object directly;
-multiple paths return a named list with a progress bar.
+handles path expansion, existence checks, format detection, naming, and
+collection in a single call.
+
+A single path returns the object directly; multiple paths return a named
+list with a progress bar.
 
 ``` r
 # Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
-# Multiple files with glue expansion — returns a named list:
+# Multiple files with glue expansion:
 lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
 ```
 
 Supported formats: `csv`, `tsv`, `parquet`, `feather`, `xlsx`, `xls`,
 `rds`, `sas7bdat`, `sav`, `por`, `xpt`, `dta`, `json`, `ndjson`,
 `jsonl`, `yaml`, `yml`, `txt`.
+
+In practice,
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+works best when data production is consistent – same formats, same
+column names, same types across files. If
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+handles a set of files without warnings, the workflow is in order. When
+it warns about type mismatches, that is a signal that something has
+changed upstream.
 
 Supply a custom reader to override auto-detection or add arguments:
 
@@ -160,29 +189,58 @@ read_files(
 )
 ```
 
-### Binding into one tibble
+**Column name casing**
 
-Set `out = "bind"` to row-bind all files into a single tibble. A
-`source` column records the origin of each row. Column types are always
-reconciled automatically.
+By default, column names are converted to lowercase after reading
+(`.lowercase = TRUE`). Set `.lowercase = FALSE` to preserve original
+casing.
+
+**Binding into one tibble**
+
+Set `out = "bind"` to row-bind all files. Use `.id` to track the origin
+of each row. When `names` is a numeric vector (e.g. years), the `.id`
+column will also be numeric.
 
 ``` r
-df <- read_files("data/dat{0:9}.parquet", names = 0:9, out = "bind")
+read_files(
+  "data/dat{2020:2024}.parquet",
+  names = 2020:2024,
+  out   = "bind",
+  .id   = "year"
+)
 ```
 
-### Unpacking into individual variables
+If column types differ across files, a warning is issued and types are
+reconciled with
+[`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
+The `.id` column is always excluded from this reconciliation.
+
+**Unpacking into individual variables**
 
 Set `out = "unpack"` to assign each file as its own named variable in
-the calling environment:
+the calling environment. By default,
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+aborts if any name already exists – set `.overwrite = TRUE` to allow
+overwriting.
 
 ``` r
 read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
-# dat0, dat1, ..., dat9 are now in your environment
 ```
 
-### `summon()` — retrieve objects by name pattern
+### `summon()` – retrieve objects by name pattern
 
-Collect objects whose names match a regex back into a list:
+A regex-based alternative to [`ls()`](https://rdrr.io/r/base/ls.html) +
+[`mget()`](https://rdrr.io/r/base/get.html). The base R equivalent is
+functional but somewhat clunky:
+
+``` r
+mget(ls(pattern = "dat\\d"))   # base R
+summon("dat\\d")               # daos
+```
+
+[`summon()`](https://dataniel.github.io/daos/reference/summon.md) pairs
+naturally with `out = "unpack"` to collect a family of objects back into
+a list:
 
 ``` r
 dat1 <- data.frame(x = 1)
@@ -194,9 +252,104 @@ names(result)
 #> [1] "dat1" "dat2" "dat3"
 ```
 
-### `read_ta()` — read Greenlandic TA files
+### `read_access()` – read from a Microsoft Access database
 
-For Greenlandic TA files:
+Connects to an `.mdb` or `.accdb` file via ODBC, executes a SQL query,
+and returns the result as a tibble. Requires the `DBI` and `odbc`
+packages and a Microsoft Access ODBC driver.
+
+The `verbosity` argument controls output:
+
+- `"compact"` (default) – one line per file, best when looping
+- `"full"` – header, spinners, and summary; best for single files
+- `"quiet"` – no output
+
+``` r
+# Full output for interactive use:
+df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
+                  verbosity = "full")
+
+# Loop over many databases quietly:
+files <- fs::dir_ls("data", glob = "*.mdb")
+results <- purrr::map(files, \(f) read_access(f, "SELECT * FROM Sales"))
+```
+
+### `read_xbrl()` – parse an XBRL file
+
+Parses an XBRL XML document and returns a tidy tibble with one row per
+fact, joined to context (dates) and unit information. Requires `xml2`.
+
+``` r
+df <- read_xbrl("report.xml")
+```
+
+The returned tibble has columns: `elementid`, `contextid`, `fact`,
+`unitid`, `decimals`, `startdate`, `enddate`, `instant`,
+`explicit_member`, `unit`.
+
+For non-UTF-8 files, pass `encoding`:
+
+``` r
+df <- read_xbrl("report.xml", encoding = "latin1")
+```
+
+### `accounts_pdf_to_txt()` – convert PDF accounts to text
+
+Reads all PDF files in a directory, extracts their text, and writes one
+`.txt` file per PDF. Intended as the first step in a manual review
+workflow for financial statements. Requires `pdftools`.
+
+``` r
+accounts_pdf_to_txt(
+  pdf_dir = "data/pdf",
+  txt_dir = "data/txt"
+)
+```
+
+The output directory is created automatically if it does not exist. File
+names (typically CVR numbers) are preserved.
+
+### `accounts_txt_to_xlsx()` – parse accounts text files to Excel
+
+Parses manually formatted text files and exports the result as an Excel
+file. Requires `writexl`.
+
+**Text file format**
+
+Each line is either a *category line* or a *data line*:
+
+- **Category line:** a single string with no field delimiter. Sets the
+  `note` value for all subsequent data lines.
+- **Data line:** three fields separated by `min_spaces` or more
+  consecutive spaces: (1) element name, (2) amount for `year`,
+  3.  amount for `year - 1`.
+
+Amounts must be whole kroner; periods used as thousands separators are
+stripped automatically. If no previous-year amount exists, the third
+field may be empty – it becomes `NA`.
+
+Appending `statnatio` to a category line negates all amounts in that
+category, useful when costs appear with a positive sign in notes. The
+suffix is stripped from the final output.
+
+File names are used as identifiers in the `cvr` column. A trailing
+`_spec` suffix is stripped automatically.
+
+``` r
+df <- accounts_txt_to_xlsx(
+  txt_dir  = "data/txt",
+  out_file = "data/output.xlsx",
+  year     = 2024
+)
+```
+
+Three validation checks run automatically and abort on failure:
+
+1.  Comma in value columns – indicates wrong decimal separator
+2.  `NA` in `note` or `elementid` – indicates a missing category line
+3.  `NA` in current-year values – indicates a parsing failure
+
+### `read_ta()` – read Greenlandic TA files
 
 ``` r
 df <- read_ta("ta.file")
@@ -206,19 +359,19 @@ df <- read_ta("ta.file")
 
 ## Data inspection
 
-### `view_types()` — compare column types across data frames
+### `view_types()` – compare column types across data frames
 
+Think of
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-shows the
-[`pillar::type_sum()`](https://pillar.r-lib.org/reference/type_sum.html)
-type of each column for every dataset supplied. Invaluable before joins
-or before binding with `read_files(out = "bind")`.
+as [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
+multiple data frames at once – it shows the type of each column for
+every dataset supplied. Invaluable before joins or before binding with
+`read_files(out = "bind")`.
 
 ``` r
 df_a <- data.frame(x = 1L,  y = "a", z = TRUE)
 df_b <- data.frame(x = 1.0, y = "b", z = 1L)
 
-# All columns:
 view_types(df_a, df_b)
 #> # A tibble: 3 × 3
 #>   column df_a  df_b 
@@ -238,17 +391,21 @@ view_types(df_a, df_b, diff = TRUE)
 #> 2 z      lgl   int
 ```
 
+The `focus` argument checks that a specific column has an expected type
+and returns only the datasets where it does not:
+
 ``` r
-# Check that a specific column has the expected type:
 view_types(df_a, df_b, focus = c(x = "int"))
 #> # A tibble: 1 × 2
 #>   column df_b 
 #>   <chr>  <chr>
 #> 1 x      dbl
-# Returns 0 rows if all match, otherwise shows the offending datasets
 ```
 
-### `size_env()` — object sizes in an environment
+### `size_env()` – object sizes in an environment
+
+A simple answer to “what is taking up space?” – lists all objects in an
+environment sorted by size.
 
 ``` r
 big   <- 1:1e6
@@ -278,50 +435,73 @@ size_env(n = 2)   # top 2 only
 
 ## Data validation
 
-### `expect_empty()` — assert a data frame is empty
+### `expect_empty()` – assert a data frame is empty
 
-Use
+Often you want to assert that a filtering condition finds nothing – and
+if it does find something, you want to know immediately with a clear
+message. Writing a custom `if (nrow(x) > 0) cli::cli_abort(...)` every
+time is repetitive.
 [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-as a checkpoint in a pipeline. It succeeds silently when the data frame
-has no rows, warns when it has rows (unless `abort_msg` is set, in which
-case it aborts).
+does this in one step, fits into a pipeline, and optionally writes to a
+log file.
+
+By filtering for impossibilities and piping through
+[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md),
+you have the offending rows at hand the moment something goes wrong.
 
 ``` r
 # Success:
-data.frame() |> expect_empty(success_msg = "All good — no rows")
-#> ✔ All good — no rows
-
-# Warning:
-filter(ggplot2::mpg, cyl < 0) |>
-  expect_empty(warn_msg = "Unexpected: negative cylinder count")
-#> ✔ The dataset is empty.
+dplyr::starwars |>
+  filter(name == "Harry Potter") |>
+  expect_empty(
+    success_msg = "No Harry Potter rows in starwars",
+    warn_msg    = "Unexpected fictional character found"
+  )
+#> ✔ No Harry Potter rows in starwars
 ```
 
 ``` r
-# Hard error:
-filter(dplyr::starwars, height < 0) |>
-  expect_empty(abort_msg = "Impossible: negative height")
+# Warning -- rows found:
+dplyr::starwars |>
+  filter(mass > 1000) |>
+  expect_empty(warn_msg = "Unrealistic mass values")
+#> Warning: Unrealistic mass values
 ```
 
-The `log` argument writes a timestamped entry to a file — useful in
-automated pipelines where you want a minimal audit trail:
+``` r
+# Hard abort:
+dplyr::starwars |>
+  filter(mass > 1000) |>
+  expect_empty(abort_msg = "Unrealistic mass values")
+```
+
+The `log` argument writes a timestamped entry to a file. When you
+eventually open RStudio to investigate, the errors are already
+collected:
 
 ``` r
 log_path <- f("log/{nowf()}/checks.log")
 checker  <- purrr::partial(expect_empty, log = log_path)
 
-filter(dplyr::starwars, name == "Harry Potter") |>
+dplyr::starwars |>
+  filter(name == "Harry Potter") |>
   checker(success_msg = "No fictional characters")
 
-filter(dplyr::starwars, height > 250) |>
-  checker(warn_msg = "Unusually tall characters found")
+dplyr::starwars |>
+  filter(height > 250) |>
+  checker(warn_msg = "Unusually tall characters")
 ```
 
-### `flag_duplicates()` — detect and label duplicate rows
+### `flag_duplicates()` – detect and label duplicate rows
 
+Base R’s [`duplicated()`](https://rdrr.io/r/base/duplicated.html) only
+marks the second occurrence of a duplicate.
 [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
-prepends two columns: `isdup` (logical) and `dupid` (an integer group
-identifier, `0` for unique rows).
+marks all copies and assigns them a shared group ID – making it easy to
+inspect all instances at once. The ID can also serve as an implicit
+record linkage key: if multiple respondents have reported the same
+information but background data is missing for one person, the shared
+`dupid` reveals the connection.
 
 ``` r
 flag_duplicates(ggplot2::mpg)
@@ -380,11 +560,13 @@ ggplot2::mpg |>
 
 ## Data manipulation
 
-### `split_by()` — split a data frame into a named list
+### `split_by()` – split a data frame into a named list
 
-[`split_by()`](https://dataniel.github.io/daos/reference/split_by.md) is
-a named version of
-[`dplyr::group_split()`](https://dplyr.tidyverse.org/reference/group_split.html):
+[`dplyr::group_split()`](https://dplyr.tidyverse.org/reference/group_split.html)
+returns an unnamed list.
+[`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
+adds names derived from the grouping values, making it straightforward
+to index by group:
 
 ``` r
 parts <- split_by(ggplot2::mpg, manufacturer)
@@ -410,7 +592,7 @@ names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
 ```
 
-### `find_signs()` — reconcile accounting line items
+### `find_signs()` – reconcile accounting line items
 
 [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
 uses a *meet-in-the-middle* algorithm to find the sign assignment (`+1`,
@@ -428,8 +610,7 @@ find_signs(items, label, value, total_label = "total")
 #> # A tibble: 0 × 0
 ```
 
-You can pin known signs and allow at most `max_zeros` items to be
-excluded:
+Pin known signs and allow items to be excluded with `max_zeros`:
 
 ``` r
 find_signs(
@@ -444,15 +625,14 @@ find_signs(
 
 ------------------------------------------------------------------------
 
-## Danish CPR numbers
+## Domain-specific
 
-### `cpr_info()` — extract birth date, age, sex, and validity
+### `cpr_info()` – extract birth date, age, sex, and validity
 
 [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md)
-appends one or more derived columns to a data frame using official CPR
-Register century-detection rules. Dashes and spaces are stripped
-automatically; nine-digit numbers are zero-padded to recover values that
-lost a leading zero in Excel.
+appends derived columns to a data frame using official CPR Register
+century-detection rules. Dashes and spaces are stripped automatically;
+nine-digit numbers are zero-padded.
 
 ``` r
 df <- data.frame(
@@ -491,11 +671,11 @@ cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 
 ## Interactive tools
 
-### `track_last_df()` — auto-save the last printed data frame
+### `track_last_df()` – auto-save the last printed data frame
 
-Enable to automatically capture any data frame returned to the console
-as `.last.df` in the global environment. Handy when you forget to assign
-an intermediate result.
+Automatically captures any data frame returned to the console as
+`.last.df` in the global environment. Handy when you forget to assign an
+intermediate result.
 
 ``` r
 track_last_df()          # enable
@@ -506,30 +686,89 @@ dplyr::starwars |> head(3)
 track_last_df(FALSE)     # disable
 ```
 
-### `time2screen()` — Shiny time-series screening dashboard
+### `screen_timeseries()` – interactive time-series screening
 
-[`time2screen()`](https://dataniel.github.io/daos/reference/time2screen.md)
-launches an interactive Shiny app for reviewing time series group by
-group. All columns that are not `x`, `y`, `series`, or excluded
-automatically become dropdown filters. Navigate with the keyboard (`←` /
-`→`) or click buttons. Press `Esc` to exit.
+Many people find it hard to get close enough to data when working in a
+console – Excel’s immediate, visual feedback is difficult to replicate.
+[`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+is an attempt to bridge that gap: it launches a Shiny app where you
+navigate time series group by group, zoom in, and flag anomalies –
+without writing any filtering code.
 
-Requires `shiny` and `highcharter`.
+All columns that are not `x`, `y`, `series`, or excluded automatically
+become dropdown filters. Requires `shiny` and `highcharter`.
 
 ``` r
-library(shiny)
-library(highcharter)
-
-# Simple example — one line per group:
 df <- expand.grid(
   year    = 2010:2020,
   country = c("DK", "SE", "NO", "FI")
 )
 df$gdp <- rnorm(nrow(df), mean = 300, sd = 30)
 
-time2screen(df, x = year, y = gdp)
+screen_timeseries(df, x = year, y = gdp)
 
-# With a series dimension for multiple lines per group:
+# Multiple lines per group with series:
 ggplot2::economics_long |>
-  time2screen(date, value, series = variable)
+  screen_timeseries(date, value, series = variable)
 ```
+
+**Keyboard shortcuts**
+
+| Key         | Action                            |
+|-------------|-----------------------------------|
+| `<-` / `->` | Navigate to previous / next group |
+| `Space`     | Flag the current group            |
+| `R`         | Reset zoom                        |
+| `Q`         | Quit and return flagged groups    |
+
+The `.y_min` and `.y_max` arguments fix the Y-axis bounds globally
+across all groups. The `.title` argument sets a title shown in the app
+header and in downloaded figures:
+
+``` r
+screen_timeseries(df, year, gdp,
+                  .y_min = 0, .y_max = 500,
+                  .title = "GDP by country")
+```
+
+------------------------------------------------------------------------
+
+## RStudio addins
+
+The following addins are available via the *Addins* menu or the command
+palette (`Ctrl+Shift+P`). Keyboard shortcuts can be bound under *Tools
+-\> Modify Keyboard Shortcuts*.
+
+### Fix Windows paths
+
+Replaces backslashes with forward slashes in Windows-style paths
+(`C:\...` or `\\server\...`). Only path-like backslashes are converted –
+`\(x)` lambda syntax and escape sequences like `\n` are left untouched.
+
+- **Text selected:** operates on the selection only
+- **Nothing selected:** operates on the entire active file and restores
+  the cursor position
+
+### Text to vector
+
+Converts selected lines (one item per line) to an R character vector
+expression. Empty lines are ignored.
+
+Selecting:
+
+    12345678
+    87654321
+    11223344
+
+produces:
+
+``` r
+c(
+  "12345678",
+  "87654321",
+  "11223344"
+)
+```
+
+Useful for quickly wrapping CVR numbers, variable names, or any
+line-delimited list copied from Excel or a mail.

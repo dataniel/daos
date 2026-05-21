@@ -9,7 +9,7 @@ combination, `R` to reset zoom, and `Q` to quit.
 ## Usage
 
 ``` r
-time2screen(
+screen_timeseries(
   data,
   x,
   y,
@@ -82,7 +82,7 @@ library(dplyr)
 
 # Simple example with economics dataset:
 flagged <- ggplot2::economics_long |>
-  time2screen(date, value, series = variable)
+  screen_timeseries(date, value, series = variable)
 
 # With a grouping column:
 df <- data.frame(
@@ -90,6 +90,6 @@ df <- data.frame(
   country = rep(c("DK", "SE", "NO"), each = 11),
   gdp     = rnorm(33, 300, 20)
 )
-flagged <- time2screen(df, x = year, y = gdp)
+flagged <- screen_timeseries(df, x = year, y = gdp)
 } # }
 ```

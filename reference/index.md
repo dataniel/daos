@@ -53,10 +53,30 @@
 
 ## Interactive
 
-- [`time2screen()`](https://dataniel.github.io/daos/reference/time2screen.md)
+- [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
 
 ## Domain-specific
 
 - [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md)
   : Extract information from Danish CPR numbers
+- [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
+  Read a Greenlandic TA file
+
+## File readers
+
+- [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)
+  : Read data from a Microsoft Access database
+- [`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md)
+  : Read an XBRL file
+- [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
+  : Convert PDF files to text files
+- [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
+  : Parse formatted text files and export to Excel
+
+## RStudio addins
+
+- [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)
+  : RStudio addin: fix Windows paths
+- [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md)
+  : RStudio addin: convert lines to R character vector
