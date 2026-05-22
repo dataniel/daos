@@ -30,6 +30,8 @@
   Retrieve objects matching a pattern from an environment
 - [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
   Read a Greenlandic TA file
+- [`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md)
+  : Write data frames to an xlsx file
 
 ## Data wrangling
 

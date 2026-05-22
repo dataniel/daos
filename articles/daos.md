@@ -35,9 +35,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20260521"
+#> [1] "20260522"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-21 09:54"
+#> [1] "2026-05-22 09:23"
 ```
 
 A common pattern – timestamping an export file:
@@ -348,6 +348,79 @@ Three validation checks run automatically and abort on failure:
 1.  Comma in value columns – indicates wrong decimal separator
 2.  `NA` in `note` or `elementid` – indicates a missing category line
 3.  `NA` in current-year values – indicates a parsing failure
+
+### `write_pretty_xlsx()` – write to Excel with sensible defaults
+
+[`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+is fast but bare: no formatting, no frozen header, no number formatting.
+`openxlsx2` can do all of that, but its API requires you to build a
+workbook object, add worksheets, apply styles, and save – many lines for
+what should be a one-liner.
+[`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md)
+is the middle ground: a single call with defaults that cover the most
+common needs.
+
+- Numeric columns with at least one value ≥ 1,000 are formatted with a
+  thousand separator and no displayed decimals (`#,##0`); the underlying
+  values are preserved.
+- `NA` values appear as blank cells.
+- The header row is bold.
+- The first row is frozen (can be turned off with
+  `freeze_header = FALSE`).
+
+**Writing a new file**
+
+Pass a data frame or a named list of data frames to `data`. Requires
+`overwrite = TRUE` if the file already exists.
+
+``` r
+# Single data frame -- sheet name defaults to "Sheet1"
+write_pretty_xlsx(mtcars, "output.xlsx")
+
+# Named list -- each element becomes a sheet
+write_pretty_xlsx(
+  list(Cars = mtcars, Iris = iris),
+  "output.xlsx"
+)
+```
+
+**Sheet naming**
+
+Sheet names come from the list names. Unnamed elements get default names
+(`"Sheet1"`, `"Sheet2"`, …). Mixed naming is also fine:
+
+``` r
+# "Hoved" is explicit; second sheet becomes "Sheet2"
+write_pretty_xlsx(list(Hoved = mtcars, iris), "output.xlsx")
+```
+
+**Appending sheets to an existing file**
+
+Use `append` to add sheets without touching the existing content. The
+file must already exist, and `overwrite = TRUE` is required if a sheet
+of the same name is already present.
+
+``` r
+# Add one sheet
+write_pretty_xlsx(append = list(Bilag = airquality), path = "output.xlsx")
+
+# Create and append in a single call
+write_pretty_xlsx(
+  list(Hoved = mtcars),
+  "output.xlsx",
+  append = list(Bilag = iris)
+)
+```
+
+**Other options**
+
+``` r
+# Insert as an Excel table (filter arrows, banded rows)
+write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
+
+# Exclude columns from the #,##0 format
+write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
+```
 
 ### `read_ta()` – read Greenlandic TA files
 
