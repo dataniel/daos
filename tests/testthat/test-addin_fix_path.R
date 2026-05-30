@@ -43,6 +43,32 @@ test_that(".fix_windows_paths leaves non-path text unchanged", {
   expect_equal(daos:::.fix_windows_paths("no paths here"), "no paths here")
 })
 
+# addin_paste_path core logic ----------------------------------------------
+
+paste_path <- function(raw) {
+  text  <- paste(raw, collapse = "\n")
+  fixed <- gsub("\\\\", "/", text)
+  paste0('"', fixed, '"')
+}
+
+test_that("paste_path flips backslashes and wraps in quotes", {
+  expect_equal(
+    paste_path("C:\\Users\\danie\\Documents"),
+    '"C:/Users/danie/Documents"'
+  )
+})
+
+test_that("paste_path handles path with no backslashes", {
+  expect_equal(paste_path("C:/already/fixed"), '"C:/already/fixed"')
+})
+
+test_that("paste_path collapses multi-line clipboard content", {
+  expect_equal(
+    paste_path(c("C:\\foo\\bar", "C:\\baz\\qux")),
+    '"C:/foo/bar\nC:/baz/qux"'
+  )
+})
+
 # addin_flip_backslash core logic ------------------------------------------
 
 test_that("flip() replaces all backslashes with forward slashes", {

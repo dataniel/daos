@@ -35,6 +35,26 @@ addin_text_to_vector <- function() {
   rstudioapi::modifyRange(sel$range, result, ctx$id)
 }
 
+#' RStudio addin: paste path from clipboard
+#'
+#' Reads a Windows path from the clipboard, replaces backslashes with forward
+#' slashes, and inserts it as a quoted R string at the cursor position.
+#'
+#' @keywords internal
+#' @export
+addin_paste_path <- function() {
+  if (!requireNamespace("rstudioapi", quietly = TRUE))
+    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+
+  raw <- utils::readClipboard()
+  if (length(raw) == 0)
+    cli::cli_abort("Clipboard is empty.")
+
+  text  <- paste(raw, collapse = "\n")
+  fixed <- gsub("\\\\", "/", text)
+  rstudioapi::insertText(paste0('"', fixed, '"'))
+}
+
 #' RStudio addin: flip backslashes in selection
 #'
 #' Replaces all backslashes with forward slashes in the selected text.

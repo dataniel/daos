@@ -27,6 +27,7 @@ pak::pak("dataniel/daos")
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `accounts_pdf_to_txt()` | Convert PDF financial statements to text files |
 | `addin_fix_path()` | RStudio addin: replace backslashes with forward slashes in Windows paths |
+| `addin_paste_path()` | RStudio addin: paste Windows path from clipboard as a quoted R string |
 | `addin_flip_backslash()` | RStudio addin: replace all backslashes with forward slashes in selection |
 | `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |

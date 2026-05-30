@@ -3,6 +3,11 @@ Description: Convert selected lines to an R character vector expression c("a", "
 Binding: addin_text_to_vector
 Interactive: false
 
+Name: Paste path from clipboard
+Description: Read a Windows path from the clipboard, flip backslashes, and insert it as a quoted R string at the cursor.
+Binding: addin_paste_path
+Interactive: false
+
 Name: Fix Windows paths
 Description: Replace backslashes with forward slashes in Windows-style paths. Operates on the selected text, or the entire file if nothing is selected.
 Binding: addin_fix_path
