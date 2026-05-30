@@ -82,5 +82,7 @@
   : RStudio addin: fix Windows paths
 - [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md)
   : RStudio addin: flip backslashes in selection
+- [`addin_paste_path()`](https://dataniel.github.io/daos/reference/addin_paste_path.md)
+  : RStudio addin: paste path from clipboard
 - [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md)
   : RStudio addin: convert lines to R character vector
