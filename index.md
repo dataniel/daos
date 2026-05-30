@@ -27,6 +27,7 @@ pak::pak("dataniel/daos")
 | `%like%`                                                                                      | Regex matching that preserves `NA` (unlike `grepl`)                                                   |
 | [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)   | Convert PDF financial statements to text files                                                        |
 | [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)             | RStudio addin: replace backslashes with forward slashes in Windows paths                              |
+| [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md) | RStudio addin: replace all backslashes with forward slashes in selection                              |
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector                                        |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel                                               |
 | [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md)                         | Extract birth date, age, sex, and validity from Danish CPR numbers                                    |
