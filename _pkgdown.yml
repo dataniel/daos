@@ -64,6 +64,7 @@ reference:
   - title: RStudio addins
     contents:
       - addin_fix_path
+      - addin_flip_backslash
       - addin_text_to_vector
 
 articles:

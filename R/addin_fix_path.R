@@ -35,6 +35,27 @@ addin_text_to_vector <- function() {
   rstudioapi::modifyRange(sel$range, result, ctx$id)
 }
 
+#' RStudio addin: flip backslashes in selection
+#'
+#' Replaces all backslashes with forward slashes in the selected text.
+#' Requires a selection.
+#'
+#' @keywords internal
+#' @export
+addin_flip_backslash <- function() {
+  if (!requireNamespace("rstudioapi", quietly = TRUE))
+    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+
+  ctx <- rstudioapi::getActiveDocumentContext()
+  sel <- ctx$selection[[1]]
+
+  if (!nzchar(sel$text))
+    cli::cli_abort("No text selected. Select the text to flip backslashes in.")
+
+  fixed <- gsub("\\\\", "/", sel$text)
+  rstudioapi::modifyRange(sel$range, fixed, ctx$id)
+}
+
 #' RStudio addin: fix Windows paths
 #'
 #' Replaces backslashes with forward slashes in Windows-style paths

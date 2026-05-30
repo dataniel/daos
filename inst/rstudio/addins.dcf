@@ -7,3 +7,8 @@ Name: Fix Windows paths
 Description: Replace backslashes with forward slashes in Windows-style paths. Operates on the selected text, or the entire file if nothing is selected.
 Binding: addin_fix_path
 Interactive: false
+
+Name: Flip backslashes
+Description: Replace all backslashes with forward slashes in the selected text.
+Binding: addin_flip_backslash
+Interactive: false
