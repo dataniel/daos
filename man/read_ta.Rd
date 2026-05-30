@@ -22,13 +22,13 @@ Column positions (0-based byte offsets):\tabular{lll}{
    nrnr \tab 0 \tab 5 \cr
    trans \tab 6 \tab 12 \cr
    brch \tab 13 \tab 17 \cr
-   bas \tab 18 \tab 32 \cr
-   eng \tab 33 \tab 45 \cr
-   det \tab 46 \tab 58 \cr
-   afg \tab 59 \tab 71 \cr
-   moms \tab 72 \tab 84 \cr
-   kbx \tab 85 \tab 97 \cr
-   prim \tab 98 \tab 103 \cr
+   bas \tab 18 \tab 31 \cr
+   eng \tab 32 \tab 43 \cr
+   det \tab 44 \tab 55 \cr
+   afg \tab 56 \tab 67 \cr
+   moms \tab 68 \tab 79 \cr
+   kbx \tab 80 \tab 91 \cr
+   prim \tab 92 \tab 103 \cr
    afstm \tab 104 \tab 107 \cr
    fval \tab 108 \tab end \cr
 }
