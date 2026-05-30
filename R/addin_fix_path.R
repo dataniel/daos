@@ -56,11 +56,7 @@ addin_fix_path <- function() {
     cursor_pos <- ctx$selection[[1]]$range$start
     text  <- paste(ctx$contents, collapse = "\n")
     fixed <- .fix_windows_paths(text)
-    full_range <- rstudioapi::document_range(
-      rstudioapi::document_position(1, 0),
-      rstudioapi::document_position(length(ctx$contents), nchar(ctx$contents[length(ctx$contents)]))
-    )
-    rstudioapi::modifyRange(full_range, fixed, ctx$id)
+    rstudioapi::setDocumentContents(fixed, ctx$id)
     rstudioapi::setCursorPosition(cursor_pos, ctx$id)
   }
 }
