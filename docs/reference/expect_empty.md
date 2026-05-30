@@ -36,8 +36,8 @@ expect_empty(
 - abort_msg:
 
   If provided,
-  [`cli::cli_abort()`](https://rdrr.io/pkg/cli/man/cli_abort.html) is
-  called with this message when `data` is not empty. If `NULL`
+  [`cli::cli_abort()`](https://cli.r-lib.org/reference/cli_abort.html)
+  is called with this message when `data` is not empty. If `NULL`
   (default), a warning is issued instead.
 
 - log:

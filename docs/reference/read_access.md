@@ -14,8 +14,8 @@ read_access(path, sql, verbosity = c("compact", "full", "quiet"))
 - path:
 
   Path to the Access database file. Can be a string or an
-  [`fs::path`](https://rdrr.io/pkg/fs/man/path.html) object. Both `.mdb`
-  and `.accdb` files are supported.
+  [`fs::path`](https://fs.r-lib.org/reference/path.html) object. Both
+  `.mdb` and `.accdb` files are supported.
 
 - sql:
 
@@ -35,8 +35,8 @@ read_access(path, sql, verbosity = c("compact", "full", "quiet"))
 
 ## Value
 
-A [`tibble`](https://rdrr.io/pkg/tibble/man/tibble.html) containing the
-query result.
+A [`tibble`](https://tibble.tidyverse.org/reference/tibble.html)
+containing the query result.
 
 ## Examples
 

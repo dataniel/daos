@@ -11,9 +11,9 @@ with short, self-contained examples.
 ### `f()` – string interpolation
 
 [`f()`](https://dataniel.github.io/daos/reference/f.md) is a short alias
-for [`glue::glue()`](https://rdrr.io/pkg/glue/man/glue.html), inspired
-by Python’s f-string syntax. The name is deliberately brief – not
-self-explanatory, but fast to type and visually unobtrusive in a
+for [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html),
+inspired by Python’s f-string syntax. The name is deliberately brief –
+not self-explanatory, but fast to type and visually unobtrusive in a
 pipeline.
 
 ``` r
@@ -37,9 +37,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260521"
+#> [1] "20260530"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-21 08:51"
+#> [1] "2026-05-30 22:02"
 ```
 
 A common pattern – timestamping an export file:
@@ -66,8 +66,8 @@ quiet(warning("neither will this"))
 ### `is_blank()` – comprehensive blank test
 
 [`is.na()`](https://rdrr.io/r/base/NA.html) only catches `NA`.
-[`rlang::is_empty()`](https://rdrr.io/pkg/rlang/man/is_empty.html) only
-catches `NULL` and zero-length vectors.
+[`rlang::is_empty()`](https://rlang.r-lib.org/reference/is_empty.html)
+only catches `NULL` and zero-length vectors.
 [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
 covers all three plus empty strings – useful when validating input that
 may arrive in any of these forms.
@@ -110,12 +110,12 @@ NA   %??% 0
 ### `%like%` – regex matching with NA preservation
 
 `%like%` is intended as a more readable replacement for
-[`str_detect()`](https://rdrr.io/pkg/stringr/man/str_detect.html). The
-infix form reads naturally in a
-[`filter()`](https://rdrr.io/pkg/dplyr/man/filter.html) call, and unlike
-[`grepl()`](https://rdrr.io/r/base/grep.html), `NA` values are preserved
-as `NA` rather than silently coerced to `FALSE` – which matters when
-filtering on optional fields.
+[`str_detect()`](https://stringr.tidyverse.org/reference/str_detect.html).
+The infix form reads naturally in a
+[`filter()`](https://dplyr.tidyverse.org/reference/filter.html) call,
+and unlike [`grepl()`](https://rdrr.io/r/base/grep.html), `NA` values
+are preserved as `NA` rather than silently coerced to `FALSE` – which
+matters when filtering on optional fields.
 
 ``` r
 
@@ -158,8 +158,8 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 Reading a set of files in base R or tidyverse requires a pipeline of
 [`list.files()`](https://rdrr.io/r/base/list.files.html),
 [`lapply()`](https://rdrr.io/r/base/lapply.html) or
-[`purrr::map()`](https://rdrr.io/pkg/purrr/man/map.html), and manual
-naming. As a statistician you want one function for one thing.
+[`purrr::map()`](https://purrr.tidyverse.org/reference/map.html), and
+manual naming. As a statistician you want one function for one thing.
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 handles path expansion, existence checks, format detection, naming, and
 collection in a single call.
@@ -223,7 +223,7 @@ read_files(
 
 If column types differ across files, a warning is issued and types are
 reconciled with
-[`readr::type_convert()`](https://rdrr.io/pkg/readr/man/type_convert.html).
+[`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
 The `.id` column is always excluded from this reconciliation.
 
 **Unpacking into individual variables**
@@ -368,6 +368,83 @@ Three validation checks run automatically and abort on failure:
 2.  `NA` in `note` or `elementid` – indicates a missing category line
 3.  `NA` in current-year values – indicates a parsing failure
 
+### `write_pretty_xlsx()` – write to Excel with sensible defaults
+
+[`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+is fast but bare: no formatting, no frozen header, no number formatting.
+`openxlsx2` can do all of that, but its API requires you to build a
+workbook object, add worksheets, apply styles, and save – many lines for
+what should be a one-liner.
+[`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md)
+is the middle ground: a single call with defaults that cover the most
+common needs.
+
+- Numeric columns with at least one value ≥ 1,000 are formatted with a
+  thousand separator and no displayed decimals (`#,##0`); the underlying
+  values are preserved.
+- `NA` values appear as blank cells.
+- The header row is bold.
+- The first row is frozen (can be turned off with
+  `freeze_header = FALSE`).
+
+**Writing a new file**
+
+Pass a data frame or a named list of data frames to `data`. Requires
+`overwrite = TRUE` if the file already exists.
+
+``` r
+
+# Single data frame -- sheet name defaults to "Sheet1"
+write_pretty_xlsx(mtcars, "output.xlsx")
+
+# Named list -- each element becomes a sheet
+write_pretty_xlsx(
+  list(Cars = mtcars, Iris = iris),
+  "output.xlsx"
+)
+```
+
+**Sheet naming**
+
+Sheet names come from the list names. Unnamed elements get default names
+(`"Sheet1"`, `"Sheet2"`, …). Mixed naming is also fine:
+
+``` r
+
+# "Hoved" is explicit; second sheet becomes "Sheet2"
+write_pretty_xlsx(list(Hoved = mtcars, iris), "output.xlsx")
+```
+
+**Appending sheets to an existing file**
+
+Use `append` to add sheets without touching the existing content. The
+file must already exist, and `overwrite = TRUE` is required if a sheet
+of the same name is already present.
+
+``` r
+
+# Add one sheet
+write_pretty_xlsx(append = list(Bilag = airquality), path = "output.xlsx")
+
+# Create and append in a single call
+write_pretty_xlsx(
+  list(Hoved = mtcars),
+  "output.xlsx",
+  append = list(Bilag = iris)
+)
+```
+
+**Other options**
+
+``` r
+
+# Insert as an Excel table (filter arrows, banded rows)
+write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
+
+# Exclude columns from the #,##0 format
+write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
+```
+
 ### `read_ta()` – read Greenlandic TA files
 
 ``` r
@@ -383,7 +460,7 @@ df <- read_ta("ta.file")
 
 Think of
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-as [`glimpse()`](https://rdrr.io/pkg/pillar/man/glimpse.html) across
+as [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
 multiple data frames at once – it shows the type of each column for
 every dataset supplied. Invaluable before joins or before binding with
 `read_files(out = "bind")`.
@@ -593,7 +670,7 @@ ggplot2::mpg |>
 
 ### `split_by()` – split a data frame into a named list
 
-[`dplyr::group_split()`](https://rdrr.io/pkg/dplyr/man/group_split.html)
+[`dplyr::group_split()`](https://dplyr.tidyverse.org/reference/group_split.html)
 returns an unnamed list.
 [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
 adds names derived from the grouping values, making it straightforward

@@ -1,10 +1,10 @@
 # Read one or more files
 
 Expands paths using
-[`glue::glue()`](https://rdrr.io/pkg/glue/man/glue.html) (so `{0:9}`
-generates ten paths), checks that every file exists, reads them with
-automatic format detection or a custom reader, and optionally row-binds
-or unpacks the result.
+[`glue::glue()`](https://glue.tidyverse.org/reference/glue.html) (so
+`{0:9}` generates ten paths), checks that every file exists, reads them
+with automatic format detection or a custom reader, and optionally
+row-binds or unpacks the result.
 
 ## Usage
 
@@ -50,7 +50,7 @@ read_files(
 
   - `"bind"`: row-bind all data frames into a single tibble. If column
     types differ, a warning is issued and types are reconciled with
-    [`readr::type_convert()`](https://rdrr.io/pkg/readr/man/type_convert.html).
+    [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
     A source column is added when `.id` is set.
 
   - `"unpack"`: assign each element as a named variable in `.envir`.
@@ -94,7 +94,7 @@ Depends on `out`:
 **Supported formats (when `reader = "auto"`):**
 
 **Note on CSV:** uses
-[`readr::read_csv2()`](https://rdrr.io/pkg/readr/man/read_delim.html)
+[`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html)
 which expects semicolon-separated values and a comma as the decimal mark
 (Danish/European convention). For comma-separated files, pass a custom
 reader: `reader = readr::read_csv`.
@@ -102,15 +102,15 @@ reader: `reader = readr::read_csv`.
 |  |  |
 |----|----|
 | Extension | Reader |
-| `csv` | [`readr::read_csv2()`](https://rdrr.io/pkg/readr/man/read_delim.html) (semicolon-separated, European format) |
-| `tsv` | [`readr::read_tsv()`](https://rdrr.io/pkg/readr/man/read_delim.html) |
-| `parquet`, `feather` | [`arrow::read_parquet()`](https://rdrr.io/pkg/arrow/man/read_parquet.html) / [`arrow::read_feather()`](https://rdrr.io/pkg/arrow/man/read_feather.html) |
-| `xlsx`, `xls` | [`readxl::read_xlsx()`](https://rdrr.io/pkg/readxl/man/read_excel.html) / [`readxl::read_xls()`](https://rdrr.io/pkg/readxl/man/read_excel.html) |
+| `csv` | [`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html) (semicolon-separated, European format) |
+| `tsv` | [`readr::read_tsv()`](https://readr.tidyverse.org/reference/read_delim.html) |
+| `parquet`, `feather` | [`arrow::read_parquet()`](https://arrow.apache.org/docs/r/reference/read_parquet.html) / [`arrow::read_feather()`](https://arrow.apache.org/docs/r/reference/read_feather.html) |
+| `xlsx`, `xls` | [`readxl::read_xlsx()`](https://readxl.tidyverse.org/reference/read_excel.html) / [`readxl::read_xls()`](https://readxl.tidyverse.org/reference/read_excel.html) |
 | `rds` | [`readRDS()`](https://rdrr.io/r/base/readRDS.html) |
 | `sas7bdat`, `sav`, `por`, `xpt`, `dta` | `haven::read_*()` |
-| `json`, `ndjson`, `jsonl` | [`jsonlite::read_json()`](https://rdrr.io/pkg/jsonlite/man/read_json.html) / [`jsonlite::stream_in()`](https://rdrr.io/pkg/jsonlite/man/stream_in.html) |
-| `yaml`, `yml` | [`yaml::read_yaml()`](https://rdrr.io/pkg/yaml/man/read_yaml.html) |
-| `txt` | [`readr::read_lines()`](https://rdrr.io/pkg/readr/man/read_lines.html) |
+| `json`, `ndjson`, `jsonl` | [`jsonlite::read_json()`](https://jeroen.r-universe.dev/jsonlite/reference/read_json.html) / [`jsonlite::stream_in()`](https://jeroen.r-universe.dev/jsonlite/reference/stream_in.html) |
+| `yaml`, `yml` | [`yaml::read_yaml()`](https://yaml.r-lib.org/reference/read_yaml.html) |
+| `txt` | [`readr::read_lines()`](https://readr.tidyverse.org/reference/read_lines.html) |
 
 Packages for non-base formats (`arrow`, `haven`, `readxl`, `jsonlite`,
 `yaml`) must be installed separately.

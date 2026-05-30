@@ -29,13 +29,13 @@ Column positions (0-based byte offsets):
 | nrnr   | 0     | 5   |
 | trans  | 6     | 12  |
 | brch   | 13    | 17  |
-| bas    | 18    | 32  |
-| eng    | 33    | 45  |
-| det    | 46    | 58  |
-| afg    | 59    | 71  |
-| moms   | 72    | 84  |
-| kbx    | 85    | 97  |
-| prim   | 98    | 103 |
+| bas    | 18    | 31  |
+| eng    | 32    | 43  |
+| det    | 44    | 55  |
+| afg    | 56    | 67  |
+| moms   | 68    | 79  |
+| kbx    | 80    | 91  |
+| prim   | 92    | 103 |
 | afstm  | 104   | 107 |
 | fval   | 108   | end |
 

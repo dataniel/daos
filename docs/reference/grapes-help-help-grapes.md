@@ -27,9 +27,9 @@ x %??% default
 ## Details
 
 More intuitive than
-[`rlang::%||%`](https://rdrr.io/pkg/rlang/man/op-null-default.html) in
-data-cleaning contexts where empty strings and all-`NA` vectors should
-be treated as missing.
+[`rlang::%||%`](https://rlang.r-lib.org/reference/op-null-default.html)
+in data-cleaning contexts where empty strings and all-`NA` vectors
+should be treated as missing.
 
 ## See also
 

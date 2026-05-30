@@ -28,11 +28,12 @@ pak::pak("dataniel/daos")
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md) | Convert PDF financial statements to text files |
 | [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md) | RStudio addin: replace backslashes with forward slashes in Windows paths |
+| [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md) | RStudio addin: replace all backslashes with forward slashes in selection |
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
 | [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md) | Extract birth date, age, sex, and validity from Danish CPR numbers |
 | [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint — warn or abort if a data frame is non-empty |
-| [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://rdrr.io/pkg/glue/man/glue.html) alias) |
+| [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
 | [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md) | Find sign assignments that reconcile a set of values to a total |
 | [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md) | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md) | Test whether a value is blank in the broadest sense |
@@ -48,3 +49,4 @@ pak::pak("dataniel/daos")
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md) | Retrieve objects matching a regex pattern from an environment |
 | [`track_last_df()`](https://dataniel.github.io/daos/reference/track_last_df.md) | Auto-save the last printed data frame as `.last.df` |
 | [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md) | Compare column types across multiple data frames |
+| [`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md) | Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs |

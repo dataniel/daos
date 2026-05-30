@@ -1,7 +1,7 @@
 # Convert PDF files to text files
 
 Reads all PDF files in a directory, extracts their text content using
-[`pdftools::pdf_text()`](https://rdrr.io/pkg/pdftools/man/pdftools.html),
+[`pdftools::pdf_text()`](https://docs.ropensci.org/pdftools//reference/pdftools.html),
 and writes one `.txt` file per PDF to the output directory.
 
 ## Usage

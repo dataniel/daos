@@ -38,7 +38,7 @@ dplyr::group_split(), the returned list is always named."></head><body>
     <div class="ref-description section level2">
     <p>Groups a data frame and splits it, automatically naming each element of
 the resulting list from the unique group key values. Unlike the bare
-<code><a href="https://rdrr.io/pkg/dplyr/man/group_split.html" class="external-link">dplyr::group_split()</a></code>, the returned list is always named.</p>
+<code><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">dplyr::group_split()</a></code>, the returned list is always named.</p>
     </div>
 
     <div class="section level2">
@@ -74,7 +74,7 @@ single list name. Default: <code>"_"</code>.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">split_by</span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/ggplot2/man/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">split_by</span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;list_of&lt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tbl_df&lt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     manufacturer: character</span>
@@ -322,7 +322,7 @@ single list name. Default: <code>"_"</code>.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Multiple grouping columns:</span></span></span>
-<span class="r-in"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu">split_by</span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/ggplot2/man/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span>, <span class="va">cyl</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu">split_by</span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span>, <span class="va">cyl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "audi_4"       "audi_6"       "audi_8"       "chevrolet_4"  "chevrolet_6" </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "chevrolet_8"  "dodge_4"      "dodge_6"      "dodge_8"      "ford_6"      </span>

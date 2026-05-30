@@ -2,7 +2,7 @@
 
 Groups a data frame and splits it, automatically naming each element of
 the resulting list from the unique group key values. Unlike the bare
-[`dplyr::group_split()`](https://rdrr.io/pkg/dplyr/man/group_split.html),
+[`dplyr::group_split()`](https://dplyr.tidyverse.org/reference/group_split.html),
 the returned list is always named.
 
 ## Usage

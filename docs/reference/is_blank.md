@@ -3,8 +3,8 @@
 Returns `TRUE` if `x` is `NULL`, has length 0, contains only `NA`
 values, or (for character vectors) contains only empty strings. More
 intuitive than
-[`rlang::is_empty()`](https://rdrr.io/pkg/rlang/man/is_empty.html) in
-data-cleaning contexts.
+[`rlang::is_empty()`](https://rlang.r-lib.org/reference/is_empty.html)
+in data-cleaning contexts.
 
 ## Usage
 

@@ -21,10 +21,10 @@ read_xbrl(path, encoding = "UTF-8")
 
 ## Value
 
-A [`tibble`](https://rdrr.io/pkg/tibble/man/tibble.html) with one row
-per fact and columns: `elementid`, `contextid`, `fact`, `unitid`,
-`decimals`, `startdate`, `enddate`, `instant`, `explicit_member`,
-`unit`.
+A [`tibble`](https://tibble.tidyverse.org/reference/tibble.html) with
+one row per fact and columns: `elementid`, `contextid`, `fact`,
+`unitid`, `decimals`, `startdate`, `enddate`, `instant`,
+`explicit_member`, `unit`.
 
 ## Examples
 

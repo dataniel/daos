@@ -1,10 +1,12 @@
 # String interpolation shorthand
 
 A short alias for
-[`glue::glue()`](https://rdrr.io/pkg/glue/man/glue.html). Interpolates R
-expressions enclosed in [`{}`](https://rdrr.io/r/base/Paren.html) inside
-a string. All arguments accepted by
-[`glue::glue()`](https://rdrr.io/pkg/glue/man/glue.html) are forwarded.
+[`glue::glue()`](https://glue.tidyverse.org/reference/glue.html).
+Interpolates R expressions enclosed in
+[`{}`](https://rdrr.io/r/base/Paren.html) inside a string. All arguments
+accepted by
+[`glue::glue()`](https://glue.tidyverse.org/reference/glue.html) are
+forwarded.
 
 ## Usage
 
@@ -106,7 +108,7 @@ f(
 
   \[`logical(1)`: ‘TRUE’\]\
   Whether to trim the input template with
-  [`trim()`](https://rdrr.io/pkg/glue/man/trim.html) or not.
+  [`trim()`](https://glue.tidyverse.org/reference/trim.html) or not.
 
 ## Value
 
