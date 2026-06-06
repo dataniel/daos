@@ -35,9 +35,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20260530"
+#> [1] "20260606"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-05-30 23:20"
+#> [1] "2026-06-06 00:29"
 ```
 
 A common pattern – timestamping an export file:
@@ -422,10 +422,11 @@ write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
 write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
 ```
 
-### `read_ta()` – read Greenlandic TA files
+### `read_ta()` / `write_ta()` – read and write Greenlandic TA files
 
 ``` r
 df <- read_ta("ta.file")
+write_ta(df, "ta.file")
 ```
 
 ------------------------------------------------------------------------

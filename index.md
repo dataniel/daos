@@ -42,6 +42,7 @@ pak::pak("dataniel/daos")
 | [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)                   | Read data from a Microsoft Access database via ODBC                                                   |
 | [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)                     | Validate paths, read files (auto or custom reader), and optionally bind or unpack                     |
 | [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                           | Read Greenlandic TA files                                                                             |
+| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                         | Write Greenlandic TA files                                                                            |
 | [`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md)                       | Parse an XBRL file into a tidy tibble                                                                 |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)       | Interactive Shiny dashboard for screening time-series data group by group                             |
 | [`size_env()`](https://dataniel.github.io/daos/reference/size_env.md)                         | Show object sizes in an environment                                                                   |

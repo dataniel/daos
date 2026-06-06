@@ -89,9 +89,9 @@ inline without stopping to think about the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20260530"</span></span>
+<span><span class="co">#&gt; [1] "20260606"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-05-30 23:20"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-06 00:29"</span></span></code></pre></div>
 <p>A common pattern – timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -456,11 +456,13 @@ is required if a sheet of the same name is already present.</p>
 <span><span class="fu"><a href="../reference/write_pretty_xlsx.html">write_pretty_xlsx</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="st">"output.xlsx"</span>, skip_fmt <span class="op">=</span> <span class="st">"hp"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="read_ta-read-greenlandic-ta-files">
-<code>read_ta()</code> – read Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-read-greenlandic-ta-files"></a>
+<h3 id="read_ta-write_ta-read-and-write-greenlandic-ta-files">
+<code>read_ta()</code> / <code>write_ta()</code> – read and write
+Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-write_ta-read-and-write-greenlandic-ta-files"></a>
 </h3>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ta.html">read_ta</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ta.html">read_ta</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/write_ta.html">write_ta</a></span><span class="op">(</span><span class="va">df</span>, <span class="st">"ta.file"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
