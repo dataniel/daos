@@ -30,6 +30,7 @@ reference:
       - read_files
       - summon
       - read_ta
+      - write_ta
       - write_pretty_xlsx
 
   - title: Data wrangling
@@ -53,6 +54,7 @@ reference:
     contents:
       - cpr_info
       - read_ta
+      - write_ta
 
   - title: File readers
     contents:

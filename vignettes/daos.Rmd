@@ -375,10 +375,11 @@ write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
 write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
 ```
 
-### `read_ta()` -- read Greenlandic TA files
+### `read_ta()` / `write_ta()` -- read and write Greenlandic TA files
 
 ```{r, eval = FALSE}
 df <- read_ta("ta.file")
+write_ta(df, "ta.file")
 ```
 
 ---

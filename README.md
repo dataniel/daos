@@ -42,6 +42,7 @@ pak::pak("dataniel/daos")
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 | `read_ta()` | Read Greenlandic TA files |
+| `write_ta()` | Write Greenlandic TA files |
 | `read_xbrl()` | Parse an XBRL file into a tidy tibble |
 | `screen_timeseries()` | Interactive Shiny dashboard for screening time-series data group by group |
 | `size_env()` | Show object sizes in an environment |
