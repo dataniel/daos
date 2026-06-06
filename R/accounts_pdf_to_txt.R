@@ -17,7 +17,6 @@
 #'
 #' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done
 #' @importFrom fs dir_create dir_ls path_file path_ext_remove path
-#' @importFrom purrr iwalk
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))

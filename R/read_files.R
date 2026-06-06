@@ -82,7 +82,6 @@
 #' @importFrom glue glue
 #' @importFrom fs file_exists path_file path_ext path_ext_remove
 #' @importFrom cli cli_abort cli_warn cli_progress_bar cli_progress_update cli_progress_done
-#' @importFrom rlang %||%
 #' @importFrom stats setNames
 #' @importFrom purrr map list_rbind
 #' @importFrom dplyr mutate across everything
