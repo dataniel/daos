@@ -28,6 +28,7 @@ pak::pak("dataniel/daos")
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md) | Convert PDF financial statements to text files |
 | [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md) | RStudio addin: replace backslashes with forward slashes in Windows paths |
+| [`addin_paste_path()`](https://dataniel.github.io/daos/reference/addin_paste_path.md) | RStudio addin: paste Windows path from clipboard as a quoted R string |
 | [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md) | RStudio addin: replace all backslashes with forward slashes in selection |
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
@@ -42,6 +43,7 @@ pak::pak("dataniel/daos")
 | [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md) | Read data from a Microsoft Access database via ODBC |
 | [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md) | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 | [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) | Read Greenlandic TA files |
+| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md) | Write Greenlandic TA files |
 | [`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md) | Parse an XBRL file into a tidy tibble |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md) | Interactive Shiny dashboard for screening time-series data group by group |
 | [`size_env()`](https://dataniel.github.io/daos/reference/size_env.md) | Show object sizes in an environment |

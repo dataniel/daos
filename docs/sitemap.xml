@@ -10,6 +10,7 @@
 <url><loc>https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/addin_fix_path.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/addin_flip_backslash.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/addin_paste_path.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/addin_text_to_vector.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/cpr_info.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/expect_empty.html</loc></url>
@@ -33,5 +34,6 @@
 <url><loc>https://dataniel.github.io/daos/reference/track_last_df.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/view_types.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/write_pretty_xlsx.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/write_ta.html</loc></url>
 </urlset>
 
