@@ -347,13 +347,15 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
                    "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
 
       if (has_series) {
-        unique_series <- as.character(unique(dplyr::pull(d, !!series_var)))
+        series_col <- rlang::as_label(series_var)
+        d[[series_col]] <- as.character(d[[series_col]])
+        unique_series <- unique(d[[series_col]])
         colors <- setNames(rep_len(palette, length(unique_series)), unique_series)
         p <- ggplot2::ggplot(d, ggplot2::aes(
           x     = !!x_var,
           y     = !!y_var,
-          color = as.character(!!series_var),
-          group = as.character(!!series_var)
+          color = !!series_var,
+          group = !!series_var
         )) +
           ggplot2::geom_line(linewidth = 0.8) +
           ggplot2::geom_point(size = 1.5) +
@@ -365,6 +367,9 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
       }
 
       p <- p +
+        ggplot2::scale_y_continuous(
+          labels = scales::label_number(big.mark = ".", decimal.mark = ",")
+        ) +
         ggplot2::theme_minimal() +
         ggplot2::theme(
           plot.background    = ggplot2::element_blank(),
@@ -397,7 +402,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
           plot_bgcolor  = "rgba(0,0,0,0)"
         ) |>
         plotly::config(
-          displayModeBar = TRUE,
+          displayModeBar = "hover",
           modeBarButtonsToRemove = list("select2d", "lasso2d"),
           toImageButtonOptions = list(
             format   = "png",
