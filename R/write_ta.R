@@ -2,8 +2,8 @@
 #'
 #' Writes a data frame to a Greenlandic TA fixed-width file. Writes the nine
 #' columns `nrnr`, `trans`, `brch`, `bas`, `eng`, `det`, `afg`, `moms`, and
-#' `kbx`. Numeric columns are written with two decimal places; character
-#' columns are right-aligned in their field.
+#' `kbx`. Numeric columns are written without decimal places; character
+#' columns are left-aligned in their field.
 #'
 #' If `moms` is absent from `x`, it is derived automatically: `NA` for rows
 #' where `trans` is `"0100"` or `"0700"` (no VAT in Greenland), `0` otherwise.
@@ -36,14 +36,14 @@ write_ta <- function(x, path) {
   }
 
   fmt_str <- function(v, width) {
-    formatC(ifelse(is.na(v), "", as.character(v)), width = width)
+    formatC(ifelse(is.na(v), "", as.character(v)), width = width, flag = "-")
   }
 
   fmt_num <- function(v, width) {
     ifelse(
       is.na(v),
       formatC("", width = width),
-      formatC(as.double(v), format = "f", digits = 2, width = width)
+      formatC(as.double(v), format = "f", digits = 0, width = width)
     )
   }
 
