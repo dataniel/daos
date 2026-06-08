@@ -72,7 +72,7 @@ A data frame of flagged group combinations (the key columns only), or
 
 ## Details
 
-Requires the `shiny` and `highcharter` packages.
+Requires the `shiny`, `ggplot2`, and `plotly` packages.
 
 ## Examples
 

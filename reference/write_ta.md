@@ -2,8 +2,8 @@
 
 Writes a data frame to a Greenlandic TA fixed-width file. Writes the
 nine columns `nrnr`, `trans`, `brch`, `bas`, `eng`, `det`, `afg`,
-`moms`, and `kbx`. Numeric columns are written with two decimal places;
-character columns are right-aligned in their field.
+`moms`, and `kbx`. Numeric columns are written without decimal places;
+character columns are left-aligned in their field.
 
 ## Usage
 

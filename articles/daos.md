@@ -39,7 +39,7 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260608"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-08 21:30"
+#> [1] "2026-06-08 22:57"
 ```
 
 A common pattern – timestamping an export file:
@@ -812,7 +812,7 @@ navigate time series group by group, zoom in, and flag anomalies –
 without writing any filtering code.
 
 All columns that are not `x`, `y`, `series`, or excluded automatically
-become dropdown filters. Requires `shiny` and `highcharter`.
+become dropdown filters. Requires `shiny`, `ggplot2`, and `plotly`.
 
 ``` r
 
