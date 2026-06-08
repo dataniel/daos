@@ -37,9 +37,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260606"
+#> [1] "20260608"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-06 19:57"
+#> [1] "2026-06-08 21:30"
 ```
 
 A common pattern – timestamping an export file:
