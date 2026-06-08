@@ -19,8 +19,8 @@ is derived automatically (see Details). Any other columns cause an error.}
 \description{
 Writes a data frame to a Greenlandic TA fixed-width file. Writes the nine
 columns \code{nrnr}, \code{trans}, \code{brch}, \code{bas}, \code{eng}, \code{det}, \code{afg}, \code{moms}, and
-\code{kbx}. Numeric columns are written with two decimal places; character
-columns are right-aligned in their field.
+\code{kbx}. Numeric columns are written without decimal places; character
+columns are left-aligned in their field.
 }
 \details{
 If \code{moms} is absent from \code{x}, it is derived automatically: \code{NA} for rows
