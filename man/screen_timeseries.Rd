@@ -54,7 +54,7 @@ groups with the arrow keys. Press \code{Space} to flag the current combination,
 \code{R} to reset zoom, and \code{Q} to quit.
 }
 \details{
-Requires the \code{shiny} and \code{highcharter} packages.
+Requires the \code{shiny}, \code{ggplot2}, and \code{plotly} packages.
 }
 \examples{
 \dontrun{

@@ -618,7 +618,7 @@ Shiny app where you navigate time series group by group, zoom in, and
 flag anomalies -- without writing any filtering code.
 
 All columns that are not `x`, `y`, `series`, or excluded automatically
-become dropdown filters. Requires `shiny` and `highcharter`.
+become dropdown filters. Requires `shiny`, `ggplot2`, and `plotly`.
 
 ```{r, eval = FALSE}
 df <- expand.grid(

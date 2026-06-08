@@ -6,7 +6,7 @@
 #' groups with the arrow keys. Press `Space` to flag the current combination,
 #' `R` to reset zoom, and `Q` to quit.
 #'
-#' Requires the `shiny` and `highcharter` packages.
+#' Requires the `shiny`, `ggplot2`, and `plotly` packages.
 #'
 #' @param data A data frame containing at minimum an x-axis column, a y-axis
 #'   column, and at least one grouping column.
@@ -61,8 +61,8 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
   if (!requireNamespace("shiny", quietly = TRUE)) {
     cli::cli_abort("Package {.pkg shiny} is required for {.fn screen_timeseries}.")
   }
-  if (!requireNamespace("highcharter", quietly = TRUE)) {
-    cli::cli_abort("Package {.pkg highcharter} is required for {.fn screen_timeseries}.")
+  if (!requireNamespace("plotly", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg plotly} is required for {.fn screen_timeseries}.")
   }
 
   x_var       <- rlang::enquo(x)
@@ -198,11 +198,6 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
           if (msg.active) { $(msg.selector).addClass(msg.cls); }
           else            { $(msg.selector).removeClass(msg.cls); }
         });
-        function getChart() {
-          return Highcharts.charts.find(function(c) {
-            return c && c.renderTo && c.renderTo.id === 'plot';
-          });
-        }
       "))
     ),
     shiny::div(class = "header",
@@ -210,7 +205,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
         if (!is.null(.title)) .title else "Time series screening"
       ),
       shiny::div(class = "header-hint",
-        shiny::tags$kbd("\u2190"), "/", shiny::tags$kbd("\u2192"), " navigate  ",
+        shiny::tags$kbd("←"), "/", shiny::tags$kbd("→"), " navigate  ",
         shiny::tags$kbd("Space"), " flag  ",
         shiny::tags$kbd("R"), " reset zoom  ",
         shiny::tags$kbd("Q"), " quit"
@@ -218,10 +213,10 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     ),
     shiny::div(class = "control-bar",
       shiny::div(class = "nav-group",
-        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "\u2190"),
+        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "←"),
         shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
-        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192"),
-        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "\u2605")
+        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "→"),
+        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "★")
       ),
       !!!dropdowns
     ),
@@ -244,14 +239,13 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
           )
         )
       ),
-      highcharter::highchartOutput("plot", height = "480px")
+      plotly::plotlyOutput("plot", height = "480px")
     )
   )
 
   server <- function(input, output, session) {
-    idx        <- shiny::reactiveVal(1L)
-    flagged    <- shiny::reactiveVal(integer(0))
-    zoom_range <- shiny::reactiveVal(NULL)
+    idx     <- shiny::reactiveVal(1L)
+    flagged <- shiny::reactiveVal(integer(0))
 
     shiny::observeEvent(input$exit_key, {
       f <- flagged()
@@ -266,11 +260,8 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     }, ignoreInit = TRUE)
 
     shiny::observeEvent(input$reset_zoom, {
-      zoom_range(NULL)
-    }, ignoreInit = TRUE)
-
-    shiny::observeEvent(input$zoom_range, {
-      zoom_range(input$zoom_range)
+      plotly::plotlyProxy("plot", session) |>
+        plotly::plotlyProxyInvoke("relayout", list("xaxis.autorange" = TRUE))
     }, ignoreInit = TRUE)
 
     shiny::observe({
@@ -326,11 +317,11 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
 
     output$counter <- shiny::renderText({
       n_flagged <- length(flagged())
-      flag_str  <- if (n_flagged > 0) paste0("  \u2605", n_flagged) else ""
+      flag_str  <- if (n_flagged > 0) paste0("  ★", n_flagged) else ""
       paste0(idx(), " / ", nrow(keys), flag_str)
     })
     output$plot_title <- shiny::renderText({
-      paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
+      paste(as.character(unlist(current_key())), collapse = " · ")
     })
     output$plot_subtitle <- shiny::renderText({
       d <- current_data()
@@ -341,168 +332,78 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
         obs_str   <- if (obs_range[1] == obs_range[2]) {
           paste0(obs_range[1], " observations each")
         } else {
-          paste0(obs_range[1], "\u2013", obs_range[2], " observations")
+          paste0(obs_range[1], "–", obs_range[2], " observations")
         }
-        paste0(n_series, " series \u00b7 ", obs_str)
+        paste0(n_series, " series · ", obs_str)
       } else {
         n_obs <- nrow(d)
         paste0(n_obs, " observation", if (n_obs == 1) "" else "s")
       }
     })
 
-    output$plot <- highcharter::renderHighchart({
-      d        <- current_data()
-      x_values <- dplyr::pull(d, !!x_var)
-      zr       <- zoom_range()
-
-      to_ms <- function(v) {
-        if (inherits(v, "Date") || inherits(v, "POSIXct")) {
-          as.numeric(as.POSIXct(v)) * 1000
-        } else if (is.numeric(v)) {
-          as.numeric(as.POSIXct(as.Date(paste0(v, "-01-01")))) * 1000
-        } else {
-          as.numeric(as.POSIXct(as.Date(as.character(v)))) * 1000
-        }
-      }
-
-      x_dates <- to_ms(x_values)
+    output$plot <- plotly::renderPlotly({
+      d       <- current_data()
       palette <- c("#18181b", "#6366f1", "#10b981", "#f59e0b",
                    "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
 
-      hc <- highcharter::highchart() |>
-        highcharter::hc_chart(
-          style = list(fontFamily = "Inter, sans-serif"),
-          backgroundColor = "transparent",
-          spacing = c(8, 0, 8, 0), animation = FALSE, zoomType = "x",
-          events = list(
-            selection = highcharter::JS("function(e) {
-              if (e.resetSelection) {
-                Shiny.setInputValue('zoom_range', null, {priority: 'event'});
-              } else if (e.xAxis && e.xAxis[0]) {
-                Shiny.setInputValue('zoom_range',
-                  {min: e.xAxis[0].min, max: e.xAxis[0].max},
-                  {priority: 'event'});
-              }
-            }")
-          )
-        ) |>
-        highcharter::hc_credits(enabled = FALSE) |>
-        highcharter::hc_title(text = NULL) |>
-        highcharter::hc_add_dependency("modules/offline-exporting.js") |>
-        highcharter::hc_exporting(
-          enabled                = TRUE,
-          fallbackToExportServer = FALSE,
-          filename               = paste(as.character(unlist(current_key())), collapse = "_"),
-          buttons      = list(
-            contextButton = list(
-              menuItems = list(
-                "downloadPNG", "downloadJPEG", "downloadPDF", "downloadSVG",
-                "separator",
-                "downloadCSV",
-                list(
-                  text    = "Download XLSX",
-                  onclick = highcharter::JS("function() { this.downloadXLS(); }")
-                )
-              )
-            )
-          ),
-          chartOptions = list(
-            chart    = list(backgroundColor = "white"),
-            title    = list(
-              text  = if (!is.null(.title)) .title else "",
-              style = list(fontSize = "16px", fontWeight = "600", color = "#18181b",
-                           fontFamily = "Inter, sans-serif")
-            ),
-            subtitle = list(
-              text  = paste(as.character(unlist(current_key())), collapse = " \u00b7 "),
-              style = list(fontSize = "13px", color = "#71717a",
-                           fontFamily = "Inter, sans-serif")
-            )
-          )
-        ) |>
-        highcharter::hc_xAxis(
-          type = "datetime", gridLineWidth = 0,
-          min  = if (!is.null(zr)) zr$min else NULL,
-          max  = if (!is.null(zr)) zr$max else NULL,
-          lineColor = "#e4e4e7", tickColor = "#e4e4e7", tickWidth = 1,
-          labels = list(style = list(color = "#71717a", fontSize = "11px",
-                                     fontWeight = "500")),
-          dateTimeLabelFormats = list(year = "%Y", month = "%b %Y",
-                                      day = "%e %b %Y")
-        ) |>
-        highcharter::hc_yAxis(
-          min = y_min_val(),
-          max = y_max_val(),
-          gridLineColor = "#f4f4f5", lineWidth = 0, tickWidth = 0,
-          labels = list(style = list(color = "#71717a", fontSize = "11px",
-                                     fontWeight = "500"),
-                        align = "right", x = -10)
-        ) |>
-        highcharter::hc_legend(
-          enabled = has_series, align = "left", verticalAlign = "top",
-          itemStyle = list(color = "#18181b", fontWeight = "500",
-                           fontSize = "12px"),
-          itemHoverStyle = list(color = "#52525b"),
-          symbolRadius = 2, symbolHeight = 8, symbolWidth = 8
-        ) |>
-        highcharter::hc_tooltip(
-          shared = TRUE, useHTML = TRUE,
-          backgroundColor = "white", borderColor = "#e4e4e7",
-          borderWidth = 1, borderRadius = 8,
-          style = list(fontFamily = "Inter, sans-serif", fontSize = "12px",
-                       color = "#18181b"),
-          headerFormat = paste0(
-            '<div style="font-size:11px;color:#71717a;font-weight:600;',
-            'text-transform:uppercase;letter-spacing:0.04em;',
-            'margin-bottom:4px;">{point.key}</div>'
-          ),
-          pointFormat = paste0(
-            '<div style="display:flex;align-items:center;gap:8px;margin:2px 0;">',
-            '<span style="width:8px;height:8px;background:{series.color};',
-            'border-radius:2px;display:inline-block;"></span>',
-            '<span style="color:#52525b;font-weight:500;">{series.name}</span>',
-            '<span style="color:#18181b;font-weight:600;margin-left:auto;">',
-            '{point.y:,.2f}</span></div>'
-          )
-        ) |>
-        highcharter::hc_plotOptions(
-          series = list(
-            animation = FALSE,
-            marker = list(enabled = TRUE, radius = 3, symbol = "circle",
-                          lineWidth = 0,
-                          states = list(hover = list(radius = 5, lineWidth = 2,
-                                                     lineColor = "white"))),
-            lineWidth = 2,
-            states = list(hover = list(lineWidthPlus = 0,
-                                       halo = list(size = 0)))
-          )
+      if (has_series) {
+        unique_series <- as.character(unique(dplyr::pull(d, !!series_var)))
+        colors <- setNames(rep_len(palette, length(unique_series)), unique_series)
+        p <- ggplot2::ggplot(d, ggplot2::aes(
+          x     = !!x_var,
+          y     = !!y_var,
+          color = as.character(!!series_var),
+          group = as.character(!!series_var)
+        )) +
+          ggplot2::geom_line(linewidth = 0.8) +
+          ggplot2::geom_point(size = 1.5) +
+          ggplot2::scale_color_manual(values = colors)
+      } else {
+        p <- ggplot2::ggplot(d, ggplot2::aes(x = !!x_var, y = !!y_var)) +
+          ggplot2::geom_line(color = "#18181b", linewidth = 0.8) +
+          ggplot2::geom_point(color = "#18181b", size = 1.5)
+      }
+
+      p <- p +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+          plot.background    = ggplot2::element_blank(),
+          panel.background   = ggplot2::element_blank(),
+          panel.grid.major.x = ggplot2::element_blank(),
+          panel.grid.minor   = ggplot2::element_blank(),
+          panel.grid.major.y = ggplot2::element_line(color = "#f4f4f5"),
+          axis.text          = ggplot2::element_text(color = "#71717a", size = 9),
+          axis.title         = ggplot2::element_blank(),
+          legend.title       = ggplot2::element_blank(),
+          legend.position    = if (has_series) "top" else "none"
         )
 
-      if (has_series) {
-        series_data <- d |> dplyr::group_by(!!series_var) |> dplyr::group_split()
-        for (i in seq_along(series_data)) {
-          gd          <- series_data[[i]]
-          series_name <- as.character(dplyr::pull(gd, !!series_var)[1])
-          x_ts        <- to_ms(dplyr::pull(gd, !!x_var))
-          y_vals      <- dplyr::pull(gd, !!y_var)
-          hc <- hc |> highcharter::hc_add_series(
-            data  = purrr::map2(x_ts, y_vals, \(x, y) list(x, y)),
-            name  = series_name,
-            type  = "line",
-            color = palette[((i - 1) %% length(palette)) + 1]
+      y_lo <- y_min_val()
+      y_hi <- y_max_val()
+      if (!is.null(y_lo) || !is.null(y_hi)) {
+        p <- p + ggplot2::coord_cartesian(
+          ylim = c(
+            if (is.null(y_lo)) NA_real_ else y_lo,
+            if (is.null(y_hi)) NA_real_ else y_hi
           )
-        }
-      } else {
-        y_values <- dplyr::pull(d, !!y_var)
-        hc <- hc |> highcharter::hc_add_series(
-          data  = purrr::map2(x_dates, y_values, \(x, y) list(x, y)),
-          name  = rlang::as_label(y_var),
-          type  = "line",
-          color = "#18181b"
         )
       }
 
-      hc
+      key_str <- paste(as.character(unlist(current_key())), collapse = "_")
+
+      plotly::ggplotly(p) |>
+        plotly::layout(
+          paper_bgcolor = "rgba(0,0,0,0)",
+          plot_bgcolor  = "rgba(0,0,0,0)"
+        ) |>
+        plotly::config(
+          displayModeBar = TRUE,
+          modeBarButtonsToRemove = list("select2d", "lasso2d"),
+          toImageButtonOptions = list(
+            format   = "png",
+            filename = key_str
+          )
+        )
     })
   }
 

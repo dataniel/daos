@@ -36,7 +36,7 @@ Suggests:
     writexl,
     ggplot2,
     haven,
-    highcharter,
+    plotly,
     jsonlite,
     readxl,
     shiny,
