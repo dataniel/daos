@@ -38,7 +38,8 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   out_paths <- file.path(txt_dir, paste0(names(pdf_files), ".txt"))
 
   n <- length(pdf_files)
-  cli::cli_alert_info("Found {n} PDF file{?s} in {.path {pdf_dir}}.")
+  pdf_dir_lnk <- .path_link(pdf_dir)
+  cli::cli_alert_info("Found {n} PDF file{?s} in '{pdf_dir_lnk}'.")
 
   t0 <- Sys.time()
   written <- logical(n)
@@ -49,8 +50,9 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
     txt <- paste(pages, collapse = "\n")
 
     if (!nzchar(trimws(txt))) {
+      file_lnk <- .path_link(pdf_files[[i]], basename(pdf_files[[i]]))
       cli::cli_alert_warning(
-        "{names(pdf_files)[[i]]}: no extractable text (probably a scanned PDF) -- skipped."
+        "{file_lnk}: no extractable text (probably a scanned PDF) -- skipped."
       )
       next
     }
@@ -60,8 +62,9 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   }
   cli::cli_progress_done()
 
+  txt_dir_lnk <- .path_link(txt_dir)
   cli::cli_alert_success(
-    "Wrote {sum(written)} text file{?s} to {.path {txt_dir}} in {format_elapsed(Sys.time() - t0)}."
+    "Wrote {sum(written)} text file{?s} to '{txt_dir_lnk}' in {format_elapsed(Sys.time() - t0)}."
   )
 
   invisible(out_paths[written])

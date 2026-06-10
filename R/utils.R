@@ -5,6 +5,17 @@ format_elapsed <- function(x) {
   else paste0(round(secs / 60, 1), "m")
 }
 
+# Hyperlink a path for cli messages: displays `text` (the path as given by
+# default), but links to the absolute path so the link resolves regardless of
+# the working directory. Falls back to plain text in terminals without
+# hyperlink support.
+.path_link <- function(path, text = path) {
+  cli::style_hyperlink(
+    text,
+    paste0("file://", normalizePath(path, winslash = "/", mustWork = FALSE))
+  )
+}
+
 # Fill NAs with the last non-NA value above (like tidyr::fill, direction
 # "down"). Leading NAs are kept as NA.
 .fill_down <- function(x) {

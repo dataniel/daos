@@ -62,7 +62,8 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
   )
 
   n <- length(txt_files)
-  cli::cli_alert_info("Collected {n} txt file{?s} from {.path {txt_dir}}, parsing and validating...")
+  txt_dir_lnk <- .path_link(txt_dir)
+  cli::cli_alert_info("Collected {n} txt file{?s} from '{txt_dir_lnk}', parsing and validating...")
   t0 <- Sys.time()
 
   # Read raw
@@ -82,12 +83,7 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
     cvr <- names(raw)[[i]]
     cli::cli_progress_update(status = cvr)
     d <- raw[[i]]
-    # Short file name as link text, absolute path as target, so the link
-    # resolves regardless of the working directory
-    file_lnk <- cli::style_hyperlink(
-      basename(txt_files[[i]]),
-      paste0("file://", normalizePath(txt_files[[i]], winslash = "/"))
-    )
+    file_lnk <- .path_link(txt_files[[i]], basename(txt_files[[i]]))
 
     # Validate: no commas in value columns (row index == line number in file)
     bad_lines <- which(grepl(",", d$V2, fixed = TRUE) | grepl(",", d$V3, fixed = TRUE))
@@ -149,15 +145,16 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
     cli::cli_abort(c(
       "Validation failed for {length(unique(issue_cvrs))} of {n} companies:",
       shown,
-      "i" = "Fix the files above and rerun. Nothing was written to {.path {out_file}}."
+      "i" = "Fix the files above and rerun. Nothing was written to '{out_file}'."
     ))
   }
 
   data <- dplyr::bind_rows(parsed, .id = "cvr")
 
   writexl::write_xlsx(data, out_file)
+  out_file_lnk <- .path_link(out_file)
   cli::cli_alert_success(
-    "Wrote {nrow(data)} row{?s} for {n} compan{?y/ies} to {.path {out_file}} in {format_elapsed(Sys.time() - t0)}."
+    "Wrote {nrow(data)} row{?s} for {n} compan{?y/ies} to '{out_file_lnk}' in {format_elapsed(Sys.time() - t0)}."
   )
 
   invisible(data)
