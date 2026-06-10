@@ -2,7 +2,8 @@
 #'
 #' Reads all PDF files in a directory, extracts their text content using
 #' [`pdftools::pdf_text()`], and writes one `.txt` file per PDF to the output
-#' directory.
+#' directory. Progress is reported with one message per converted file, plus
+#' a summary when done.
 #'
 #' @param pdf_dir Path to the directory containing PDF files.
 #' @param txt_dir Path to the directory where text files will be written.
@@ -15,7 +16,7 @@
 #' accounts_pdf_to_txt("data/pdf", "data/txt")
 #' }
 #'
-#' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_inform
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))
@@ -31,13 +32,22 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
 
   out_paths <- file.path(txt_dir, paste0(names(pdf_files), ".txt"))
 
-  cli::cli_progress_bar("Converting PDFs", total = length(pdf_files))
+  n <- length(pdf_files)
+  cli::cli_alert_info("Found {n} PDF file{?s} in {.path {pdf_dir}}.")
+
+  t0 <- Sys.time()
   for (i in seq_along(pdf_files)) {
-    cli::cli_progress_update(status = basename(pdf_files[[i]]))
-    txt <- pdftools::pdf_text(pdf_files[[i]]) |> paste(collapse = "\n")
+    pages <- pdftools::pdf_text(pdf_files[[i]])
+    txt <- paste(pages, collapse = "\n")
     cat(txt, file = out_paths[[i]])
+    n_lines <- length(strsplit(txt, "\n", fixed = TRUE)[[1]])
+    cli::cli_inform(
+      "[{i}/{n}] {.file {basename(pdf_files[[i]])}} ({length(pages)} page{?s}, {n_lines} line{?s}) -> {.path {out_paths[[i]]}}"
+    )
   }
-  cli::cli_progress_done()
+
+  elapsed <- format(round(difftime(Sys.time(), t0), 1))
+  cli::cli_alert_success("Wrote {n} text file{?s} to {.path {txt_dir}} in {elapsed}.")
 
   invisible(out_paths)
 }

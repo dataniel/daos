@@ -18,7 +18,8 @@ Invisibly, a character vector of paths to the written \code{.txt} files.
 \description{
 Reads all PDF files in a directory, extracts their text content using
 \code{\link[pdftools:pdf_text]{pdftools::pdf_text()}}, and writes one \code{.txt} file per PDF to the output
-directory.
+directory. Progress is reported with one message per converted file, plus
+a summary when done.
 }
 \examples{
 \dontrun{
