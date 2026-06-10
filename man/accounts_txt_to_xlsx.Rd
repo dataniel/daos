@@ -23,9 +23,9 @@ The parsed data as a tibble, invisibly.
 Reads all \code{.txt} files in a directory, parses them according to a specific
 layout used for manually formatted financial statements, and exports the
 result as an Excel file. Messages report how many files were collected and
-a summary when done. Files are validated one company at a time, so a
-formatting problem aborts at the offending company with a message naming
-the CVR, the file, and the offending lines or elements.
+a summary when done. All companies are validated before any output is
+written; formatting problems abort with a combined message listing every
+offending company along with the file and the offending lines or elements.
 }
 \details{
 \strong{Text file format:}

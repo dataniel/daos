@@ -3,9 +3,9 @@
 #' Reads all `.txt` files in a directory, parses them according to a specific
 #' layout used for manually formatted financial statements, and exports the
 #' result as an Excel file. Messages report how many files were collected and
-#' a summary when done. Files are validated one company at a time, so a
-#' formatting problem aborts at the offending company with a message naming
-#' the CVR, the file, and the offending lines or elements.
+#' a summary when done. All companies are validated before any output is
+#' written; formatting problems abort with a combined message listing every
+#' offending company along with the file and the offending lines or elements.
 #'
 #' @details
 #' **Text file format:**
@@ -72,23 +72,27 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
       tibble::as_tibble()
   })
 
-  # Parse and validate per company; abort at the first company with problems
+  # Parse and validate all companies, collecting problems for a combined report
   parsed <- vector("list", n)
   names(parsed) <- names(raw)
+  issues <- character()
+  issue_cvrs <- character()
   cli::cli_progress_bar("Parsing companies", total = n)
   for (i in seq_along(raw)) {
     cvr <- names(raw)[[i]]
     cli::cli_progress_update(status = cvr)
     d <- raw[[i]]
+    file_nm <- basename(txt_files[[i]])
 
     # Validate: no commas in value columns (row index == line number in file)
     bad_lines <- which(grepl(",", d$V2, fixed = TRUE) | grepl(",", d$V3, fixed = TRUE))
-    if (length(bad_lines) > 0)
-      cli::cli_abort(c(
-        "[{i}/{n}] {cvr}: comma detected in value columns.",
-        "x" = "{cli::qty(length(bad_lines))}Line{?s} {bad_lines} of {.path {txt_files[[i]]}}.",
-        "i" = "Amounts must be whole kroner with periods as thousands separators."
+    if (length(bad_lines) > 0) {
+      issues <- c(issues, cli::format_inline(
+        "{cvr}: comma in value columns ({cli::qty(length(bad_lines))}line{?s} {bad_lines} in {.file {file_nm}})"
       ))
+      issue_cvrs <- c(issue_cvrs, cvr)
+      next  # comma values cannot be parsed; skip to avoid derived NA noise
+    }
 
     d <- dplyr::mutate(d, note = dplyr::if_else(V2 == "", V1, NA_character_), .before = 1)
     d <- dplyr::mutate(d, note = .fill_down(note))
@@ -113,24 +117,37 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
 
     # Validate: no NAs in note or elementid
     bad_note <- unique(out$elementid[is.na(out$note) | is.na(out$elementid)])
-    if (length(bad_note) > 0)
-      cli::cli_abort(c(
-        "[{i}/{n}] {cvr}: NA in note or elementid.",
-        "x" = "{cli::qty(length(bad_note))}Element{?s} {.val {bad_note}} in {.path {txt_files[[i]]}}.",
-        "i" = "Data lines before the first category line have no note."
+    if (length(bad_note) > 0) {
+      issues <- c(issues, cli::format_inline(
+        "{cvr}: NA in note or elementid ({cli::qty(length(bad_note))}element{?s} {.val {bad_note}} in {.file {file_nm}})"
       ))
+      issue_cvrs <- c(issue_cvrs, cvr)
+    }
 
     # Validate: no NAs in current year values
     bad_val <- unique(out$elementid[is.na(out$val) & out$year == year_val])
-    if (length(bad_val) > 0)
-      cli::cli_abort(c(
-        "[{i}/{n}] {cvr}: non-numeric values in current year ({year_val}).",
-        "x" = "{cli::qty(length(bad_val))}Element{?s} {.val {bad_val}} in {.path {txt_files[[i]]}}."
+    if (length(bad_val) > 0) {
+      issues <- c(issues, cli::format_inline(
+        "{cvr}: non-numeric value in current year ({cli::qty(length(bad_val))}element{?s} {.val {bad_val}} in {.file {file_nm}})"
       ))
+      issue_cvrs <- c(issue_cvrs, cvr)
+    }
 
     parsed[[i]] <- out
   }
   cli::cli_progress_done()
+
+  if (length(issues) > 0) {
+    shown <- stats::setNames(utils::head(issues, 10), rep("x", min(length(issues), 10)))
+    if (length(issues) > 10)
+      shown <- c(shown, cli::format_inline("... and {length(issues) - 10} more issue{?s}."))
+    cli::cli_abort(c(
+      "Validation failed for {length(unique(issue_cvrs))} of {n} companies:",
+      shown,
+      "i" = "Fix the files above and rerun. Nothing was written to {.path {out_file}}."
+    ))
+  }
+
   data <- dplyr::bind_rows(parsed, .id = "cvr")
 
   writexl::write_xlsx(data, out_file)
