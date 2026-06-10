@@ -4,7 +4,13 @@
 \alias{accounts_txt_to_xlsx}
 \title{Parse formatted text files and export to Excel}
 \usage{
-accounts_txt_to_xlsx(txt_dir, out_file, year, min_spaces = 3)
+accounts_txt_to_xlsx(
+  txt_dir,
+  out_file,
+  year,
+  min_spaces = 3,
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{txt_dir}{Path to the directory containing \code{.txt} files.}
@@ -15,6 +21,9 @@ accounts_txt_to_xlsx(txt_dir, out_file, year, min_spaces = 3)
 
 \item{min_spaces}{Minimum number of consecutive spaces used as field
 delimiter. Default \code{3}.}
+
+\item{overwrite}{If \code{FALSE} (default), the function aborts when \code{out_file}
+already exists. Set to \code{TRUE} to replace it.}
 }
 \value{
 The parsed data as a tibble, invisibly.

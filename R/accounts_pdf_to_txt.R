@@ -12,6 +12,8 @@
 #' @param pdf_dir Path to the directory containing PDF files.
 #' @param txt_dir Path to the directory where text files will be written.
 #'   Created automatically if it does not exist.
+#' @param overwrite If `FALSE` (default), the function aborts when any of the
+#'   `.txt` files it would write already exist. Set to `TRUE` to replace them.
 #'
 #' @return Invisibly, a character vector of paths to the written `.txt` files
 #'   (skipped PDFs are not included).
@@ -23,7 +25,7 @@
 #'
 #' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_progress_bar cli_progress_update cli_progress_done
 #' @export
-accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
+accounts_pdf_to_txt <- function(pdf_dir, txt_dir, overwrite = FALSE) {
   if (!requireNamespace("pdftools", quietly = TRUE))
     cli::cli_abort("Package {.pkg pdftools} is required to use {.fn accounts_pdf_to_txt}.")
 
@@ -36,6 +38,19 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   pdf_files <- stats::setNames(pdf_files, tools::file_path_sans_ext(basename(pdf_files)))
 
   out_paths <- file.path(txt_dir, paste0(names(pdf_files), ".txt"))
+
+  if (!overwrite) {
+    existing <- out_paths[file.exists(out_paths)]
+    if (length(existing) > 0) {
+      shown <- utils::head(basename(existing), 10)
+      if (length(existing) > 10)
+        shown <- c(shown, cli::format_inline("... and {length(existing) - 10} more"))
+      cli::cli_abort(c(
+        "Would overwrite {length(existing)} existing text file{?s} in {.path {txt_dir}}: {shown}.",
+        "i" = "Set {.code overwrite = TRUE} to replace existing files."
+      ))
+    }
+  }
 
   n <- length(pdf_files)
   pdf_dir_lnk <- .path_link(pdf_dir)

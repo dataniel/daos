@@ -4,13 +4,16 @@
 \alias{accounts_pdf_to_txt}
 \title{Convert PDF files to text files}
 \usage{
-accounts_pdf_to_txt(pdf_dir, txt_dir)
+accounts_pdf_to_txt(pdf_dir, txt_dir, overwrite = FALSE)
 }
 \arguments{
 \item{pdf_dir}{Path to the directory containing PDF files.}
 
 \item{txt_dir}{Path to the directory where text files will be written.
 Created automatically if it does not exist.}
+
+\item{overwrite}{If \code{FALSE} (default), the function aborts when any of the
+\code{.txt} files it would write already exist. Set to \code{TRUE} to replace them.}
 }
 \value{
 Invisibly, a character vector of paths to the written \code{.txt} files

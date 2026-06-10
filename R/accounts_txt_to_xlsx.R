@@ -32,6 +32,8 @@
 #' @param year The accounting year as a numeric scalar (e.g. `2024`).
 #' @param min_spaces Minimum number of consecutive spaces used as field
 #'   delimiter. Default `3`.
+#' @param overwrite If `FALSE` (default), the function aborts when `out_file`
+#'   already exists. Set to `TRUE` to replace it.
 #'
 #' @return The parsed data as a tibble, invisibly.
 #'
@@ -45,9 +47,15 @@
 #' @importFrom dplyr mutate filter if_else bind_rows
 #' @importFrom tibble as_tibble tibble
 #' @export
-accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
+accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3, overwrite = FALSE) {
   if (!requireNamespace("writexl", quietly = TRUE))
     cli::cli_abort("Package {.pkg writexl} is required to use {.fn accounts_txt_to_xlsx}.")
+
+  if (!overwrite && file.exists(out_file))
+    cli::cli_abort(c(
+      "Would overwrite existing output file {.path {out_file}}.",
+      "i" = "Set {.code overwrite = TRUE} to replace it."
+    ))
 
   year_val <- year
   delim    <- paste0(" {", min_spaces, ",}")
