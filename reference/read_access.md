@@ -13,9 +13,8 @@ read_access(path, sql, verbosity = c("compact", "full", "quiet"))
 
 - path:
 
-  Path to the Access database file. Can be a string or an
-  [`fs::path`](https://fs.r-lib.org/reference/path.html) object. Both
-  `.mdb` and `.accdb` files are supported.
+  Path to the Access database file. Both `.mdb` and `.accdb` files are
+  supported.
 
 - sql:
 
@@ -47,8 +46,7 @@ data <- read_access("sales.mdb", "SELECT * FROM Customers",
                     verbosity = "full")
 
 # many files – compact output is the default
-files <- fs::dir_ls("data", glob = "*.mdb")
-all_data <- files |>
-  purrr::map(\(f) read_access(f, "SELECT * FROM Sales"))
+files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
+all_data <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 } # }
 ```

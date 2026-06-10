@@ -23,7 +23,7 @@ size_env(.envir = parent.frame(), n = NULL)
 ## Value
 
 A tibble with columns `name` (character), `size` (numeric, bytes), and
-`pretty` (fs_bytes, human-readable). Returns `NULL` invisibly if the
+`pretty` (character, human-readable). Returns `NULL` invisibly if the
 environment is empty.
 
 ## Examples
@@ -33,13 +33,13 @@ x <- 1:1e6
 y <- letters
 size_env()       # all objects
 #> # A tibble: 2 × 3
-#>   name     size      pretty
-#>   <chr>   <dbl> <fs::bytes>
-#> 1 x     4000048       3.81M
-#> 2 y        1712       1.67K
+#>   name     size pretty
+#>   <chr>   <dbl> <chr> 
+#> 1 x     4000048 3.8 Mb
+#> 2 y        1712 1.7 Kb
 size_env(n = 1)  # only the largest
 #> # A tibble: 1 × 3
-#>   name     size      pretty
-#>   <chr>   <dbl> <fs::bytes>
-#> 1 x     4000048       3.81M
+#>   name     size pretty
+#>   <chr>   <dbl> <chr> 
+#> 1 x     4000048 3.8 Mb
 ```

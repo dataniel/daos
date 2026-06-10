@@ -91,7 +91,7 @@ inline without stopping to think about the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20260610"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-10 01:06"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-10 12:19"</span></span></code></pre></div>
 <p>A common pattern – timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -305,8 +305,8 @@ files</li>
 <span>                  verbosity <span class="op">=</span> <span class="st">"full"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Loop over many databases quietly:</span></span>
-<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu">fs</span><span class="fu">::</span><span class="fu"><a href="https://fs.r-lib.org/reference/dir_ls.html" class="external-link">dir_ls</a></span><span class="op">(</span><span class="st">"data"</span>, glob <span class="op">=</span> <span class="st">"*.mdb"</span><span class="op">)</span></span>
-<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">files</span>, \<span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="../reference/read_access.html">read_access</a></span><span class="op">(</span><span class="va">f</span>, <span class="st">"SELECT * FROM Sales"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"data"</span>, pattern <span class="op">=</span> <span class="st">"\\.mdb$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">files</span>, \<span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="../reference/read_access.html">read_access</a></span><span class="op">(</span><span class="va">f</span>, <span class="st">"SELECT * FROM Sales"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="read_xbrl-parse-an-xbrl-file">
@@ -517,23 +517,23 @@ an environment sorted by size.</p>
 <span><span class="va">small</span> <span class="op">&lt;-</span> <span class="va">letters</span></span>
 <span><span class="fu"><a href="../reference/size_env.html">size_env</a></span><span class="op">(</span><span class="op">)</span>        <span class="co"># all objects, largest first</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 3</span></span></span>
-<span><span class="co">#&gt;   name      size      pretty</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fs::bytes&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> big    4<span style="text-decoration: underline;">000</span>048       3.81M</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> result    <span style="text-decoration: underline;">2</span>648       2.59K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> small     <span style="text-decoration: underline;">1</span>712       1.67K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> df_a      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> df_b      <span style="text-decoration: underline;">1</span>064       1.04K</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> dat1       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> dat2       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> dat3       736         736</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> year        56          56</span></span>
+<span><span class="co">#&gt;   name      size pretty   </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> big    4<span style="text-decoration: underline;">000</span>048 3.8 Mb   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> result    <span style="text-decoration: underline;">2</span>648 2.6 Kb   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> small     <span style="text-decoration: underline;">1</span>712 1.7 Kb   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> df_a      <span style="text-decoration: underline;">1</span>064 1 Kb     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> df_b      <span style="text-decoration: underline;">1</span>064 1 Kb     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> dat1       736 736 bytes</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> dat2       736 736 bytes</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> dat3       736 736 bytes</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> year        56 56 bytes</span></span>
 <span><span class="fu"><a href="../reference/size_env.html">size_env</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>   <span class="co"># top 2 only</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   name      size      pretty</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fs::bytes&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> big    4<span style="text-decoration: underline;">000</span>048       3.81M</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> result    <span style="text-decoration: underline;">2</span>648       2.59K</span></span></code></pre></div>
+<span><span class="co">#&gt;   name      size pretty</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> big    4<span style="text-decoration: underline;">000</span>048 3.8 Mb</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> result    <span style="text-decoration: underline;">2</span>648 2.6 Kb</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -578,7 +578,7 @@ When you eventually open RStudio to investigate, the errors are already
 collected:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/checks.log"</span><span class="op">)</span></span>
-<span><span class="va">checker</span>  <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/partial.html" class="external-link">partial</a></span><span class="op">(</span><span class="va">expect_empty</span>, log <span class="op">=</span> <span class="va">log_path</span><span class="op">)</span></span>
+<span><span class="va">checker</span>  <span class="op">&lt;-</span> \<span class="op">(</span><span class="va">data</span>, <span class="va">...</span><span class="op">)</span> <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">...</span>, log <span class="op">=</span> <span class="va">log_path</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">name</span> <span class="op">==</span> <span class="st">"Harry Potter"</span><span class="op">)</span> <span class="op">|&gt;</span></span>

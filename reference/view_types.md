@@ -32,9 +32,8 @@ view_types(..., diff = FALSE, focus = NULL)
 ## Value
 
 A tibble with a `column` column and one column per input dataset showing
-the
-[`pillar::type_sum()`](https://pillar.r-lib.org/reference/type_sum.html)
-type string.
+an abbreviated type string (`"int"`, `"dbl"`, `"chr"`, `"fct"`,
+`"date"`, `"dttm"`, ...).
 
 ## See also
 

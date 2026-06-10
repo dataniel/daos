@@ -29,10 +29,6 @@ drop_all_na(data, which = c("rows", "cols"))
 `data` with fully-`NA` rows and/or columns removed. The class of the
 input (data frame or tibble) is preserved.
 
-## See also
-
-[`tidyr::drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html)
-
 ## Examples
 
 ``` r
