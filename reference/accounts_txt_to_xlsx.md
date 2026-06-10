@@ -2,7 +2,10 @@
 
 Reads all `.txt` files in a directory, parses them according to a
 specific layout used for manually formatted financial statements, and
-exports the result as an Excel file.
+exports the result as an Excel file. Messages report how many files were
+collected and a summary when done. Files are validated one company at a
+time, so a formatting problem aborts at the offending company with a
+message naming the CVR, the file, and the offending lines or elements.
 
 ## Usage
 
