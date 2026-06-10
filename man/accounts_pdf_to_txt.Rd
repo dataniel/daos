@@ -13,13 +13,19 @@ accounts_pdf_to_txt(pdf_dir, txt_dir)
 Created automatically if it does not exist.}
 }
 \value{
-Invisibly, a character vector of paths to the written \code{.txt} files.
+Invisibly, a character vector of paths to the written \code{.txt} files
+(skipped PDFs are not included).
 }
 \description{
 Reads all PDF files in a directory, extracts their text content using
 \code{\link[pdftools:pdf_text]{pdftools::pdf_text()}}, and writes one \code{.txt} file per PDF to the output
 directory. Progress is reported with one message per converted file, plus
 a summary when done.
+}
+\details{
+PDFs with no extractable text (blank or whitespace only -- typically
+scanned/photo-printed annual reports) are skipped with a warning message;
+no \code{.txt} file is written for them.
 }
 \examples{
 \dontrun{

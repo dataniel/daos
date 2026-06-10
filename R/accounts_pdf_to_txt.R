@@ -5,18 +5,23 @@
 #' directory. Progress is reported with one message per converted file, plus
 #' a summary when done.
 #'
+#' PDFs with no extractable text (blank or whitespace only -- typically
+#' scanned/photo-printed annual reports) are skipped with a warning message;
+#' no `.txt` file is written for them.
+#'
 #' @param pdf_dir Path to the directory containing PDF files.
 #' @param txt_dir Path to the directory where text files will be written.
 #'   Created automatically if it does not exist.
 #'
-#' @return Invisibly, a character vector of paths to the written `.txt` files.
+#' @return Invisibly, a character vector of paths to the written `.txt` files
+#'   (skipped PDFs are not included).
 #'
 #' @examples
 #' \dontrun{
 #' accounts_pdf_to_txt("data/pdf", "data/txt")
 #' }
 #'
-#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_inform
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_inform
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))
@@ -36,18 +41,34 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   cli::cli_alert_info("Found {n} PDF file{?s} in {.path {pdf_dir}}.")
 
   t0 <- Sys.time()
+  written <- logical(n)
   for (i in seq_along(pdf_files)) {
     pages <- pdftools::pdf_text(pdf_files[[i]])
     txt <- paste(pages, collapse = "\n")
+
+    if (!nzchar(trimws(txt))) {
+      cli::cli_alert_warning(
+        "[{i}/{n}] {.file {basename(pdf_files[[i]])}}: no extractable text (probably a scanned PDF) -- skipped."
+      )
+      next
+    }
+
     cat(txt, file = out_paths[[i]])
+    written[[i]] <- TRUE
     n_lines <- length(strsplit(txt, "\n", fixed = TRUE)[[1]])
     cli::cli_inform(
       "[{i}/{n}] {.file {basename(pdf_files[[i]])}} ({length(pages)} page{?s}, {n_lines} line{?s}) -> {.path {out_paths[[i]]}}"
     )
   }
 
-  elapsed <- format(round(difftime(Sys.time(), t0), 1))
-  cli::cli_alert_success("Wrote {n} text file{?s} to {.path {txt_dir}} in {elapsed}.")
+  n_skipped <- sum(!written)
+  cli::cli_alert_success(
+    "Wrote {sum(written)} text file{?s} to {.path {txt_dir}} in {format_elapsed(Sys.time() - t0)}."
+  )
+  if (n_skipped > 0)
+    cli::cli_alert_warning(
+      "Skipped {n_skipped} PDF{?s} with no extractable text: {.file {basename(pdf_files[!written])}}."
+    )
 
-  invisible(out_paths)
+  invisible(out_paths[written])
 }
