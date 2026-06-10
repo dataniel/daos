@@ -17,7 +17,6 @@ not self-explanatory, but fast to type and visually unobtrusive in a
 pipeline.
 
 ``` r
-
 year <- 2026
 f("Report for {year}")
 #> Report for 2026
@@ -35,7 +34,6 @@ The motivation is simple: when timestamping an export, you want to write
 without stopping to think about the `format(Sys.time(), ...)` signature.
 
 ``` r
-
 nowf()                  # default: YYYYMMDD
 #> [1] "20260610"
 nowf("%Y-%m-%d %H:%M")  # custom format
@@ -45,7 +43,6 @@ nowf("%Y-%m-%d %H:%M")  # custom format
 A common pattern – timestamping an export file:
 
 ``` r
-
 iris |>
   writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
 ```
@@ -58,7 +55,6 @@ as CLI tools (e.g. with `rapp`) or in presentation tools like
 `presenterm` where console output must be clean.
 
 ``` r
-
 quiet(message("this will not appear"))
 quiet(warning("neither will this"))
 ```
@@ -73,7 +69,6 @@ covers all three plus empty strings – useful when validating input that
 may arrive in any of these forms.
 
 ``` r
-
 is_blank(NULL)        # TRUE
 #> [1] TRUE
 is_blank(NA)          # TRUE
@@ -96,7 +91,6 @@ instead of [`is.null()`](https://rdrr.io/r/base/NULL.html), so it also
 triggers on `NA`, `""`, and empty vectors.
 
 ``` r
-
 NULL %??% "default"
 #> [1] "default"
 NA   %??% 0
@@ -117,7 +111,6 @@ are preserved as `NA` rather than silently coerced to `FALSE` – which
 matters when filtering on optional fields.
 
 ``` r
-
 c("sedan", "SUV", NA, "truck") %like% "^S"
 #> [1] FALSE  TRUE    NA FALSE
 
@@ -167,7 +160,6 @@ A single path returns the object directly; multiple paths return a named
 list with a progress bar.
 
 ``` r
-
 # Single file (returns object directly):
 df <- read_files("data/results.parquet")
 
@@ -191,7 +183,6 @@ changed upstream.
 Supply a custom reader to override auto-detection or add arguments:
 
 ``` r
-
 read_files(
   "data/dat{0:9}.parquet",
   reader = \(x) arrow::read_parquet(x, col_select = 1:5)
@@ -211,7 +202,6 @@ of each row. When `names` is a numeric vector (e.g. years), the `.id`
 column will also be numeric.
 
 ``` r
-
 read_files(
   "data/dat{2020:2024}.parquet",
   names = 2020:2024,
@@ -234,7 +224,6 @@ aborts if any name already exists – set `.overwrite = TRUE` to allow
 overwriting.
 
 ``` r
-
 read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
 ```
 
@@ -245,7 +234,6 @@ A regex-based alternative to [`ls()`](https://rdrr.io/r/base/ls.html) +
 functional but somewhat clunky:
 
 ``` r
-
 mget(ls(pattern = "dat\\d"))   # base R
 summon("dat\\d")               # daos
 ```
@@ -255,7 +243,6 @@ naturally with `out = "unpack"` to collect a family of objects back into
 a list:
 
 ``` r
-
 dat1 <- data.frame(x = 1)
 dat2 <- data.frame(x = 2)
 dat3 <- data.frame(x = 3)
@@ -278,7 +265,6 @@ The `verbosity` argument controls output:
 - `"quiet"` – no output
 
 ``` r
-
 # Full output for interactive use:
 df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
                   verbosity = "full")
@@ -294,7 +280,6 @@ Parses an XBRL XML document and returns a tidy tibble with one row per
 fact, joined to context (dates) and unit information. Requires `xml2`.
 
 ``` r
-
 df <- read_xbrl("report.xml")
 ```
 
@@ -305,7 +290,6 @@ The returned tibble has columns: `elementid`, `contextid`, `fact`,
 For non-UTF-8 files, pass `encoding`:
 
 ``` r
-
 df <- read_xbrl("report.xml", encoding = "latin1")
 ```
 
@@ -316,7 +300,6 @@ Reads all PDF files in a directory, extracts their text, and writes one
 workflow for financial statements. Requires `pdftools`.
 
 ``` r
-
 accounts_pdf_to_txt(
   pdf_dir = "data/pdf",
   txt_dir = "data/txt"
@@ -353,7 +336,6 @@ File names are used as identifiers in the `cvr` column. A trailing
 `_spec` suffix is stripped automatically.
 
 ``` r
-
 df <- accounts_txt_to_xlsx(
   txt_dir  = "data/txt",
   out_file = "data/output.xlsx",
@@ -392,7 +374,6 @@ Pass a data frame or a named list of data frames to `data`. Requires
 `overwrite = TRUE` if the file already exists.
 
 ``` r
-
 # Single data frame -- sheet name defaults to "Sheet1"
 write_pretty_xlsx(mtcars, "output.xlsx")
 
@@ -409,7 +390,6 @@ Sheet names come from the list names. Unnamed elements get default names
 (`"Sheet1"`, `"Sheet2"`, …). Mixed naming is also fine:
 
 ``` r
-
 # "Hoved" is explicit; second sheet becomes "Sheet2"
 write_pretty_xlsx(list(Hoved = mtcars, iris), "output.xlsx")
 ```
@@ -421,7 +401,6 @@ file must already exist, and `overwrite = TRUE` is required if a sheet
 of the same name is already present.
 
 ``` r
-
 # Add one sheet
 write_pretty_xlsx(append = list(Bilag = airquality), path = "output.xlsx")
 
@@ -436,7 +415,6 @@ write_pretty_xlsx(
 **Other options**
 
 ``` r
-
 # Insert as an Excel table (filter arrows, banded rows)
 write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
 
@@ -447,7 +425,6 @@ write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
 ### `read_ta()` / `write_ta()` – read and write Greenlandic TA files
 
 ``` r
-
 df <- read_ta("ta.file")
 write_ta(df, "ta.file")
 ```
@@ -466,7 +443,6 @@ every dataset supplied. Invaluable before joins or before binding with
 `read_files(out = "bind")`.
 
 ``` r
-
 df_a <- data.frame(x = 1L,  y = "a", z = TRUE)
 df_b <- data.frame(x = 1.0, y = "b", z = 1L)
 
@@ -480,7 +456,6 @@ view_types(df_a, df_b)
 ```
 
 ``` r
-
 # Only columns where types differ:
 view_types(df_a, df_b, diff = TRUE)
 #> # A tibble: 2 × 3
@@ -494,7 +469,6 @@ The `focus` argument checks that a specific column has an expected type
 and returns only the datasets where it does not:
 
 ``` r
-
 view_types(df_a, df_b, focus = c(x = "int"))
 #> # A tibble: 1 × 2
 #>   column df_b 
@@ -508,7 +482,6 @@ A simple answer to “what is taking up space?” – lists all objects in an
 environment sorted by size.
 
 ``` r
-
 big   <- 1:1e6
 small <- letters
 size_env()        # all objects, largest first
@@ -551,7 +524,6 @@ By filtering for impossibilities and piping through
 you have the offending rows at hand the moment something goes wrong.
 
 ``` r
-
 # Success:
 dplyr::starwars |>
   filter(name == "Harry Potter") |>
@@ -563,7 +535,6 @@ dplyr::starwars |>
 ```
 
 ``` r
-
 # Warning -- rows found:
 dplyr::starwars |>
   filter(mass > 1000) |>
@@ -572,7 +543,6 @@ dplyr::starwars |>
 ```
 
 ``` r
-
 # Hard abort:
 dplyr::starwars |>
   filter(mass > 1000) |>
@@ -584,7 +554,6 @@ eventually open RStudio to investigate, the errors are already
 collected:
 
 ``` r
-
 log_path <- f("log/{nowf()}/checks.log")
 checker  <- purrr::partial(expect_empty, log = log_path)
 
@@ -609,7 +578,6 @@ information but background data is missing for one person, the shared
 `dupid` reveals the connection.
 
 ``` r
-
 flag_duplicates(ggplot2::mpg)
 #> # A tibble: 234 × 13
 #>    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy
@@ -629,7 +597,6 @@ flag_duplicates(ggplot2::mpg)
 ```
 
 ``` r
-
 # Check specific columns:
 flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
   filter(isdup) |>
@@ -656,7 +623,6 @@ Combine with
 for a pipeline validation gate:
 
 ``` r
-
 ggplot2::mpg |>
   flag_duplicates() |>
   filter(isdup) |>
@@ -679,7 +645,6 @@ removes them. Unlike
 where *every* value is `NA`:
 
 ``` r
-
 df <- tibble::tibble(
   a = c(1, NA, 3),
   b = c(NA, NA, NA),
@@ -716,7 +681,6 @@ adds names derived from the grouping values, making it straightforward
 to index by group:
 
 ``` r
-
 parts <- split_by(ggplot2::mpg, manufacturer)
 names(parts)[1:5]
 #> [1] "audi"      "chevrolet" "dodge"     "ford"      "honda"
@@ -735,7 +699,6 @@ head(parts[["audi"]])
 Multiple grouping columns are joined with `.sep`:
 
 ``` r
-
 parts2 <- split_by(ggplot2::mpg, cyl, drv, .sep = "-")
 names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
@@ -750,7 +713,6 @@ specified total. Useful when importing accounting data where sign
 conventions are unknown.
 
 ``` r
-
 items <- data.frame(
   label = c("revenue", "costs", "tax", "total"),
   value = c(1000, 400, 100, 500)
@@ -763,7 +725,6 @@ find_signs(items, label, value, total_label = "total")
 Pin known signs and allow items to be excluded with `max_zeros`:
 
 ``` r
-
 find_signs(
   items,
   label, value,
@@ -786,7 +747,6 @@ century-detection rules. Dashes and spaces are stripped automatically;
 nine-digit numbers are zero-padded.
 
 ``` r
-
 df <- data.frame(
   pnr = c("1111111118", "111111-1118", "111111118"),
   stringsAsFactors = FALSE
@@ -802,7 +762,6 @@ cpr_info(df, pnr)
 Choose a subset of columns and optionally rename them:
 
 ``` r
-
 cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
 #>          pnr birth_date years_old
 #> 1 1111111118 1911-11-11       114
@@ -813,7 +772,6 @@ cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
 A custom reference date shifts the age calculation:
 
 ``` r
-
 cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 #>          pnr age
 #> 1 1111111118  88
@@ -832,7 +790,6 @@ Automatically captures any data frame returned to the console as
 intermediate result.
 
 ``` r
-
 track_last_df()          # enable
 
 dplyr::starwars |> head(3)
@@ -854,7 +811,6 @@ All columns that are not `x`, `y`, `series`, or excluded automatically
 become dropdown filters. Requires `shiny`, `ggplot2`, and `plotly`.
 
 ``` r
-
 df <- expand.grid(
   year    = 2010:2020,
   country = c("DK", "SE", "NO", "FI")
@@ -882,7 +838,6 @@ across all groups. The `.title` argument sets a title shown in the app
 header and in downloaded figures:
 
 ``` r
-
 screen_timeseries(df, year, gdp,
                   .y_min = 0, .y_max = 500,
                   .title = "GDP by country")
@@ -920,7 +875,6 @@ Selecting:
 produces:
 
 ``` r
-
 c(
   "12345678",
   "87654321",
