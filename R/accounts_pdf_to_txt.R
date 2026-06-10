@@ -21,7 +21,7 @@
 #' accounts_pdf_to_txt("data/pdf", "data/txt")
 #' }
 #'
-#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_inform
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_verbatim
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))
@@ -42,23 +42,27 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
 
   t0 <- Sys.time()
   written <- logical(n)
+  w_idx  <- nchar(as.character(n))
+  w_name <- max(nchar(names(pdf_files)))
   for (i in seq_along(pdf_files)) {
     pages <- pdftools::pdf_text(pdf_files[[i]])
     txt <- paste(pages, collapse = "\n")
+    prefix <- sprintf("[%*d/%d] %-*s", w_idx, i, n, w_name, names(pdf_files)[[i]])
 
     if (!nzchar(trimws(txt))) {
-      cli::cli_alert_warning(
-        "[{i}/{n}] {.file {basename(pdf_files[[i]])}}: no extractable text (probably a scanned PDF) -- skipped."
-      )
+      cli::cli_verbatim(paste0(prefix, "  skipped: no extractable text (probably a scanned PDF)"))
       next
     }
 
     cat(txt, file = out_paths[[i]])
     written[[i]] <- TRUE
     n_lines <- length(strsplit(txt, "\n", fixed = TRUE)[[1]])
-    cli::cli_inform(
-      "[{i}/{n}] {.file {basename(pdf_files[[i]])}} ({length(pages)} page{?s}, {n_lines} line{?s}) -> {.path {out_paths[[i]]}}"
-    )
+    n_pages <- length(pages)
+    cli::cli_verbatim(paste0(prefix, sprintf(
+      "  %4d %-5s %6d %s",
+      n_pages, if (n_pages == 1) "page" else "pages",
+      n_lines, if (n_lines == 1) "line" else "lines"
+    )))
   }
 
   n_skipped <- sum(!written)
