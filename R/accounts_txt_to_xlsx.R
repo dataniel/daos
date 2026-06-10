@@ -82,13 +82,18 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
     cvr <- names(raw)[[i]]
     cli::cli_progress_update(status = cvr)
     d <- raw[[i]]
-    file_nm <- basename(txt_files[[i]])
+    # Short file name as link text, absolute path as target, so the link
+    # resolves regardless of the working directory
+    file_lnk <- cli::style_hyperlink(
+      basename(txt_files[[i]]),
+      paste0("file://", normalizePath(txt_files[[i]], winslash = "/"))
+    )
 
     # Validate: no commas in value columns (row index == line number in file)
     bad_lines <- which(grepl(",", d$V2, fixed = TRUE) | grepl(",", d$V3, fixed = TRUE))
     if (length(bad_lines) > 0) {
       issues <- c(issues, cli::format_inline(
-        "{cvr}: comma in value columns ({cli::qty(length(bad_lines))}line{?s} {bad_lines} in {.file {file_nm}})"
+        "{cvr}: comma in value columns ({cli::qty(length(bad_lines))}line{?s} {bad_lines} in {file_lnk})"
       ))
       issue_cvrs <- c(issue_cvrs, cvr)
       next  # comma values cannot be parsed; skip to avoid derived NA noise
@@ -119,7 +124,7 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
     bad_note <- unique(out$elementid[is.na(out$note) | is.na(out$elementid)])
     if (length(bad_note) > 0) {
       issues <- c(issues, cli::format_inline(
-        "{cvr}: NA in note or elementid ({cli::qty(length(bad_note))}element{?s} {.val {bad_note}} in {.file {file_nm}})"
+        "{cvr}: NA in note or elementid ({cli::qty(length(bad_note))}element{?s} {.val {bad_note}} in {file_lnk})"
       ))
       issue_cvrs <- c(issue_cvrs, cvr)
     }
@@ -128,7 +133,7 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
     bad_val <- unique(out$elementid[is.na(out$val) & out$year == year_val])
     if (length(bad_val) > 0) {
       issues <- c(issues, cli::format_inline(
-        "{cvr}: non-numeric value in current year ({cli::qty(length(bad_val))}element{?s} {.val {bad_val}} in {.file {file_nm}})"
+        "{cvr}: non-numeric value in current year ({cli::qty(length(bad_val))}element{?s} {.val {bad_val}} in {file_lnk})"
       ))
       issue_cvrs <- c(issue_cvrs, cvr)
     }
