@@ -29,6 +29,7 @@ pak::pak("dataniel/daos")
 | `addin_fix_path()` | RStudio addin: replace backslashes with forward slashes in Windows paths |
 | `addin_paste_path()` | RStudio addin: paste Windows path from clipboard as a quoted R string |
 | `addin_flip_backslash()` | RStudio addin: replace all backslashes with forward slashes in selection |
+| `addin_open_in_explorer()` | RStudio addin: open the selected path (or `getwd()`) in the file explorer |
 | `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
 | `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |

@@ -83,6 +83,76 @@ test_that("flip() replaces backslashes outside of Windows paths", {
   expect_equal(flip("foo\\bar\\baz"), "foo/bar/baz")
 })
 
+# .resolve_path_text core logic --------------------------------------------
+
+test_that(".resolve_path_text returns an existing literal path as-is", {
+  f <- withr::local_tempfile()
+  writeLines("x", f)
+  expect_equal(daos:::.resolve_path_text(f), f)
+})
+
+test_that(".resolve_path_text strips surrounding quotes from a literal path", {
+  f <- withr::local_tempfile()
+  writeLines("x", f)
+  expect_equal(daos:::.resolve_path_text(paste0('"', f, '"')), f)
+  expect_equal(daos:::.resolve_path_text(paste0("'", f, "'")), f)
+})
+
+test_that(".resolve_path_text evaluates an object holding a path", {
+  f <- withr::local_tempfile()
+  writeLines("x", f)
+  e <- new.env()
+  assign("p", f, envir = e)
+  expect_equal(daos:::.resolve_path_text("p", envir = e), f)
+})
+
+test_that(".resolve_path_text evaluates a call returning a path", {
+  d <- withr::local_tempdir()
+  e <- new.env()
+  assign("d", d, envir = e)
+  expect_equal(
+    daos:::.resolve_path_text('file.path(d, "a")', envir = e),
+    file.path(d, "a")
+  )
+})
+
+test_that(".resolve_path_text falls back to the unquoted literal", {
+  expect_equal(daos:::.resolve_path_text("no_such_thing"), "no_such_thing")
+})
+
+test_that(".resolve_path_text returns NULL for blank text", {
+  expect_null(daos:::.resolve_path_text("   "))
+  expect_null(daos:::.resolve_path_text(""))
+})
+
+# .token_at_cursor core logic ----------------------------------------------
+
+test_that(".token_at_cursor grabs the object name under the cursor", {
+  line <- "x <- my_path"
+  # cursor anywhere inside 'my_path' (cols 7..13)
+  expect_equal(daos:::.token_at_cursor(line, 9), "my_path")
+  # cursor just after the token
+  expect_equal(daos:::.token_at_cursor(line, 13), "my_path")
+})
+
+test_that(".token_at_cursor captures an unquoted path including slashes", {
+  line <- "C:/Users/danie/data.csv"
+  expect_equal(daos:::.token_at_cursor(line, 5), "C:/Users/danie/data.csv")
+})
+
+test_that(".token_at_cursor stops the token at whitespace", {
+  line <- "open  my_path  now"
+  expect_equal(daos:::.token_at_cursor(line, 8), "my_path")
+})
+
+test_that(".token_at_cursor returns empty when the cursor is on whitespace", {
+  expect_equal(daos:::.token_at_cursor("a   b", 3), "")
+})
+
+test_that(".token_at_cursor returns empty for an empty line", {
+  expect_equal(daos:::.token_at_cursor("", 1), "")
+})
+
 # addin_text_to_vector core logic ------------------------------------------
 
 make_vector_result <- function(text) {

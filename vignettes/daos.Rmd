@@ -697,3 +697,22 @@ c(
 
 Useful for quickly wrapping CVR numbers, variable names, or any
 line-delimited list copied from Excel or a mail.
+
+### Open in file explorer
+
+Opens a location in the system file explorer.
+
+- **A path selected:** opens it directly if it is a folder, or reveals
+  the file inside its containing folder if it is a file
+- **An object or call selected:** the selection is evaluated as R code,
+  so `my_path` or `file.path(dir, "data.csv")` work too
+- **Just the cursor on a token (no selection):** the path-like word under
+  the cursor is used, so you can place the cursor on a path or an object
+  holding one without selecting it (paths with spaces still need to be
+  selected)
+- **Cursor on whitespace / nothing selected:** opens the current working
+  directory (`getwd()`)
+
+A literal path that exists on disk is used as-is; anything else is
+evaluated, making it easy to jump from a path stored in a variable
+straight to its location on disk.

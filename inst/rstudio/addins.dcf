@@ -17,3 +17,8 @@ Name: Flip backslashes
 Description: Replace all backslashes with forward slashes in the selected text.
 Binding: addin_flip_backslash
 Interactive: false
+
+Name: Open in file explorer
+Description: Open the selected path (or path object) in the file explorer, revealing files in their folder. With nothing selected, opens the working directory.
+Binding: addin_open_in_explorer
+Interactive: false

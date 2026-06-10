@@ -67,6 +67,7 @@ reference:
     contents:
       - addin_fix_path
       - addin_flip_backslash
+      - addin_open_in_explorer
       - addin_paste_path
       - addin_text_to_vector
 
