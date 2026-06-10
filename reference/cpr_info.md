@@ -51,14 +51,14 @@ The original data frame with the requested columns appended.
 
 **Supported info types** (`add` values):
 
-|           |         |                                                             |
-|-----------|---------|-------------------------------------------------------------|
-| Type      | Output  | Description                                                 |
-| `"bday"`  | Date    | Date of birth                                               |
-| `"age"`   | integer | Age in whole years at `ref_date`                            |
-| `"sex"`   | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
-| `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1)              |
-| `"valid"` | logical | Format valid *and* birth date parseable                     |
+|  |  |  |
+|----|----|----|
+| Type | Output | Description |
+| `"bday"` | Date | Date of birth |
+| `"age"` | integer | Age in whole years at `ref_date` |
+| `"sex"` | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
+| `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
+| `"valid"` | logical | Format valid *and* birth date parseable |
 
 **Century detection** follows the official CPR Register rules based on
 digit 7 and the two-digit year component.
