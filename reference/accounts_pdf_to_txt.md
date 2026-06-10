@@ -24,7 +24,14 @@ accounts_pdf_to_txt(pdf_dir, txt_dir)
 
 ## Value
 
-Invisibly, a character vector of paths to the written `.txt` files.
+Invisibly, a character vector of paths to the written `.txt` files
+(skipped PDFs are not included).
+
+## Details
+
+PDFs with no extractable text (blank or whitespace only – typically
+scanned/photo-printed annual reports) are skipped with a warning
+message; no `.txt` file is written for them.
 
 ## Examples
 

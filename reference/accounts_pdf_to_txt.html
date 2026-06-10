@@ -64,7 +64,14 @@ Created automatically if it does not exist.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Invisibly, a character vector of paths to the written <code>.txt</code> files.</p>
+    <p>Invisibly, a character vector of paths to the written <code>.txt</code> files
+(skipped PDFs are not included).</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>PDFs with no extractable text (blank or whitespace only – typically
+scanned/photo-printed annual reports) are skipped with a warning message;
+no <code>.txt</code> file is written for them.</p>
     </div>
 
     <div class="section level2">
