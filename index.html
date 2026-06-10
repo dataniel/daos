@@ -63,126 +63,131 @@
 <col width="43%">
 <col width="56%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Function</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>%??%</code></td>
 <td>Null-coalescing operator — returns a default when <code>x</code> is <code>NULL</code>, empty, all-<code>NA</code>, or all-<code>""</code>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>%like%</code></td>
 <td>Regex matching that preserves <code>NA</code> (unlike <code>grepl</code>)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/accounts_pdf_to_txt.html">accounts_pdf_to_txt()</a></code></td>
 <td>Convert PDF financial statements to text files</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/addin_fix_path.html">addin_fix_path()</a></code></td>
 <td>RStudio addin: replace backslashes with forward slashes in Windows paths</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/addin_paste_path.html">addin_paste_path()</a></code></td>
 <td>RStudio addin: paste Windows path from clipboard as a quoted R string</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/addin_flip_backslash.html">addin_flip_backslash()</a></code></td>
 <td>RStudio addin: replace all backslashes with forward slashes in selection</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/addin_open_in_explorer.html">addin_open_in_explorer()</a></code></td>
 <td>RStudio addin: open the selected path (or <code><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd()</a></code>) in the file explorer</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/addin_text_to_vector.html">addin_text_to_vector()</a></code></td>
 <td>RStudio addin: convert selected lines to an R character vector</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/accounts_txt_to_xlsx.html">accounts_txt_to_xlsx()</a></code></td>
 <td>Parse manually formatted text files and export to Excel</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/cpr_info.html">cpr_info()</a></code></td>
 <td>Extract birth date, age, sex, and validity from Danish CPR numbers</td>
 </tr>
-<tr class="odd">
+<tr>
+<td><code><a href="reference/drop_all_na.html">drop_all_na()</a></code></td>
+<td>Drop rows and/or columns that are entirely <code>NA</code>
+</td>
+</tr>
+<tr>
 <td><code><a href="reference/expect_empty.html">expect_empty()</a></code></td>
 <td>Pipeline checkpoint — warn or abort if a data frame is non-empty</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/f.html">f()</a></code></td>
 <td>String interpolation shorthand (<code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue</a></code> alias)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/find_signs.html">find_signs()</a></code></td>
 <td>Find sign assignments that reconcile a set of values to a total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/flag_duplicates.html">flag_duplicates()</a></code></td>
 <td>Prepend <code>isdup</code>/<code>dupid</code> columns to mark duplicate rows</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/is_blank.html">is_blank()</a></code></td>
 <td>Test whether a value is blank in the broadest sense</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/nowf.html">nowf()</a></code></td>
 <td>Formatted current timestamp, e.g. for file names</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/quiet.html">quiet()</a></code></td>
 <td>Suppress messages and warnings during evaluation</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/read_access.html">read_access()</a></code></td>
 <td>Read data from a Microsoft Access database via ODBC</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/read_files.html">read_files()</a></code></td>
 <td>Validate paths, read files (auto or custom reader), and optionally bind or unpack</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/read_ta.html">read_ta()</a></code></td>
 <td>Read Greenlandic TA files</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/write_ta.html">write_ta()</a></code></td>
 <td>Write Greenlandic TA files</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/read_xbrl.html">read_xbrl()</a></code></td>
 <td>Parse an XBRL file into a tidy tibble</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/screen_timeseries.html">screen_timeseries()</a></code></td>
 <td>Interactive Shiny dashboard for screening time-series data group by group</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/size_env.html">size_env()</a></code></td>
 <td>Show object sizes in an environment</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/split_by.html">split_by()</a></code></td>
 <td>Split a data frame into a named list by grouping columns</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/summon.html">summon()</a></code></td>
 <td>Retrieve objects matching a regex pattern from an environment</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/track_last_df.html">track_last_df()</a></code></td>
 <td>Auto-save the last printed data frame as <code>.last.df</code>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td><code><a href="reference/view_types.html">view_types()</a></code></td>
 <td>Compare column types across multiple data frames</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code><a href="reference/write_pretty_xlsx.html">write_pretty_xlsx()</a></code></td>
 <td>Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs</td>
 </tr>

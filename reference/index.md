@@ -39,12 +39,21 @@
 
 - [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
   : Compare column types across data frames
+
 - [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
   : Flag duplicate rows
+
 - [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
   : Assert that a data frame is empty
+
+- [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)
+  :
+
+  Drop all-`NA` rows and/or columns
+
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
+
 - [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
   : Find sign combinations that sum to a target
 
