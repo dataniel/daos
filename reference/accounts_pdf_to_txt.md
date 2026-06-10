@@ -2,7 +2,8 @@
 
 Reads all PDF files in a directory, extracts their text content using
 [`pdftools::pdf_text()`](https://docs.ropensci.org/pdftools//reference/pdftools.html),
-and writes one `.txt` file per PDF to the output directory.
+and writes one `.txt` file per PDF to the output directory. Progress is
+reported with one message per converted file, plus a summary when done.
 
 ## Usage
 
