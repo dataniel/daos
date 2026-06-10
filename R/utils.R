@@ -7,13 +7,15 @@ format_elapsed <- function(x) {
 
 # Hyperlink a path for cli messages: displays `text` (the path as given by
 # default), but links to the absolute path so the link resolves regardless of
-# the working directory. Falls back to plain text in terminals without
-# hyperlink support.
+# the working directory. RStudio's console only opens file:// links in the
+# editor (directories fail silently), so directories become run-links there,
+# opening the folder in the file explorer instead. Falls back to plain text in
+# terminals without hyperlink support.
 .path_link <- function(path, text = path) {
-  cli::style_hyperlink(
-    text,
-    paste0("file://", normalizePath(path, winslash = "/", mustWork = FALSE))
-  )
+  abs <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  if (dir.exists(path) && Sys.getenv("RSTUDIO") == "1")
+    return(cli::format_inline("{.run [{text}](daos:::.open_in_explorer('{abs}'))}"))
+  cli::style_hyperlink(text, paste0("file://", abs))
 }
 
 # Fill NAs with the last non-NA value above (like tidyr::fill, direction
