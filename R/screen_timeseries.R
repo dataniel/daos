@@ -205,7 +205,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
         if (!is.null(.title)) .title else "Time series screening"
       ),
       shiny::div(class = "header-hint",
-        shiny::tags$kbd("←"), "/", shiny::tags$kbd("→"), " navigate  ",
+        shiny::tags$kbd("\u2190"), "/", shiny::tags$kbd("\u2192"), " navigate  ",
         shiny::tags$kbd("Space"), " flag  ",
         shiny::tags$kbd("R"), " reset zoom  ",
         shiny::tags$kbd("Q"), " quit"
@@ -213,10 +213,10 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     ),
     shiny::div(class = "control-bar",
       shiny::div(class = "nav-group",
-        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "←"),
+        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "\u2190"),
         shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
-        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "→"),
-        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "★")
+        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192"),
+        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "\u2605")
       ),
       !!!dropdowns
     ),
@@ -317,11 +317,11 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
 
     output$counter <- shiny::renderText({
       n_flagged <- length(flagged())
-      flag_str  <- if (n_flagged > 0) paste0("  ★", n_flagged) else ""
+      flag_str  <- if (n_flagged > 0) paste0("  \u2605", n_flagged) else ""
       paste0(idx(), " / ", nrow(keys), flag_str)
     })
     output$plot_title <- shiny::renderText({
-      paste(as.character(unlist(current_key())), collapse = " · ")
+      paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
     })
     output$plot_subtitle <- shiny::renderText({
       d <- current_data()
@@ -332,9 +332,9 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
         obs_str   <- if (obs_range[1] == obs_range[2]) {
           paste0(obs_range[1], " observations each")
         } else {
-          paste0(obs_range[1], "–", obs_range[2], " observations")
+          paste0(obs_range[1], "\u2013", obs_range[2], " observations")
         }
-        paste0(n_series, " series · ", obs_str)
+        paste0(n_series, " series \u00b7 ", obs_str)
       } else {
         n_obs <- nrow(d)
         paste0(n_obs, " observation", if (n_obs == 1) "" else "s")

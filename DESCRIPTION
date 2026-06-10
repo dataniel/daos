@@ -37,6 +37,7 @@ Suggests:
     ggplot2,
     haven,
     plotly,
+    scales,
     jsonlite,
     readxl,
     shiny,
