@@ -22,6 +22,7 @@ Imports:
     xml2
 Suggests:
     arrow,
+    curl,
     rstudioapi,
     DBI,
     odbc,
