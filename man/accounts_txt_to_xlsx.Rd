@@ -35,6 +35,8 @@ result as an Excel file. Messages report how many files were collected and
 a summary when done. All companies are validated before any output is
 written; formatting problems abort with a combined message listing every
 offending company along with the file and the offending lines or elements.
+Files containing no data lines at all are skipped with a warning message;
+if no file yields any data the function aborts.
 }
 \details{
 \strong{Text file format:}

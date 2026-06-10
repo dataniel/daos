@@ -6,6 +6,8 @@
 #' a summary when done. All companies are validated before any output is
 #' written; formatting problems abort with a combined message listing every
 #' offending company along with the file and the offending lines or elements.
+#' Files containing no data lines at all are skipped with a warning message;
+#' if no file yields any data the function aborts.
 #'
 #' @details
 #' **Text file format:**
@@ -42,7 +44,7 @@
 #' accounts_txt_to_xlsx("data/txt", "data/output.xlsx", year = 2024)
 #' }
 #'
-#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_progress_bar cli_progress_update cli_progress_done
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_progress_bar cli_progress_update cli_progress_done
 #' @importFrom readr read_lines
 #' @importFrom dplyr mutate filter if_else bind_rows
 #' @importFrom tibble as_tibble tibble
@@ -107,6 +109,13 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3, overwr
     d <- dplyr::mutate(d, note = .fill_down(note))
     d <- dplyr::filter(d, V2 != "")
 
+    if (nrow(d) == 0) {
+      cli::cli_alert_warning(
+        "{cvr}: no data lines found in {file_lnk} (check the format or {.arg min_spaces}) -- skipped."
+      )
+      next
+    }
+
     # Long format: two rows per element (current year first, then last year)
     long <- tibble::tibble(
       note      = rep(d$note, each = 2),
@@ -158,6 +167,8 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3, overwr
   }
 
   data <- dplyr::bind_rows(parsed, .id = "cvr")
+  if (nrow(data) == 0)
+    cli::cli_abort("No data lines found in any txt file -- nothing to write.")
 
   writexl::write_xlsx(data, out_file)
   out_file_lnk <- .path_link(out_file)
