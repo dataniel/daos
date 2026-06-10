@@ -60,5 +60,5 @@ test_that(".path_link() uses an Explorer run-link for directories in RStudio", {
 
   link <- .path_link(dir)
   expect_match(link, "x-r-run", fixed = TRUE)
-  expect_match(link, ".open_in_explorer", fixed = TRUE)
+  expect_match(link, "daos::open_in_explorer", fixed = TRUE)
 })

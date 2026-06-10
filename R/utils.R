@@ -9,12 +9,14 @@ format_elapsed <- function(x) {
 # default), but links to the absolute path so the link resolves regardless of
 # the working directory. RStudio's console only opens file:// links in the
 # editor (directories fail silently), so directories become run-links there,
-# opening the folder in the file explorer instead. Falls back to plain text in
-# terminals without hyperlink support.
+# opening the folder in the file explorer instead. The run-link code must be
+# `pkg::fun(args)` from a loaded package -- RStudio refuses anything else,
+# including `:::` -- hence the exported open_in_explorer() wrapper. Falls
+# back to plain text in terminals without hyperlink support.
 .path_link <- function(path, text = path) {
   abs <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (dir.exists(path) && Sys.getenv("RSTUDIO") == "1")
-    return(cli::format_inline("{.run [{text}](daos:::.open_in_explorer('{abs}'))}"))
+    return(cli::format_inline("{.run [{text}](daos::open_in_explorer('{abs}'))}"))
   cli::style_hyperlink(text, paste0("file://", abs))
 }
 

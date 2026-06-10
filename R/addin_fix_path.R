@@ -121,6 +121,24 @@ addin_paste_path <- function() {
   invisible(path)
 }
 
+#' Open a path in the system file explorer
+#'
+#' Opens a directory directly, or reveals a file (selected) inside its
+#' containing folder. Used as the target of the directory links in cli
+#' messages: RStudio only executes link code of the form `pkg::fun(args)`
+#' from a loaded package, so this thin exported wrapper exists for the
+#' internal `.path_link()` helper to point at.
+#'
+#' @param path A file or directory path. Defaults to the working directory.
+#'
+#' @return `path`, invisibly.
+#'
+#' @keywords internal
+#' @export
+open_in_explorer <- function(path = getwd()) {
+  .open_in_explorer(path)
+}
+
 #' RStudio addin: open path in file explorer
 #'
 #' Opens a location in the system file explorer. The target is resolved to a
