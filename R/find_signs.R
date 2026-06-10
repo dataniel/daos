@@ -34,9 +34,8 @@
 #' )
 #' find_signs(items, label, value, total_label = "total")
 #'
-#' @importFrom cli cli_abort
-#' @importFrom dplyr group_by group_split group_keys bind_cols across all_of
-#' @importFrom purrr map list_rbind
+#' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done
+#' @importFrom dplyr group_by group_split group_keys bind_cols bind_rows across all_of
 #' @importFrom tibble as_tibble
 #' @export
 find_signs <- function(df, label_col, value_col, total_label = "total",
@@ -173,12 +172,14 @@ find_signs <- function(df, label_col, value_col, total_label = "total",
   grupper     <- df |> dplyr::group_by(dplyr::across(dplyr::all_of(by_cols_nm))) |> dplyr::group_split()
   gruppe_keys <- df |> dplyr::group_by(dplyr::across(dplyr::all_of(by_cols_nm))) |> dplyr::group_keys()
 
-  seq_along(grupper) |>
-    purrr::map(.progress = TRUE, \(i) {
-      res <- find_signs_group(grupper[[i]])
-      if (is.null(res)) return(NULL)
-      dplyr::bind_cols(gruppe_keys[i, ], res)
-    }) |>
-    purrr::list_rbind() |>
-    tibble::as_tibble()
+  results <- vector("list", length(grupper))
+  cli::cli_progress_bar("Finding signs", total = length(grupper))
+  for (i in seq_along(grupper)) {
+    res <- find_signs_group(grupper[[i]])
+    if (!is.null(res)) results[[i]] <- dplyr::bind_cols(gruppe_keys[i, ], res)
+    cli::cli_progress_update()
+  }
+  cli::cli_progress_done()
+
+  dplyr::bind_rows(results) |> tibble::as_tibble()
 }

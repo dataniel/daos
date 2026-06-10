@@ -7,8 +7,8 @@
 read_access(path, sql, verbosity = c("compact", "full", "quiet"))
 }
 \arguments{
-\item{path}{Path to the Access database file. Can be a string or an
-\code{\link[fs:path]{fs::path}} object. Both \code{.mdb} and \code{.accdb} files are supported.}
+\item{path}{Path to the Access database file. Both \code{.mdb} and \code{.accdb}
+files are supported.}
 
 \item{sql}{A SQL query string to execute against the database.}
 
@@ -35,9 +35,8 @@ data <- read_access("sales.mdb", "SELECT * FROM Customers",
                     verbosity = "full")
 
 # many files – compact output is the default
-files <- fs::dir_ls("data", glob = "*.mdb")
-all_data <- files |>
-  purrr::map(\(f) read_access(f, "SELECT * FROM Sales"))
+files <- list.files("data", pattern = "\\\\.mdb$", full.names = TRUE)
+all_data <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 }
 
 }

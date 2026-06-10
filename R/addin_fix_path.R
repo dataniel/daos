@@ -2,11 +2,9 @@
 # and replaces backslashes with forward slashes within them.
 # Avoids \(x) lambda syntax, \n, \t etc. by requiring path-like continuation.
 .fix_windows_paths <- function(text) {
-  stringr::str_replace_all(
-    text,
-    "(?:[A-Za-z]:\\\\|\\\\\\\\)[^\\s\"']*",
-    function(m) gsub("\\\\", "/", m)
-  )
+  m <- gregexpr("(?:[A-Za-z]:\\\\|\\\\\\\\)[^\\s\"']*", text, perl = TRUE)
+  regmatches(text, m) <- lapply(regmatches(text, m), \(x) gsub("\\\\", "/", x))
+  text
 }
 
 #' RStudio addin: convert lines to R character vector

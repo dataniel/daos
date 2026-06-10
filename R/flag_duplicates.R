@@ -53,8 +53,9 @@ flag_duplicates <- function(data, ...) {
   }
 
   dt <- data.table::as.data.table(data)
-  dt[, isdup := .N > 1, by = cols]
-  dt[, dupid := ifelse(isdup, .GRP, 0L), by = cols]
+  # Both columns in a single grouping pass; a per-group ifelse() is slow.
+  dt[, c("isdup", "dupid") := list(.N > 1L, .GRP), by = cols]
+  dt[!(isdup), dupid := 0L]
 
   data.table::setcolorder(dt, c("isdup", "dupid"))
 

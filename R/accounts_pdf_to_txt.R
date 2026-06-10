@@ -16,25 +16,24 @@
 #' }
 #'
 #' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done
-#' @importFrom fs dir_create dir_ls path_file path_ext_remove path
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))
     cli::cli_abort("Package {.pkg pdftools} is required to use {.fn accounts_pdf_to_txt}.")
 
-  fs::dir_create(txt_dir)
+  dir.create(txt_dir, recursive = TRUE, showWarnings = FALSE)
 
-  pdf_files <- fs::dir_ls(pdf_dir, glob = "*.pdf")
+  pdf_files <- list.files(pdf_dir, pattern = "\\.pdf$", full.names = TRUE)
   if (length(pdf_files) == 0)
     cli::cli_abort("No PDF files found in {.path {pdf_dir}}.")
 
-  pdf_files <- stats::setNames(pdf_files, fs::path_ext_remove(fs::path_file(pdf_files)))
+  pdf_files <- stats::setNames(pdf_files, tools::file_path_sans_ext(basename(pdf_files)))
 
-  out_paths <- fs::path(txt_dir, paste0(names(pdf_files), ".txt"))
+  out_paths <- file.path(txt_dir, paste0(names(pdf_files), ".txt"))
 
   cli::cli_progress_bar("Converting PDFs", total = length(pdf_files))
   for (i in seq_along(pdf_files)) {
-    cli::cli_progress_update(status = fs::path_file(pdf_files[[i]]))
+    cli::cli_progress_update(status = basename(pdf_files[[i]]))
     txt <- pdftools::pdf_text(pdf_files[[i]]) |> paste(collapse = "\n")
     cat(txt, file = out_paths[[i]])
   }

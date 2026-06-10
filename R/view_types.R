@@ -13,7 +13,8 @@
 #'   tibble (0 rows) when all types match — suitable for use in tests.
 #'
 #' @return A tibble with a `column` column and one column per input dataset
-#'   showing the [`pillar::type_sum()`] type string.
+#'   showing an abbreviated type string (`"int"`, `"dbl"`, `"chr"`, `"fct"`,
+#'   `"date"`, `"dttm"`, ...).
 #'
 #' @examples
 #' df1 <- data.frame(x = 1L, y = "a")
@@ -26,10 +27,8 @@
 #' @seealso [daos::read_files()]
 #'
 #' @importFrom rlang list2 enexprs .data
-#' @importFrom purrr map_chr map_lgl imap reduce
 #' @importFrom dplyr full_join filter n_distinct
 #' @importFrom tibble tibble
-#' @importFrom pillar type_sum
 #' @importFrom cli cli_abort
 #' @export
 view_types <- function(..., diff = FALSE, focus = NULL) {
@@ -38,17 +37,19 @@ view_types <- function(..., diff = FALSE, focus = NULL) {
 
   if (length(datasets) == 0) cli::cli_abort("Please supply at least one dataset.")
 
-  bad <- unique(purrr::map_chr(datasets, \(x) class(x)[1])[!purrr::map_lgl(datasets, is.data.frame)])
+  is_df <- vapply(datasets, is.data.frame, logical(1))
+  bad <- unique(vapply(datasets, \(x) class(x)[1], character(1))[!is_df])
   if (length(bad)) {
     cli::cli_abort(c("All inputs must be data frames or tibbles.",
                      "x" = "Invalid input type{?s}: {bad}."))
   }
 
-  out <- purrr::imap(datasets, \(data, nm) {
-    tibble::tibble(column = names(data),
-                   !!nm := purrr::map_chr(data, pillar::type_sum))
-  }) |>
-    purrr::reduce(dplyr::full_join, by = "column")
+  out <- Map(
+    \(data, nm) tibble::tibble(column = names(data),
+                               !!nm := vapply(data, .type_sum, character(1))),
+    datasets, names(datasets)
+  ) |>
+    Reduce(f = \(x, y) dplyr::full_join(x, y, by = "column"))
 
   if (!is.null(focus)) {
     if (!is.character(focus) || length(focus) != 1 || !rlang::is_named(focus)) {
@@ -57,7 +58,7 @@ view_types <- function(..., diff = FALSE, focus = NULL) {
     out <- dplyr::filter(out, .data[["column"]] == names(focus))
     if (nrow(out) == 0) cli::cli_abort("Column {.var {names(focus)}} was not found.")
 
-    keep <- purrr::map_lgl(out[-1], \(x) is.na(x) || x != unname(focus))
+    keep <- vapply(out[-1], \(x) is.na(x) || x != unname(focus), logical(1))
     out  <- out[, c(TRUE, keep)]
     if (ncol(out) == 1) out[0, ] else out
 
@@ -67,4 +68,25 @@ view_types <- function(..., diff = FALSE, focus = NULL) {
   } else {
     out
   }
+}
+
+# Abbreviated type string for a column, mirroring pillar::type_sum() for the
+# common cases ("int", "dbl", "chr", "fct", "date", "dttm", ...). Unknown
+# classed objects fall back to their first class name.
+.type_sum <- function(x) {
+  if (is.object(x)) {
+    if (is.factor(x))           return("fct")
+    if (inherits(x, "Date"))    return("date")
+    if (inherits(x, "POSIXct")) return("dttm")
+    if (inherits(x, "difftime")) return("drtn")
+    return(class(x)[1])
+  }
+  switch(typeof(x),
+         logical   = "lgl",
+         integer   = "int",
+         double    = "dbl",
+         character = "chr",
+         complex   = "cpl",
+         list      = "list",
+         typeof(x))
 }

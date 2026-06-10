@@ -21,11 +21,10 @@
 #' @seealso [daos::summon()] to retrieve objects matching a name pattern
 #'
 #' @importFrom dplyr group_keys group_by group_split
-#' @importFrom purrr pmap_chr
 #' @export
 split_by <- function(data, ..., .sep = "_") {
   keys   <- dplyr::group_keys(dplyr::group_by(data, ...))
   splits <- dplyr::group_split(data, ...)
-  names(splits) <- purrr::pmap_chr(keys, \(...) paste(..., sep = .sep))
+  names(splits) <- do.call(paste, c(keys, sep = .sep))
   splits
 }

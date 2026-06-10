@@ -9,7 +9,7 @@
 #'   returned.
 #'
 #' @return A tibble with columns `name` (character), `size` (numeric, bytes),
-#'   and `pretty` (fs_bytes, human-readable). Returns `NULL` invisibly if the
+#'   and `pretty` (character, human-readable). Returns `NULL` invisibly if the
 #'   environment is empty.
 #'
 #' @examples
@@ -18,10 +18,8 @@
 #' size_env()       # all objects
 #' size_env(n = 1)  # only the largest
 #'
-#' @importFrom purrr map_dbl
 #' @importFrom tibble tibble
 #' @importFrom dplyr arrange desc
-#' @importFrom fs as_fs_bytes
 #' @importFrom cli cli_alert_info
 #' @importFrom utils object.size head
 #' @export
@@ -34,13 +32,18 @@ size_env <- function(.envir = parent.frame(), n = NULL) {
     return(invisible(NULL))
   }
 
-  sizes <- purrr::map_dbl(
+  sizes <- vapply(
     objs,
-    \(x) as.numeric(utils::object.size(get(x, envir = .envir)))
+    \(x) as.numeric(utils::object.size(get(x, envir = .envir))),
+    numeric(1), USE.NAMES = FALSE
+  )
+  pretty <- vapply(
+    sizes,
+    \(s) format(structure(s, class = "object_size"), units = "auto"),
+    character(1)
   )
 
-  out <- tibble::tibble(name = objs, size = sizes,
-                        pretty = fs::as_fs_bytes(sizes)) |>
+  out <- tibble::tibble(name = objs, size = sizes, pretty = pretty) |>
     dplyr::arrange(dplyr::desc(.data$size))
 
   if (is.null(n)) out else utils::head(out, n)

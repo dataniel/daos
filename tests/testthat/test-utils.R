@@ -12,3 +12,27 @@ test_that("format_elapsed() formats minutes", {
   expect_equal(format_elapsed(as.difftime(90, units = "secs")), "1.5m")
   expect_equal(format_elapsed(as.difftime(60, units = "secs")), "1m")
 })
+
+test_that(".fill_down() carries the last non-NA value forward", {
+  expect_equal(.fill_down(c("a", NA, NA, "b", NA)), c("a", "a", "a", "b", "b"))
+  expect_equal(.fill_down(c(1, NA, 3)), c(1, 1, 3))
+})
+
+test_that(".fill_down() keeps leading NAs and handles edge cases", {
+  expect_equal(.fill_down(c(NA, NA, "x", NA)), c(NA, NA, "x", "x"))
+  expect_equal(.fill_down(character(0)), character(0))
+  expect_equal(.fill_down(c(NA_character_, NA_character_)),
+               c(NA_character_, NA_character_))
+})
+
+test_that(".split3() splits into exactly three fields", {
+  out <- .split3(c("a   b   c", "category line", "x   1.000   "), " {3,}")
+  expect_equal(out[1, ], c(V1 = "a", V2 = "b", V3 = "c"))
+  expect_equal(out[2, ], c(V1 = "category line", V2 = "", V3 = ""))
+  expect_equal(out[3, ], c(V1 = "x", V2 = "1.000", V3 = ""))
+})
+
+test_that(".split3() keeps extra delimiters in the third field", {
+  out <- .split3("a   b   c   d", " {3,}")
+  expect_equal(out[1, ], c(V1 = "a", V2 = "b", V3 = "c   d"))
+})

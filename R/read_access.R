@@ -3,8 +3,8 @@
 #' Connects to a Microsoft Access database (`.mdb` or `.accdb`) via ODBC,
 #' executes a SQL query, and returns the result as a tibble.
 #'
-#' @param path Path to the Access database file. Can be a string or an
-#'   [`fs::path`] object. Both `.mdb` and `.accdb` files are supported.
+#' @param path Path to the Access database file. Both `.mdb` and `.accdb`
+#'   files are supported.
 #' @param sql A SQL query string to execute against the database.
 #' @param verbosity Level of status output. One of:
 #'   * `"full"` – header, per-step spinners, and summary. Best for interactive
@@ -22,14 +22,12 @@
 #'                     verbosity = "full")
 #'
 #' # many files – compact output is the default
-#' files <- fs::dir_ls("data", glob = "*.mdb")
-#' all_data <- files |>
-#'   purrr::map(\(f) read_access(f, "SELECT * FROM Sales"))
+#' files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
+#' all_data <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 #' }
 #'
 #' @importFrom rlang arg_match
 #' @importFrom cli cli_abort cli_h1 cli_alert_info cli_alert_success cli_progress_step cli_progress_done cli_rule
-#' @importFrom fs file_exists path_abs path_file
 #' @importFrom glue glue
 #' @importFrom tibble as_tibble
 #' @export
@@ -39,7 +37,7 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
   if (!is.character(sql) || length(sql) != 1 || !nzchar(sql)) {
     cli::cli_abort("{.arg sql} must be a single non-empty string.")
   }
-  if (!fs::file_exists(path)) {
+  if (!file.exists(path)) {
     cli::cli_abort("File {.file {path}} does not exist.")
   }
 
@@ -62,11 +60,11 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
     ))
   }
 
-  conn_str <- glue::glue("Driver={{{access_driver}}};DBQ={fs::path_abs(path)};")
+  conn_str <- glue::glue("Driver={{{access_driver}}};DBQ={normalizePath(path, winslash = '/')};")
 
   if (verbosity == "full") {
     cli::cli_h1("Reading Access database")
-    cli::cli_alert_info("File: {.file {fs::path_file(path)}}")
+    cli::cli_alert_info("File: {.file {basename(path)}}")
     cli::cli_alert_info("Driver: {.val {access_driver}}")
 
     t_connect <- Sys.time()
@@ -101,7 +99,7 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
   data <- DBI::dbGetQuery(con, sql) |> tibble::as_tibble()
 
   cli::cli_alert_success(
-    "{.file {fs::path_file(path)}}: {.strong {format(nrow(data), big.mark = ',')}} \u00d7 {ncol(data)} {.timestamp {format_elapsed(Sys.time() - t_start)}}"
+    "{.file {basename(path)}}: {.strong {format(nrow(data), big.mark = ',')}} \u00d7 {ncol(data)} {.timestamp {format_elapsed(Sys.time() - t_start)}}"
   )
 
   data

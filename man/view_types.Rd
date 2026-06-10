@@ -20,7 +20,8 @@ tibble (0 rows) when all types match — suitable for use in tests.}
 }
 \value{
 A tibble with a \code{column} column and one column per input dataset
-showing the \code{\link[pillar:type_sum]{pillar::type_sum()}} type string.
+showing an abbreviated type string (\code{"int"}, \code{"dbl"}, \code{"chr"}, \code{"fct"},
+\code{"date"}, \code{"dttm"}, ...).
 }
 \description{
 Shows the column types of one or more data frames side-by-side. Useful

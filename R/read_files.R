@@ -80,11 +80,9 @@
 #' @seealso [daos::summon()], [daos::view_types()]
 #'
 #' @importFrom glue glue
-#' @importFrom fs file_exists path_file path_ext path_ext_remove
 #' @importFrom cli cli_abort cli_warn cli_progress_bar cli_progress_update cli_progress_done
 #' @importFrom stats setNames
-#' @importFrom purrr map list_rbind
-#' @importFrom dplyr mutate across everything
+#' @importFrom dplyr mutate across everything bind_rows
 #' @importFrom readr type_convert
 #' @export
 read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
@@ -105,11 +103,11 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     as.character(glue::glue(p, .envir = .envir))
   }))
 
-  missing_files <- files[!fs::file_exists(files)]
+  missing_files <- files[!file.exists(files)]
   if (length(missing_files) > 0) {
     cli::cli_abort(c(
       "{length(missing_files)} of {length(files)} file{?s} could not be found.",
-      stats::setNames(fs::path_file(missing_files), rep("x", length(missing_files)))
+      stats::setNames(basename(missing_files), rep("x", length(missing_files)))
     ))
   }
 
@@ -120,7 +118,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   } else if (!is.null(input_names) && length(input_names) == length(files)) {
     input_names
   } else {
-    files |> fs::path_file() |> fs::path_ext_remove()
+    tools::file_path_sans_ext(basename(files))
   }
 
   if (length(file_names) != length(files)) {
@@ -149,7 +147,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     base::names(result) <- base::names(files)
     cli::cli_progress_bar("Reading files", total = length(files))
     for (i in seq_along(files)) {
-      cli::cli_progress_update(status = fs::path_file(files[[i]]))
+      cli::cli_progress_update(status = basename(files[[i]]))
       result[[i]] <- maybe_lower(read_one(files[[i]]))
     }
     cli::cli_progress_done()
@@ -162,12 +160,11 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   }
 
   if (out == "bind") {
-    names_to <- if (is.null(.id)) rlang::zap() else .id
     coerce_id <- function(df) {
       if (!is.null(.id) && id_type == "numeric") df[[.id]] <- as.numeric(df[[.id]])
       df
     }
-    bound <- tryCatch(purrr::list_rbind(result, names_to = names_to), error = function(e) e)
+    bound <- tryCatch(dplyr::bind_rows(result, .id = .id), error = function(e) e)
     if (!inherits(bound, "error")) return(coerce_id(bound))
     cli::cli_warn(c(
       "Column types differ across files -- coercing to character and re-typing with {.fun readr::type_convert}.",
@@ -179,8 +176,8 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
       readr::cols()
     }
     return(
-      purrr::map(result, \(d) dplyr::mutate(d, dplyr::across(dplyr::everything(), as.character))) |>
-        purrr::list_rbind(names_to = names_to) |>
+      lapply(result, \(d) dplyr::mutate(d, dplyr::across(dplyr::everything(), as.character))) |>
+        dplyr::bind_rows(.id = .id) |>
         readr::type_convert(col_types = id_col_spec) |>
         coerce_id()
     )
@@ -280,7 +277,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     txt      = readr::read_lines
   )
 
-  ext <- tolower(fs::path_ext(path))
+  ext <- tolower(tools::file_ext(path))
   if (!ext %in% base::names(readers)) {
     cli::cli_abort(c(
       "No reader for {.field .{ext}} files.",

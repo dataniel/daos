@@ -19,7 +19,7 @@ input (data frame or tibble) is preserved.
 \description{
 Removes rows and/or columns that are entirely \code{NA} -- handy for tidying up
 data after a join or import has left empty rows or unused columns behind.
-Unlike \code{\link[tidyr:drop_na]{tidyr::drop_na()}}, which drops a row as soon as it contains a single
+Unlike \code{tidyr::drop_na()}, which drops a row as soon as it contains a single
 \code{NA}, this only drops rows (or columns) where \emph{every} value is \code{NA}.
 }
 \examples{
@@ -33,7 +33,4 @@ drop_all_na(df)                  # drops column b and the all-NA row
 drop_all_na(df, which = "rows")  # only the all-NA row
 drop_all_na(df, which = "cols")  # only column b
 
-}
-\seealso{
-\code{\link[tidyr:drop_na]{tidyr::drop_na()}}
 }

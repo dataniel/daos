@@ -36,7 +36,7 @@
 #' # With logging:
 #' \dontrun{
 #' log_path <- f("log/{nowf()}/checks.log")
-#' checker  <- purrr::partial(expect_empty, log = log_path)
+#' checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
 #'
 #' dplyr::filter(dplyr::starwars, name == "Harry Potter") |>
 #'   checker(success_msg = "No Harry Potter rows")
@@ -45,7 +45,6 @@
 #' @seealso [daos::flag_duplicates()]
 #'
 #' @importFrom cli cli_abort cli_warn cli_alert_success
-#' @importFrom fs dir_create path_dir
 #' @export
 expect_empty <- function(data,
                          success_msg = "The dataset is empty.",
@@ -59,7 +58,7 @@ expect_empty <- function(data,
 
   write_log <- function(symbol, msg) {
     if (is.null(log)) return(invisible())
-    fs::dir_create(fs::path_dir(log))
+    dir.create(dirname(log), recursive = TRUE, showWarnings = FALSE)
     cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "|", symbol, msg, "\n",
         file = log, append = TRUE)
   }

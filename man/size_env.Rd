@@ -15,7 +15,7 @@ returned.}
 }
 \value{
 A tibble with columns \code{name} (character), \code{size} (numeric, bytes),
-and \code{pretty} (fs_bytes, human-readable). Returns \code{NULL} invisibly if the
+and \code{pretty} (character, human-readable). Returns \code{NULL} invisibly if the
 environment is empty.
 }
 \description{

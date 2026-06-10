@@ -227,8 +227,8 @@ df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
                   verbosity = "full")
 
 # Loop over many databases quietly:
-files <- fs::dir_ls("data", glob = "*.mdb")
-results <- purrr::map(files, \(f) read_access(f, "SELECT * FROM Sales"))
+files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
+results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
 
 ### `read_xbrl()` -- parse an XBRL file
@@ -467,7 +467,7 @@ eventually open RStudio to investigate, the errors are already collected:
 
 ```{r, eval = FALSE}
 log_path <- f("log/{nowf()}/checks.log")
-checker  <- purrr::partial(expect_empty, log = log_path)
+checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
 
 dplyr::starwars |>
   filter(name == "Harry Potter") |>

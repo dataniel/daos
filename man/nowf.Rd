@@ -14,7 +14,7 @@ Default is \code{"\%Y\%m\%d"} (ISO date without separators).}
 A single character string with the formatted timestamp.
 }
 \description{
-A shorthand for \code{format(lubridate::now(), fmt)}. Useful for constructing
+A shorthand for \code{format(Sys.time(), fmt)}. Useful for constructing
 file names and log paths with a timestamp baked in.
 }
 \examples{

@@ -15,16 +15,10 @@ Imports:
     cli,
     data.table,
     dplyr,
-    fs,
     glue,
-    lubridate,
-    pillar,
-    purrr,
     readr,
     rlang,
-    stringr,
     tibble,
-    tidyr,
     xml2
 Suggests:
     arrow,

@@ -3,7 +3,7 @@
 #' @description
 #' Removes rows and/or columns that are entirely `NA` -- handy for tidying up
 #' data after a join or import has left empty rows or unused columns behind.
-#' Unlike [tidyr::drop_na()], which drops a row as soon as it contains a single
+#' Unlike `tidyr::drop_na()`, which drops a row as soon as it contains a single
 #' `NA`, this only drops rows (or columns) where *every* value is `NA`.
 #'
 #' @param data A data frame or tibble.
@@ -23,8 +23,6 @@
 #' drop_all_na(df)                  # drops column b and the all-NA row
 #' drop_all_na(df, which = "rows")  # only the all-NA row
 #' drop_all_na(df, which = "cols")  # only column b
-#'
-#' @seealso [tidyr::drop_na()]
 #'
 #' @importFrom cli cli_abort
 #' @importFrom dplyr select filter where if_all everything

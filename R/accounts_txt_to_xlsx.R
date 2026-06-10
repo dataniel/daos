@@ -38,30 +38,24 @@
 #' }
 #'
 #' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done
-#' @importFrom fs dir_ls path_file path_ext_remove
-#' @importFrom purrr map list_rbind
 #' @importFrom readr read_lines
-#' @importFrom stringr str_split_fixed str_detect str_remove_all str_remove str_to_lower
-#' @importFrom dplyr mutate filter rename if_else across
-#' @importFrom tidyr fill pivot_longer
-#' @importFrom tibble as_tibble
+#' @importFrom dplyr mutate filter if_else bind_rows
+#' @importFrom tibble as_tibble tibble
 #' @export
 accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
   if (!requireNamespace("writexl", quietly = TRUE))
     cli::cli_abort("Package {.pkg writexl} is required to use {.fn accounts_txt_to_xlsx}.")
 
   year_val <- year
-  yr       <- as.character(year)
-  yr_lag   <- as.character(year - 1)
   delim    <- paste0(" {", min_spaces, ",}")
 
-  txt_files <- fs::dir_ls(txt_dir, glob = "*.txt")
+  txt_files <- list.files(txt_dir, pattern = "\\.txt$", full.names = TRUE)
   if (length(txt_files) == 0)
     cli::cli_abort("No txt files found in {.path {txt_dir}}.")
 
   txt_files <- stats::setNames(
     txt_files,
-    sub("_spec$", "", fs::path_ext_remove(fs::path_file(txt_files)))
+    sub("_spec$", "", tools::file_path_sans_ext(basename(txt_files)))
   )
 
   # Read raw
@@ -69,36 +63,43 @@ accounts_txt_to_xlsx <- function(txt_dir, out_file, year, min_spaces = 3) {
   raw <- vector("list", length(txt_files))
   names(raw) <- names(txt_files)
   for (i in seq_along(txt_files)) {
-    cli::cli_progress_update(status = fs::path_file(txt_files[[i]]))
+    cli::cli_progress_update(status = basename(txt_files[[i]]))
     raw[[i]] <- readr::read_lines(txt_files[[i]]) |>
-      stringr::str_split_fixed(pattern = delim, n = 3) |>
-      tibble::as_tibble(.name_repair = ~ c("V1", "V2", "V3"))
+      .split3(pattern = delim) |>
+      tibble::as_tibble()
   }
   cli::cli_progress_done()
 
   # Validate: no commas in value columns
-  purrr::map(raw, ~ dplyr::filter(.x, stringr::str_detect(V2, ",") | stringr::str_detect(V3, ","))) |>
-    purrr::list_rbind(names_to = "cvr") |>
+  lapply(raw, \(d) dplyr::filter(d, grepl(",", V2, fixed = TRUE) |
+                                    grepl(",", V3, fixed = TRUE))) |>
+    dplyr::bind_rows(.id = "cvr") |>
     expect_empty(abort_msg = "Comma detected in value columns -- check text file formatting.")
 
   # Parse
-  data <- purrr::map(raw, function(d) {
-    d |>
-      dplyr::mutate(note = dplyr::if_else(V2 == "", V1, NA_character_), .before = 1) |>
-      tidyr::fill(note, .direction = "down") |>
-      dplyr::filter(V2 != "") |>
-      dplyr::rename(elementid = V1, !!yr := V2, !!yr_lag := V3) |>
-      tidyr::pivot_longer(-c(note, elementid), names_to = "year", values_to = "val") |>
-      dplyr::mutate(
-        val  = as.numeric(stringr::str_remove_all(val, "\\.")) / 1e3,
-        year = as.numeric(year),
-        note = trimws(note),
-        val  = dplyr::if_else(stringr::str_detect(note, "statnatio$"), -val, val),
-        note = stringr::str_remove(note, " statnatio$")
-      ) |>
-      dplyr::mutate(dplyr::across(c(note, elementid), stringr::str_to_lower))
+  data <- lapply(raw, function(d) {
+    d <- dplyr::mutate(d, note = dplyr::if_else(V2 == "", V1, NA_character_), .before = 1)
+    d <- dplyr::mutate(d, note = .fill_down(note))
+    d <- dplyr::filter(d, V2 != "")
+
+    # Long format: two rows per element (current year first, then last year)
+    long <- tibble::tibble(
+      note      = rep(d$note, each = 2),
+      elementid = rep(d$V1, each = 2),
+      year      = rep(c(year_val, year_val - 1), times = nrow(d)),
+      val       = c(rbind(d$V2, d$V3))  # interleave V2/V3 per element
+    )
+
+    dplyr::mutate(
+      long,
+      val  = as.numeric(gsub(".", "", val, fixed = TRUE)) / 1e3,
+      note = trimws(note),
+      val  = dplyr::if_else(grepl("statnatio$", note), -val, val),
+      note = tolower(sub(" statnatio$", "", note)),
+      elementid = tolower(elementid)
+    )
   }) |>
-    purrr::list_rbind(names_to = "cvr")
+    dplyr::bind_rows(.id = "cvr")
 
   # Validate: no NAs in note or elementid
   dplyr::filter(data, is.na(note) | is.na(elementid)) |>

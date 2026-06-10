@@ -49,7 +49,6 @@
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang enquo quo_is_null as_label syms
-#' @importFrom purrr map_lgl map walk map_chr map2
 #' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
 #' @export
 screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
@@ -72,7 +71,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
 
   has_series <- !rlang::quo_is_null(series_var)
 
-  list_cols <- names(data)[purrr::map_lgl(data, is.list)]
+  list_cols <- names(data)[vapply(data, is.list, logical(1))]
   if (length(list_cols) > 0) {
     data <- data |> dplyr::select(-dplyr::all_of(list_cols))
   }
@@ -100,7 +99,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     dplyr::group_by(!!!by) |>
     dplyr::group_keys()
 
-  dropdowns <- purrr::map(by_names, \(var) {
+  dropdowns <- lapply(by_names, \(var) {
     choices <- as.character(unique(keys[[var]]))
     shiny::div(
       class = "field",
@@ -282,13 +281,13 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     }
 
     find_idx <- function() {
-      current_values <- purrr::map_chr(by_names, \(var) {
+      current_values <- vapply(by_names, \(var) {
         val <- input[[paste0("group_", var)]]
         if (is.null(val)) NA_character_ else as.character(val)
-      })
-      matches <- purrr::map_lgl(seq_len(nrow(keys)), \(i) {
+      }, character(1))
+      matches <- vapply(seq_len(nrow(keys)), \(i) {
         all(as.character(unlist(keys[i, ])) == current_values)
-      })
+      }, logical(1))
       which(matches)[1]
     }
 
@@ -299,12 +298,15 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
       new_idx <- min(nrow(keys), idx() + 1L); idx(new_idx); sync_dropdowns(new_idx)
     })
 
-    purrr::walk(by_names, \(var) {
-      shiny::observeEvent(input[[paste0("group_", var)]], {
-        new_idx <- find_idx()
-        if (!is.na(new_idx) && new_idx != idx()) idx(new_idx)
-      }, ignoreInit = TRUE)
-    })
+    for (var in by_names) {
+      local({
+        var <- var
+        shiny::observeEvent(input[[paste0("group_", var)]], {
+          new_idx <- find_idx()
+          if (!is.na(new_idx) && new_idx != idx()) idx(new_idx)
+        }, ignoreInit = TRUE)
+      })
+    }
 
     current_data <- shiny::reactive({
       target <- keys[idx(), , drop = FALSE]

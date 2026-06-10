@@ -1,6 +1,6 @@
 #' Formatted timestamp for now
 #'
-#' A shorthand for `format(lubridate::now(), fmt)`. Useful for constructing
+#' A shorthand for `format(Sys.time(), fmt)`. Useful for constructing
 #' file names and log paths with a timestamp baked in.
 #'
 #' @param fmt Format string as accepted by [`strftime()`][base::strftime].
@@ -21,8 +21,7 @@
 #'
 #' @seealso [daos::f()] for string interpolation
 #'
-#' @importFrom lubridate now
 #' @export
 nowf <- function(fmt = "%Y%m%d") {
-  format(lubridate::now(), fmt)
+  format(Sys.time(), fmt)
 }
