@@ -89,9 +89,9 @@ inline without stopping to think about the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20260608"</span></span>
+<span><span class="co">#&gt; [1] "20260610"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-08 22:57"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-10 00:10"</span></span></code></pre></div>
 <p>A common pattern – timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -871,6 +871,32 @@ expression. Empty lines are ignored.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Useful for quickly wrapping CVR numbers, variable names, or any
 line-delimited list copied from Excel or a mail.</p>
+</div>
+<div class="section level3">
+<h3 id="open-in-file-explorer">Open in file explorer<a class="anchor" aria-label="anchor" href="#open-in-file-explorer"></a>
+</h3>
+<p>Opens a location in the system file explorer.</p>
+<ul>
+<li>
+<strong>A path selected:</strong> opens it directly if it is a
+folder, or reveals the file inside its containing folder if it is a
+file</li>
+<li>
+<strong>An object or call selected:</strong> the selection is
+evaluated as R code, so <code>my_path</code> or
+<code>file.path(dir, "data.csv")</code> work too</li>
+<li>
+<strong>Just the cursor on a token (no selection):</strong> the
+path-like word under the cursor is used, so you can place the cursor on
+a path or an object holding one without selecting it (paths with spaces
+still need to be selected)</li>
+<li>
+<strong>Cursor on whitespace / nothing selected:</strong> opens the
+current working directory (<code><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd()</a></code>)</li>
+</ul>
+<p>A literal path that exists on disk is used as-is; anything else is
+evaluated, making it easy to jump from a path stored in a variable
+straight to its location on disk.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
