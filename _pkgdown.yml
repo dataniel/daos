@@ -38,6 +38,7 @@ reference:
       - view_types
       - flag_duplicates
       - expect_empty
+      - drop_all_na
       - split_by
       - find_signs
 

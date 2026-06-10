@@ -33,6 +33,7 @@ pak::pak("dataniel/daos")
 | `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
 | `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| `drop_all_na()` | Drop rows and/or columns that are entirely `NA` |
 | `expect_empty()` | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `find_signs()` | Find sign assignments that reconcile a set of values to a total |

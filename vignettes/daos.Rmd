@@ -511,6 +511,25 @@ ggplot2::mpg |>
 
 ## Data manipulation
 
+### `drop_all_na()` -- drop empty rows and/or columns
+
+After a join or import you often end up with rows or columns that are
+entirely `NA`. `drop_all_na()` removes them. Unlike `tidyr::drop_na()`
+(which drops a row on the *first* `NA`), it only drops a row or column
+where *every* value is `NA`:
+
+```{r}
+df <- tibble::tibble(
+  a = c(1, NA, 3),
+  b = c(NA, NA, NA),
+  c = c("x", NA, "z")
+)
+
+drop_all_na(df)                  # column b and the all-NA row
+drop_all_na(df, which = "rows")  # only the all-NA row
+drop_all_na(df, which = "cols")  # only column b
+```
+
 ### `split_by()` -- split a data frame into a named list
 
 `dplyr::group_split()` returns an unnamed list. `split_by()` adds names
