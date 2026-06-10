@@ -2,8 +2,8 @@
 #'
 #' Reads all PDF files in a directory, extracts their text content using
 #' [`pdftools::pdf_text()`], and writes one `.txt` file per PDF to the output
-#' directory. Progress is reported with one message per converted file, plus
-#' a summary when done.
+#' directory. A progress bar is shown while converting; messages are only
+#' emitted for skipped PDFs, plus a summary when done.
 #'
 #' PDFs with no extractable text (blank or whitespace only -- typically
 #' scanned/photo-printed annual reports) are skipped with a warning message;
@@ -21,7 +21,7 @@
 #' accounts_pdf_to_txt("data/pdf", "data/txt")
 #' }
 #'
-#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_verbatim
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_progress_bar cli_progress_update cli_progress_done
 #' @export
 accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
   if (!requireNamespace("pdftools", quietly = TRUE))
@@ -42,37 +42,27 @@ accounts_pdf_to_txt <- function(pdf_dir, txt_dir) {
 
   t0 <- Sys.time()
   written <- logical(n)
-  w_idx  <- nchar(as.character(n))
-  w_name <- max(nchar(names(pdf_files)))
+  cli::cli_progress_bar("Converting PDFs", total = n)
   for (i in seq_along(pdf_files)) {
+    cli::cli_progress_update(status = names(pdf_files)[[i]])
     pages <- pdftools::pdf_text(pdf_files[[i]])
     txt <- paste(pages, collapse = "\n")
-    prefix <- sprintf("[%*d/%d] %-*s", w_idx, i, n, w_name, names(pdf_files)[[i]])
 
     if (!nzchar(trimws(txt))) {
-      cli::cli_verbatim(paste0(prefix, "  skipped: no extractable text (probably a scanned PDF)"))
+      cli::cli_alert_warning(
+        "{names(pdf_files)[[i]]}: no extractable text (probably a scanned PDF) -- skipped."
+      )
       next
     }
 
     cat(txt, file = out_paths[[i]])
     written[[i]] <- TRUE
-    n_lines <- length(strsplit(txt, "\n", fixed = TRUE)[[1]])
-    n_pages <- length(pages)
-    cli::cli_verbatim(paste0(prefix, sprintf(
-      "  %4d %-5s %6d %s",
-      n_pages, if (n_pages == 1) "page" else "pages",
-      n_lines, if (n_lines == 1) "line" else "lines"
-    )))
   }
+  cli::cli_progress_done()
 
-  n_skipped <- sum(!written)
   cli::cli_alert_success(
     "Wrote {sum(written)} text file{?s} to {.path {txt_dir}} in {format_elapsed(Sys.time() - t0)}."
   )
-  if (n_skipped > 0)
-    cli::cli_alert_warning(
-      "Skipped {n_skipped} PDF{?s} with no extractable text: {.file {basename(pdf_files[!written])}}."
-    )
 
   invisible(out_paths[written])
 }
