@@ -39,7 +39,7 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260611"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-11 12:14"
+#> [1] "2026-06-11 12:18"
 ```
 
 A common pattern – timestamping an export file:
@@ -374,6 +374,34 @@ of documents you download.
 The downloaded PDFs feed directly into
 [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
 below.
+
+### The accounts workflow – background
+
+The two `accounts_*` functions below were built for collecting financial
+statements and tax documents from a system with little digital maturity,
+where the only digital artefact may be the PDF itself (often a scan of a
+paper report). This is the situation behind the accounts statistics at
+Statistics Greenland, which is based on documents like these.
+
+The workflow has four steps:
+
+1.  **Convert** the PDFs to text files with
+    [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md).
+2.  **Format** the text files by hand: financial statements are
+    inherently table-like, so the relevant lines are shaped into the
+    simple space-delimited format described under
+    [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
+    below.
+3.  **Parse and combine** all text files into a single validated Excel
+    file with
+    [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md).
+4.  **Review and code** in Excel: the element labels are free text taken
+    from the PDFs, so this is where they can be checked and mapped to a
+    classification if needed.
+
+Nothing in the method is tied to that setting, though – the same steps
+work for any workflow that has to go from PDF reports through manual
+review to structured data.
 
 ### `accounts_pdf_to_txt()` – convert PDF accounts to text
 
