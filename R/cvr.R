@@ -30,7 +30,6 @@
 #'
 #' @seealso [cvr_search()], [cvr_hits()], [cvr_download()]
 #' @family cvr
-#' @keywords internal
 #'
 #' @importFrom cli cli_abort
 #' @export
@@ -97,7 +96,6 @@ cvr_query <- function(cvr, enddate_from, enddate_to, size = 2999) {
 #'
 #' @seealso [cvr_query()], [cvr_hits()], [cvr_download()]
 #' @family cvr
-#' @keywords internal
 #'
 #' @importFrom cli cli_abort cli_alert_success cli_warn
 #' @export
@@ -163,7 +161,6 @@ cvr_search <- function(query, contact,
 #'
 #' @seealso [cvr_query()], [cvr_search()], [cvr_download()]
 #' @family cvr
-#' @keywords internal
 #'
 #' @importFrom cli cli_alert_info cli_warn
 #' @importFrom dplyr bind_rows
@@ -227,7 +224,6 @@ cvr_hits <- function(response) {
 #' @seealso [cvr_query()], [cvr_search()], [cvr_hits()],
 #'   [accounts_pdf_to_txt()] for the next step of the workflow.
 #' @family cvr
-#' @keywords internal
 #'
 #' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning cli_progress_bar cli_progress_update cli_progress_done
 #' @export

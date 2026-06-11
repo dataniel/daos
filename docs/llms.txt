@@ -34,6 +34,10 @@ pak::pak("dataniel/daos")
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
 | [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md) | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md) | Build an Elasticsearch query for CVR annual reports |
+| [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md) | Send a query to the CVR distribution service |
+| [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md) | Extract CVR search hits as a tibble |
+| [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md) | Download the documents found by a CVR search |
 | [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md) | Drop rows and/or columns that are entirely `NA` |
 | [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
@@ -145,6 +149,17 @@ pak::pak("dataniel/daos")
   : Convert PDF files to text files
 - [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
   : Parse formatted text files and export to Excel
+
+## CVR annual reports
+
+- [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md)
+  : Build an Elasticsearch query for CVR annual reports
+- [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md)
+  : Send a query to the CVR distribution service
+- [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md)
+  : Extract CVR search hits as a tibble
+- [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
+  : Download CVR documents
 
 ## RStudio addins
 

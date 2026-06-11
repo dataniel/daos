@@ -250,6 +250,37 @@ For non-UTF-8 files, pass `encoding`:
 df <- read_xbrl("report.xml", encoding = "latin1")
 ```
 
+### CVR annual reports -- the download pipeline
+
+Four functions form a pipeline for fetching published annual reports from
+Erhvervsstyrelsens distribution service: build the query, send it, extract
+the hits, download the documents. Requires `curl` and `jsonlite`.
+
+```{r, eval = FALSE}
+cvr_query(
+  cvr          = c("12345678", "87654321"),
+  enddate_from = "2024-01-01",
+  enddate_to   = "2024-12-31"
+) |>
+  cvr_search(contact = "you@example.com") |>
+  cvr_hits() |>
+  cvr_download("data/pdf")
+```
+
+- `cvr_query()` builds the Elasticsearch query (pure, no network). Matches
+  by CVR number (max 1000 per query) and accounting-period end date.
+- `cvr_search()` posts the query. The `contact` argument is mandatory and is
+  sent as the `User-Agent` header -- Erhvervsstyrelsen requires requests to
+  identify the sender. A warning is issued if the result may be truncated
+  by the query's `size`.
+- `cvr_hits()` flattens the response into a tibble with one row per
+  document (`cvrnummer`, `dokumenturl`, ...).
+- `cvr_download()` downloads the documents, named by CVR number, with a
+  polite delay between requests (min. 1 second, default 3) and the same
+  `overwrite` guard as the other writers in the package.
+
+The downloaded PDFs feed directly into `accounts_pdf_to_txt()` below.
+
 ### `accounts_pdf_to_txt()` -- convert PDF accounts to text
 
 Reads all PDF files in a directory, extracts their text, and writes one

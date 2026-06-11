@@ -89,6 +89,17 @@
 - [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
   : Parse formatted text files and export to Excel
 
+## CVR annual reports
+
+- [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md)
+  : Build an Elasticsearch query for CVR annual reports
+- [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md)
+  : Send a query to the CVR distribution service
+- [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md)
+  : Extract CVR search hits as a tibble
+- [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
+  : Download CVR documents
+
 ## RStudio addins
 
 - [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)

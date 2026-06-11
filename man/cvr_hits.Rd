@@ -37,4 +37,3 @@ Other cvr:
 \code{\link[=cvr_search]{cvr_search()}}
 }
 \concept{cvr}
-\keyword{internal}
