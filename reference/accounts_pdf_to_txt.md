@@ -9,7 +9,7 @@ PDFs, plus a summary when done.
 ## Usage
 
 ``` r
-accounts_pdf_to_txt(pdf_dir, txt_dir)
+accounts_pdf_to_txt(pdf_dir, txt_dir, overwrite = FALSE)
 ```
 
 ## Arguments
@@ -22,6 +22,11 @@ accounts_pdf_to_txt(pdf_dir, txt_dir)
 
   Path to the directory where text files will be written. Created
   automatically if it does not exist.
+
+- overwrite:
+
+  If `FALSE` (default), the function aborts when any of the `.txt` files
+  it would write already exist. Set to `TRUE` to replace them.
 
 ## Value
 

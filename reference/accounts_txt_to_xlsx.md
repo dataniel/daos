@@ -6,12 +6,19 @@ exports the result as an Excel file. Messages report how many files were
 collected and a summary when done. All companies are validated before
 any output is written; formatting problems abort with a combined message
 listing every offending company along with the file and the offending
-lines or elements.
+lines or elements. Files containing no data lines at all are skipped
+with a warning message; if no file yields any data the function aborts.
 
 ## Usage
 
 ``` r
-accounts_txt_to_xlsx(txt_dir, out_file, year, min_spaces = 3)
+accounts_txt_to_xlsx(
+  txt_dir,
+  out_file,
+  year,
+  min_spaces = 3,
+  overwrite = FALSE
+)
 ```
 
 ## Arguments
@@ -32,6 +39,11 @@ accounts_txt_to_xlsx(txt_dir, out_file, year, min_spaces = 3)
 
   Minimum number of consecutive spaces used as field delimiter. Default
   `3`.
+
+- overwrite:
+
+  If `FALSE` (default), the function aborts when `out_file` already
+  exists. Set to `TRUE` to replace it.
 
 ## Value
 
