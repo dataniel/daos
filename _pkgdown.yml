@@ -84,3 +84,10 @@ articles:
     navbar: ~
     contents:
       - daos
+
+  - title: Guides
+    navbar: Guides
+    contents:
+      - validation
+      - accounts
+      - cvr

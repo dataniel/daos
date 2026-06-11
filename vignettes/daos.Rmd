@@ -250,138 +250,19 @@ For non-UTF-8 files, pass `encoding`:
 df <- read_xbrl("report.xml", encoding = "latin1")
 ```
 
-### CVR annual reports -- the download pipeline
+### Accounts and CVR workflows -- see the dedicated articles
 
-Four functions form a pipeline for fetching published annual reports from
-Erhvervsstyrelsens distribution service: build the query, send it, extract
-the hits, download the documents. Requires `curl` and `jsonlite`.
+Two larger workflows have their own articles instead of a walkthrough
+here:
 
-```{r, eval = FALSE}
-cvr_query(
-  cvr          = c("12345678", "87654321"),
-  enddate_from = "2024-01-01",
-  enddate_to   = "2024-12-31"
-) |>
-  cvr_search(contact = "you@example.com") |>
-  cvr_hits() |>
-  cvr_download("data/pdf")
-```
-
-- `cvr_query()` builds the Elasticsearch query (pure, no network). Matches
-  by CVR number (max 1000 per query) and accounting-period end date.
-- `cvr_search()` posts the query. The `contact` argument is mandatory and is
-  sent as the `User-Agent` header -- Erhvervsstyrelsen requires requests to
-  identify the sender. A warning is issued if the result may be truncated
-  by the query's `size`; use `scroll = TRUE` to fetch all matching hits in
-  batches instead.
-- `cvr_hits()` flattens the response into a tibble with one row per
-  document (`cvrnummer`, `dokumenturl`, ...).
-- `cvr_download()` downloads the documents, named by CVR number, with a
-  polite delay between requests (min. 1 second, default 3) and the same
-  `overwrite` guard as the other writers in the package.
-
-**Volume -- use the download step with care.** Each hit is one published
-annual report, and its `dokumenter` array typically holds several files
-(PDF, XML/XBRL, sometimes XHTML), so expect roughly 3-5 document rows per
-company per year in the hits tibble. The query selects *companies and
-periods*; selecting which *documents* to download is done in R, between
-`cvr_hits()` and `cvr_download()`:
-
-```{r, eval = FALSE}
-hits <- hits |> dplyr::filter(dokumentmimetype == "application/pdf")
-```
-
-The arithmetic matters: 1000 companies for one year is ~1000 hits but
-3000--5000 documents, which at the default `sleep = 3` is 2.5--4 hours of
-downloading. Filtering to one mimetype first cuts it to ~1000 files
-(under an hour).
-
-Note that `scroll` solves a different problem: it is for when the *search
-result* holds more hits than the query's `size` allows (e.g. many
-companies across many years) -- it does not reduce the number of
-documents you download.
-
-The downloaded PDFs feed directly into `accounts_pdf_to_txt()` below.
-
-### The accounts workflow -- background
-
-The two `accounts_*` functions below were built for collecting financial
-statements and tax documents from a system with little digital maturity,
-where the only digital artefact may be the PDF itself (often a scan of a
-paper report). This is the situation behind the accounts statistics at
-Statistics Greenland, which is based on documents like these.
-
-The workflow has four steps:
-
-1. **Convert** the PDFs to text files with `accounts_pdf_to_txt()`.
-2. **Format** the text files by hand: financial statements are inherently
-   table-like, so the relevant lines are shaped into the simple
-   space-delimited format described under `accounts_txt_to_xlsx()` below.
-3. **Parse and combine** all text files into a single validated Excel file
-   with `accounts_txt_to_xlsx()`.
-4. **Review and code** in Excel: the element labels are free text taken
-   from the PDFs, so this is where they can be checked and mapped to a
-   classification if needed.
-
-Nothing in the method is tied to that setting, though -- the same steps
-work for any workflow that has to go from PDF reports through manual
-review to structured data.
-
-### `accounts_pdf_to_txt()` -- convert PDF accounts to text
-
-Reads all PDF files in a directory, extracts their text, and writes one
-`.txt` file per PDF. Intended as the first step in a manual review
-workflow for financial statements. Requires `pdftools`.
-
-```{r, eval = FALSE}
-accounts_pdf_to_txt(
-  pdf_dir = "data/pdf",
-  txt_dir = "data/txt"
-)
-```
-
-The output directory is created automatically if it does not exist.
-File names (typically CVR numbers) are preserved.
-
-### `accounts_txt_to_xlsx()` -- parse accounts text files to Excel
-
-Parses manually formatted text files and exports the result as an Excel
-file. Requires `writexl`.
-
-**Text file format**
-
-Each line is either a *category line* or a *data line*:
-
-- **Category line:** a single string with no field delimiter. Sets the
-  `note` value for all subsequent data lines.
-- **Data line:** three fields separated by `min_spaces` or more
-  consecutive spaces: (1) element name, (2) amount for `year`,
-  (3) amount for `year - 1`.
-
-Amounts must be whole kroner; periods used as thousands separators are
-stripped automatically. If no previous-year amount exists, the third
-field may be empty -- it becomes `NA`.
-
-Appending ` statnatio` to a category line negates all amounts in that
-category, useful when costs appear with a positive sign in notes. The
-suffix is stripped from the final output.
-
-File names are used as identifiers in the `cvr` column. A trailing
-`_spec` suffix is stripped automatically.
-
-```{r, eval = FALSE}
-df <- accounts_txt_to_xlsx(
-  txt_dir  = "data/txt",
-  out_file = "data/output.xlsx",
-  year     = 2024
-)
-```
-
-Three validation checks run automatically and abort on failure:
-
-1. Comma in value columns -- indicates wrong decimal separator
-2. `NA` in `note` or `elementid` -- indicates a missing category line
-3. `NA` in current-year values -- indicates a parsing failure
+- `vignette("cvr")` -- responsible use of the `cvr_*` pipeline for
+  fetching published annual reports from Erhvervsstyrelsens distribution
+  service: `cvr_query()`, `cvr_search()`, `cvr_hits()`,
+  `cvr_download()`.
+- `vignette("accounts")` -- the manual accounts workflow behind
+  `accounts_pdf_to_txt()` and `accounts_txt_to_xlsx()`: from PDF
+  reports through hand-formatted text files to one validated, tidy
+  Excel file.
 
 ### `write_pretty_xlsx()` -- write to Excel with sensible defaults
 
@@ -503,6 +384,10 @@ size_env(n = 2)   # top 2 only
 ---
 
 ## Data validation
+
+The checkpoint pattern behind these two functions -- and how to build
+lightweight validation into pipelines with them -- has its own article:
+`vignette("validation")`.
 
 ### `expect_empty()` -- assert a data frame is empty
 
