@@ -1,7 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://dataniel.github.io/daos/404.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/articles/accounts.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/articles/cvr.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/articles/daos.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/articles/index.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/articles/validation.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/authors.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/index.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/LICENSE-text.html</loc></url>
