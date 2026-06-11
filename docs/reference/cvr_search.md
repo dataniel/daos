@@ -13,6 +13,7 @@ extract the hits as a tibble.
 cvr_search(
   query,
   contact,
+  scroll = FALSE,
   url = "http://distribution.virk.dk/offentliggoerelser/_search"
 )
 ```
@@ -30,6 +31,13 @@ cvr_search(
   `User-Agent` header). Erhvervsstyrelsen requires requests to identify
   the sender; use an email address.
 
+- scroll:
+
+  Controls how results are fetched. `FALSE` (default): one request, at
+  most `query$size` hits. `TRUE`: use the Elasticsearch scroll API to
+  fetch *all* matching hits in batches of 500 (`query$size` is ignored).
+  A number: like `TRUE` but with that batch size.
+
 - url:
 
   The endpoint to post to. Defaults to the offentliggoerelser search
@@ -37,9 +45,10 @@ cvr_search(
 
 ## Value
 
-The parsed JSON response as a nested list. A warning is issued if the
-response holds as many hits as the query's `size` allows, since the
-result may then be truncated.
+The parsed JSON response as a nested list; with `scroll`, the batches
+are combined into one response of the same shape. Without `scroll`, a
+warning is issued if the response holds as many hits as the query's
+`size` allows, since the result may then be truncated.
 
 ## See also
 
@@ -58,5 +67,9 @@ Other cvr:
 if (FALSE) { # \dontrun{
 response <- cvr_query("12345678", "2024-01-01", "2024-12-31") |>
   cvr_search(contact = "you@example.com")
+
+# Large pulls: fetch every matching hit in batches
+response <- cvr_query(many_cvrs, "2015-01-01", "2024-12-31") |>
+  cvr_search(contact = "you@example.com", scroll = TRUE)
 } # }
 ```

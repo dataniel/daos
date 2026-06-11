@@ -81,25 +81,34 @@ cvr_query <- function(cvr, enddate_from, enddate_to, size = 2999) {
 #' @param contact A non-empty string identifying you to the API (sent as the
 #'   `User-Agent` header). Erhvervsstyrelsen requires requests to identify
 #'   the sender; use an email address.
+#' @param scroll Controls how results are fetched. `FALSE` (default): one
+#'   request, at most `query$size` hits. `TRUE`: use the Elasticsearch scroll
+#'   API to fetch *all* matching hits in batches of 500 (`query$size` is
+#'   ignored). A number: like `TRUE` but with that batch size.
 #' @param url The endpoint to post to. Defaults to the offentliggoerelser
 #'   search endpoint.
 #'
-#' @return The parsed JSON response as a nested list. A warning is issued if
-#'   the response holds as many hits as the query's `size` allows, since the
-#'   result may then be truncated.
+#' @return The parsed JSON response as a nested list; with `scroll`, the
+#'   batches are combined into one response of the same shape. Without
+#'   `scroll`, a warning is issued if the response holds as many hits as the
+#'   query's `size` allows, since the result may then be truncated.
 #'
 #' @examples
 #' \dontrun{
 #' response <- cvr_query("12345678", "2024-01-01", "2024-12-31") |>
 #'   cvr_search(contact = "you@example.com")
+#'
+#' # Large pulls: fetch every matching hit in batches
+#' response <- cvr_query(many_cvrs, "2015-01-01", "2024-12-31") |>
+#'   cvr_search(contact = "you@example.com", scroll = TRUE)
 #' }
 #'
 #' @seealso [cvr_query()], [cvr_hits()], [cvr_download()]
 #' @family cvr
 #'
-#' @importFrom cli cli_abort cli_alert_success cli_warn
+#' @importFrom cli cli_abort cli_alert_success cli_warn cli_progress_bar cli_progress_update cli_progress_done
 #' @export
-cvr_search <- function(query, contact,
+cvr_search <- function(query, contact, scroll = FALSE,
                        url = "http://distribution.virk.dk/offentliggoerelser/_search") {
   for (pkg in c("curl", "jsonlite"))
     if (!requireNamespace(pkg, quietly = TRUE))
@@ -111,31 +120,56 @@ cvr_search <- function(query, contact,
       "i" = "Erhvervsstyrelsen requires requests to identify the sender; use an email address."
     ))
 
-  h <- curl::new_handle()
-  curl::handle_setheaders(h,
-    "Content-Type" = "application/json",
-    "User-Agent"   = contact
+  if (!isFALSE(scroll) && !isTRUE(scroll) &&
+      !(is.numeric(scroll) && length(scroll) == 1 && scroll >= 1))
+    cli::cli_abort("{.arg scroll} must be `TRUE`, `FALSE`, or a single batch size >= 1.")
+
+  if (isFALSE(scroll)) {
+    parsed <- .cvr_post(url, .cvr_json(query), contact)
+
+    n_hits <- length(parsed$hits$hits)
+    cli::cli_alert_success("CVR API request succeeded (HTTP 200, {n_hits} hit{?s}).")
+    if (!is.null(query$size) && n_hits >= query$size)
+      cli::cli_warn(c(
+        "The response holds {n_hits} hits -- as many as the query {.arg size} allows.",
+        "i" = "The result may be truncated. Use {.code scroll = TRUE} to fetch all hits."
+      ))
+    return(parsed)
+  }
+
+  # Scroll mode: fetch all hits in batches. The scroll context is kept alive
+  # for 5 minutes between calls; continuation requests go to /_search/scroll
+  # at the root of the host.
+  query$size <- if (isTRUE(scroll)) 500L else as.integer(scroll)
+
+  parsed <- .cvr_post(paste0(url, "?scroll=5m"), .cvr_json(query), contact)
+  scroll_id <- parsed[["_scroll_id"]]
+  if (is.null(scroll_id))
+    cli::cli_abort("The response contains no scroll id -- the endpoint may not support scrolling.")
+
+  all_hits <- parsed$hits$hits
+  batch <- all_hits
+  n_batches <- 1L
+  cli::cli_progress_bar("Scrolling CVR hits", total = NA)
+  while (length(batch) > 0) {
+    cli::cli_progress_update(status = paste0(length(all_hits), " hits"))
+    Sys.sleep(1)
+    nxt <- .cvr_post(
+      paste0(.scroll_url(url), "?scroll=5m&scroll_id=",
+             utils::URLencode(scroll_id, reserved = TRUE)),
+      "", contact
+    )
+    if (!is.null(nxt[["_scroll_id"]])) scroll_id <- nxt[["_scroll_id"]]
+    batch <- nxt$hits$hits
+    all_hits <- c(all_hits, batch)
+    n_batches <- n_batches + 1L
+  }
+  cli::cli_progress_done()
+
+  parsed$hits$hits <- all_hits
+  cli::cli_alert_success(
+    "CVR API scroll completed: {length(all_hits)} hit{?s} in {n_batches} request{?s}."
   )
-  curl::handle_setopt(
-    h,
-    postfields = as.character(jsonlite::toJSON(query, auto_unbox = TRUE))
-  )
-
-  resp <- curl::curl_fetch_memory(url, handle = h)
-  if (resp$status_code != 200)
-    cli::cli_abort("The CVR API request failed with HTTP status {resp$status_code}.")
-
-  parsed <- jsonlite::fromJSON(rawToChar(resp$content), simplifyVector = FALSE)
-
-  n_hits <- length(parsed$hits$hits)
-  cli::cli_alert_success("CVR API request succeeded (HTTP 200, {n_hits} hit{?s}).")
-  if (!is.null(query$size) && n_hits >= query$size)
-    cli::cli_warn(c(
-      "The response holds {n_hits} hits -- as many as the query {.arg size} allows.",
-      "i" = "The result may be truncated. Split the request into smaller batches
-             (fewer CVR numbers or a shorter date range) and combine the results."
-    ))
-
   parsed
 }
 
@@ -303,4 +337,31 @@ cvr_download <- function(hits, path, sleep = 3, overwrite = FALSE) {
   if (length(d) != 1 || is.na(d))
     cli::cli_abort("{.arg {arg}} must be a single valid date in 'YYYY-MM-DD' format.")
   d
+}
+
+.cvr_json <- function(query) {
+  as.character(jsonlite::toJSON(query, auto_unbox = TRUE))
+}
+
+# POST `body` to `url` with the contact as User-Agent and return the parsed
+# JSON response; abort on any non-200 status.
+.cvr_post <- function(url, body, contact) {
+  h <- curl::new_handle()
+  curl::handle_setheaders(h,
+    "Content-Type" = "application/json",
+    "User-Agent"   = contact
+  )
+  curl::handle_setopt(h, postfields = body)
+
+  resp <- curl::curl_fetch_memory(url, handle = h)
+  if (resp$status_code != 200)
+    cli::cli_abort("The CVR API request failed with HTTP status {resp$status_code}.")
+
+  jsonlite::fromJSON(rawToChar(resp$content), simplifyVector = FALSE)
+}
+
+# Scroll continuations go to /_search/scroll at the root of the host, not
+# under the index path.
+.scroll_url <- function(url) {
+  paste0(sub("^(https?://[^/]+).*$", "\\1", url), "/_search/scroll")
 }

@@ -38,6 +38,25 @@ test_that("cvr_query() validates cvr numbers", {
   )
 })
 
+test_that(".scroll_url() targets /_search/scroll at the host root", {
+  expect_equal(
+    .scroll_url("http://distribution.virk.dk/offentliggoerelser/_search"),
+    "http://distribution.virk.dk/_search/scroll"
+  )
+  expect_equal(
+    .scroll_url("https://example.com:9200/index/_search"),
+    "https://example.com:9200/_search/scroll"
+  )
+})
+
+test_that("cvr_search() validates the scroll argument", {
+  skip_if_not_installed("curl")
+  skip_if_not_installed("jsonlite")
+  q <- cvr_query("12345678", "2024-01-01", "2024-12-31")
+  expect_error(cvr_search(q, contact = "x@y.dk", scroll = "ja"), "scroll")
+  expect_error(cvr_search(q, contact = "x@y.dk", scroll = 0), "scroll")
+})
+
 test_that("cvr_query() validates dates", {
   expect_error(cvr_query("12345678", NULL, "2024-12-31"), "valid date")
   expect_error(cvr_query("12345678", "2024-01-01", "ikke en dato"), "valid date")

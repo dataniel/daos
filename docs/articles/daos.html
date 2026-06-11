@@ -91,7 +91,7 @@ inline without stopping to think about the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20260611"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-11 09:04"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-11 12:07"</span></span></code></pre></div>
 <p>A common pattern – timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -352,7 +352,8 @@ accounting-period end date.</li>
 argument is mandatory and is sent as the <code>User-Agent</code> header
 – Erhvervsstyrelsen requires requests to identify the sender. A warning
 is issued if the result may be truncated by the query’s
-<code>size</code>.</li>
+<code>size</code>; use <code>scroll = TRUE</code> to fetch all matching
+hits in batches instead.</li>
 <li>
 <code><a href="../reference/cvr_hits.html">cvr_hits()</a></code> flattens the response into a tibble with one
 row per document (<code>cvrnummer</code>, <code>dokumenturl</code>,

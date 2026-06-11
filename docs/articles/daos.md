@@ -39,7 +39,7 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260611"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-11 09:04"
+#> [1] "2026-06-11 12:07"
 ```
 
 A common pattern – timestamping an export file:
@@ -336,7 +336,8 @@ cvr_query(
   posts the query. The `contact` argument is mandatory and is sent as
   the `User-Agent` header – Erhvervsstyrelsen requires requests to
   identify the sender. A warning is issued if the result may be
-  truncated by the query’s `size`.
+  truncated by the query’s `size`; use `scroll = TRUE` to fetch all
+  matching hits in batches instead.
 - [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md)
   flattens the response into a tibble with one row per document
   (`cvrnummer`, `dokumenturl`, …).

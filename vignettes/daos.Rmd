@@ -272,7 +272,8 @@ cvr_query(
 - `cvr_search()` posts the query. The `contact` argument is mandatory and is
   sent as the `User-Agent` header -- Erhvervsstyrelsen requires requests to
   identify the sender. A warning is issued if the result may be truncated
-  by the query's `size`.
+  by the query's `size`; use `scroll = TRUE` to fetch all matching hits in
+  batches instead.
 - `cvr_hits()` flattens the response into a tibble with one row per
   document (`cvrnummer`, `dokumenturl`, ...).
 - `cvr_download()` downloads the documents, named by CVR number, with a

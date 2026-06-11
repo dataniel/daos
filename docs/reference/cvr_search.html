@@ -46,6 +46,7 @@ service and returns the parsed JSON response. Pass the result to
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cvr_search</span><span class="op">(</span></span>
 <span>  <span class="va">query</span>,</span>
 <span>  <span class="va">contact</span>,</span>
+<span>  scroll <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  url <span class="op">=</span> <span class="st">"http://distribution.virk.dk/offentliggoerelser/_search"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -64,6 +65,13 @@ service and returns the parsed JSON response. Pass the result to
 the sender; use an email address.</p></dd>
 
 
+<dt id="arg-scroll">scroll<a class="anchor" aria-label="anchor" href="#arg-scroll"></a></dt>
+<dd><p>Controls how results are fetched. <code>FALSE</code> (default): one
+request, at most <code>query$size</code> hits. <code>TRUE</code>: use the Elasticsearch scroll
+API to fetch <em>all</em> matching hits in batches of 500 (<code>query$size</code> is
+ignored). A number: like <code>TRUE</code> but with that batch size.</p></dd>
+
+
 <dt id="arg-url">url<a class="anchor" aria-label="anchor" href="#arg-url"></a></dt>
 <dd><p>The endpoint to post to. Defaults to the offentliggoerelser
 search endpoint.</p></dd>
@@ -71,9 +79,10 @@ search endpoint.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>The parsed JSON response as a nested list. A warning is issued if
-the response holds as many hits as the query's <code>size</code> allows, since the
-result may then be truncated.</p>
+    <p>The parsed JSON response as a nested list; with <code>scroll</code>, the
+batches are combined into one response of the same shape. Without
+<code>scroll</code>, a warning is issued if the response holds as many hits as the
+query's <code>size</code> allows, since the result may then be truncated.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -89,6 +98,10 @@ result may then be truncated.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">response</span> <span class="op">&lt;-</span> <span class="fu"><a href="cvr_query.html">cvr_query</a></span><span class="op">(</span><span class="st">"12345678"</span>, <span class="st">"2024-01-01"</span>, <span class="st">"2024-12-31"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">cvr_search</span><span class="op">(</span>contact <span class="op">=</span> <span class="st">"you@example.com"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Large pulls: fetch every matching hit in batches</span></span></span>
+<span class="r-in"><span><span class="va">response</span> <span class="op">&lt;-</span> <span class="fu"><a href="cvr_query.html">cvr_query</a></span><span class="op">(</span><span class="va">many_cvrs</span>, <span class="st">"2015-01-01"</span>, <span class="st">"2024-12-31"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">cvr_search</span><span class="op">(</span>contact <span class="op">=</span> <span class="st">"you@example.com"</span>, scroll <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

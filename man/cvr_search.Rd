@@ -7,6 +7,7 @@
 cvr_search(
   query,
   contact,
+  scroll = FALSE,
   url = "http://distribution.virk.dk/offentliggoerelser/_search"
 )
 }
@@ -17,13 +18,19 @@ cvr_search(
 \code{User-Agent} header). Erhvervsstyrelsen requires requests to identify
 the sender; use an email address.}
 
+\item{scroll}{Controls how results are fetched. \code{FALSE} (default): one
+request, at most \code{query$size} hits. \code{TRUE}: use the Elasticsearch scroll
+API to fetch \emph{all} matching hits in batches of 500 (\code{query$size} is
+ignored). A number: like \code{TRUE} but with that batch size.}
+
 \item{url}{The endpoint to post to. Defaults to the offentliggoerelser
 search endpoint.}
 }
 \value{
-The parsed JSON response as a nested list. A warning is issued if
-the response holds as many hits as the query's \code{size} allows, since the
-result may then be truncated.
+The parsed JSON response as a nested list; with \code{scroll}, the
+batches are combined into one response of the same shape. Without
+\code{scroll}, a warning is issued if the response holds as many hits as the
+query's \code{size} allows, since the result may then be truncated.
 }
 \description{
 Posts a query built with \code{\link[=cvr_query]{cvr_query()}} to Erhvervsstyrelsens distribution
@@ -34,6 +41,10 @@ service and returns the parsed JSON response. Pass the result to
 \dontrun{
 response <- cvr_query("12345678", "2024-01-01", "2024-12-31") |>
   cvr_search(contact = "you@example.com")
+
+# Large pulls: fetch every matching hit in batches
+response <- cvr_query(many_cvrs, "2015-01-01", "2024-12-31") |>
+  cvr_search(contact = "you@example.com", scroll = TRUE)
 }
 
 }
