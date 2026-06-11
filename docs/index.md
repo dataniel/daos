@@ -30,9 +30,11 @@ pak::pak("dataniel/daos")
 | [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md) | RStudio addin: replace backslashes with forward slashes in Windows paths |
 | [`addin_paste_path()`](https://dataniel.github.io/daos/reference/addin_paste_path.md) | RStudio addin: paste Windows path from clipboard as a quoted R string |
 | [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md) | RStudio addin: replace all backslashes with forward slashes in selection |
+| [`addin_open_in_explorer()`](https://dataniel.github.io/daos/reference/addin_open_in_explorer.md) | RStudio addin: open the selected path (or [`getwd()`](https://rdrr.io/r/base/getwd.html)) in the file explorer |
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
 | [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md) | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md) | Drop rows and/or columns that are entirely `NA` |
 | [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
 | [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md) | Find sign assignments that reconcile a set of values to a total |

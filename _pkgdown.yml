@@ -15,6 +15,16 @@ navbar:
 home:
   strip_header: true
 
+# Keep the internal cvr_* helpers out of the site's search index. NB: pkgdown
+# still renders their pages and lists them in sitemap.xml on every build --
+# delete docs/reference/cvr_* and the sitemap lines manually after rebuilding.
+search:
+  exclude:
+    - reference/cvr_query.html
+    - reference/cvr_search.html
+    - reference/cvr_hits.html
+    - reference/cvr_download.html
+
 reference:
   - title: General utilities
     contents:

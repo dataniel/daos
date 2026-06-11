@@ -75,7 +75,7 @@ dplyr::filter(dplyr::starwars, height < 0) |>
 # With logging:
 if (FALSE) { # \dontrun{
 log_path <- f("log/{nowf()}/checks.log")
-checker  <- purrr::partial(expect_empty, log = log_path)
+checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
 
 dplyr::filter(dplyr::starwars, name == "Harry Potter") |>
   checker(success_msg = "No Harry Potter rows")

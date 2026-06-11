@@ -37,9 +37,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260608"
+#> [1] "20260610"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-08 20:57"
+#> [1] "2026-06-10 23:44"
 ```
 
 A common pattern – timestamping an export file:
@@ -285,8 +285,8 @@ df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
                   verbosity = "full")
 
 # Loop over many databases quietly:
-files <- fs::dir_ls("data", glob = "*.mdb")
-results <- purrr::map(files, \(f) read_access(f, "SELECT * FROM Sales"))
+files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
+results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
 
 ### `read_xbrl()` – parse an XBRL file
@@ -514,23 +514,23 @@ big   <- 1:1e6
 small <- letters
 size_env()        # all objects, largest first
 #> # A tibble: 9 × 3
-#>   name      size      pretty
-#>   <chr>    <dbl> <fs::bytes>
-#> 1 big    4000048       3.81M
-#> 2 result    2648       2.59K
-#> 3 small     1712       1.67K
-#> 4 df_a      1064       1.04K
-#> 5 df_b      1064       1.04K
-#> 6 dat1       736         736
-#> 7 dat2       736         736
-#> 8 dat3       736         736
-#> 9 year        56          56
+#>   name      size pretty   
+#>   <chr>    <dbl> <chr>    
+#> 1 big    4000048 3.8 Mb   
+#> 2 result    2648 2.6 Kb   
+#> 3 small     1712 1.7 Kb   
+#> 4 df_a      1064 1 Kb     
+#> 5 df_b      1064 1 Kb     
+#> 6 dat1       736 736 bytes
+#> 7 dat2       736 736 bytes
+#> 8 dat3       736 736 bytes
+#> 9 year        56 56 bytes
 size_env(n = 2)   # top 2 only
 #> # A tibble: 2 × 3
-#>   name      size      pretty
-#>   <chr>    <dbl> <fs::bytes>
-#> 1 big    4000048       3.81M
-#> 2 result    2648       2.59K
+#>   name      size pretty
+#>   <chr>    <dbl> <chr> 
+#> 1 big    4000048 3.8 Mb
+#> 2 result    2648 2.6 Kb
 ```
 
 ------------------------------------------------------------------------
@@ -587,7 +587,7 @@ collected:
 ``` r
 
 log_path <- f("log/{nowf()}/checks.log")
-checker  <- purrr::partial(expect_empty, log = log_path)
+checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
 
 dplyr::starwars |>
   filter(name == "Harry Potter") |>
@@ -668,6 +668,45 @@ ggplot2::mpg |>
 ------------------------------------------------------------------------
 
 ## Data manipulation
+
+### `drop_all_na()` – drop empty rows and/or columns
+
+After a join or import you often end up with rows or columns that are
+entirely `NA`.
+[`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)
+removes them. Unlike
+[`tidyr::drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html)
+(which drops a row on the *first* `NA`), it only drops a row or column
+where *every* value is `NA`:
+
+``` r
+
+df <- tibble::tibble(
+  a = c(1, NA, 3),
+  b = c(NA, NA, NA),
+  c = c("x", NA, "z")
+)
+
+drop_all_na(df)                  # column b and the all-NA row
+#> # A tibble: 2 × 2
+#>       a c    
+#>   <dbl> <chr>
+#> 1     1 x    
+#> 2     3 z
+drop_all_na(df, which = "rows")  # only the all-NA row
+#> # A tibble: 2 × 3
+#>       a b     c    
+#>   <dbl> <lgl> <chr>
+#> 1     1 NA    x    
+#> 2     3 NA    z
+drop_all_na(df, which = "cols")  # only column b
+#> # A tibble: 3 × 2
+#>       a c    
+#>   <dbl> <chr>
+#> 1     1 x    
+#> 2    NA NA   
+#> 3     3 z
+```
 
 ### `split_by()` – split a data frame into a named list
 
@@ -892,3 +931,22 @@ c(
 
 Useful for quickly wrapping CVR numbers, variable names, or any
 line-delimited list copied from Excel or a mail.
+
+### Open in file explorer
+
+Opens a location in the system file explorer.
+
+- **A path selected:** opens it directly if it is a folder, or reveals
+  the file inside its containing folder if it is a file
+- **An object or call selected:** the selection is evaluated as R code,
+  so `my_path` or `file.path(dir, "data.csv")` work too
+- **Just the cursor on a token (no selection):** the path-like word
+  under the cursor is used, so you can place the cursor on a path or an
+  object holding one without selecting it (paths with spaces still need
+  to be selected)
+- **Cursor on whitespace / nothing selected:** opens the current working
+  directory ([`getwd()`](https://rdrr.io/r/base/getwd.html))
+
+A literal path that exists on disk is used as-is; anything else is
+evaluated, making it easy to jump from a path stored in a variable
+straight to its location on disk.

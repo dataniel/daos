@@ -1,7 +1,7 @@
 # Formatted timestamp for now
 
-A shorthand for `format(lubridate::now(), fmt)`. Useful for constructing
-file names and log paths with a timestamp baked in.
+A shorthand for `format(Sys.time(), fmt)`. Useful for constructing file
+names and log paths with a timestamp baked in.
 
 ## Usage
 
@@ -30,9 +30,9 @@ interpolation
 
 ``` r
 nowf()                 # e.g. "20260518"
-#> [1] "20260608"
+#> [1] "20260610"
 nowf("%Y%m%d_%H%M%S")  # e.g. "20260518_143022"
-#> [1] "20260608_205635"
+#> [1] "20260610_234305"
 nowf("%Y%B")           # e.g. "2026May"
 #> [1] "2026juni"
 
