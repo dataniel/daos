@@ -21,7 +21,9 @@ the sender; use an email address.}
 search endpoint.}
 }
 \value{
-The parsed JSON response as a nested list.
+The parsed JSON response as a nested list. A warning is issued if
+the response holds as many hits as the query's \code{size} allows, since the
+result may then be truncated.
 }
 \description{
 Posts a query built with \code{\link[=cvr_query]{cvr_query()}} to Erhvervsstyrelsens distribution

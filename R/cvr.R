@@ -85,7 +85,9 @@ cvr_query <- function(cvr, enddate_from, enddate_to, size = 2999) {
 #' @param url The endpoint to post to. Defaults to the offentliggoerelser
 #'   search endpoint.
 #'
-#' @return The parsed JSON response as a nested list.
+#' @return The parsed JSON response as a nested list. A warning is issued if
+#'   the response holds as many hits as the query's `size` allows, since the
+#'   result may then be truncated.
 #'
 #' @examples
 #' \dontrun{
@@ -97,7 +99,7 @@ cvr_query <- function(cvr, enddate_from, enddate_to, size = 2999) {
 #' @family cvr
 #' @keywords internal
 #'
-#' @importFrom cli cli_abort cli_alert_success
+#' @importFrom cli cli_abort cli_alert_success cli_warn
 #' @export
 cvr_search <- function(query, contact,
                        url = "http://distribution.virk.dk/offentliggoerelser/_search") {
@@ -125,8 +127,18 @@ cvr_search <- function(query, contact,
   if (resp$status_code != 200)
     cli::cli_abort("The CVR API request failed with HTTP status {resp$status_code}.")
 
-  cli::cli_alert_success("CVR API request succeeded (HTTP 200).")
-  jsonlite::fromJSON(rawToChar(resp$content), simplifyVector = FALSE)
+  parsed <- jsonlite::fromJSON(rawToChar(resp$content), simplifyVector = FALSE)
+
+  n_hits <- length(parsed$hits$hits)
+  cli::cli_alert_success("CVR API request succeeded (HTTP 200, {n_hits} hit{?s}).")
+  if (!is.null(query$size) && n_hits >= query$size)
+    cli::cli_warn(c(
+      "The response holds {n_hits} hits -- as many as the query {.arg size} allows.",
+      "i" = "The result may be truncated. Split the request into smaller batches
+             (fewer CVR numbers or a shorter date range) and combine the results."
+    ))
+
+  parsed
 }
 
 #' Extract CVR search hits as a tibble
