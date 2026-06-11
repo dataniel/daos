@@ -235,6 +235,10 @@ cvr_hits <- function(response) {
 #' row, named by CVR number (repeated CVR numbers get a `_2`, `_3`, ...
 #' suffix). A delay between requests keeps the load on the API polite.
 #'
+#' Each company-year typically lists several files (PDF, XML/XBRL, sometimes
+#' XHTML), so filter the hits tibble before downloading if you only need one
+#' format -- e.g. `dplyr::filter(hits, dokumentmimetype == "application/pdf")`.
+#'
 #' @param hits A tibble with `cvrnummer` and `dokumenturl` columns, typically
 #'   from [cvr_hits()].
 #' @param path Directory to download into. Created automatically if it does

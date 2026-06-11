@@ -28,6 +28,11 @@ Downloads the documents listed in a tibble from \code{\link[=cvr_hits]{cvr_hits(
 row, named by CVR number (repeated CVR numbers get a \verb{_2}, \verb{_3}, ...
 suffix). A delay between requests keeps the load on the API polite.
 }
+\details{
+Each company-year typically lists several files (PDF, XML/XBRL, sometimes
+XHTML), so filter the hits tibble before downloading if you only need one
+format -- e.g. \code{dplyr::filter(hits, dokumentmimetype == "application/pdf")}.
+}
 \examples{
 \dontrun{
 cvr_query("12345678", "2024-01-01", "2024-12-31") |>

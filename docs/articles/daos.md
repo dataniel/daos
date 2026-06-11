@@ -39,7 +39,7 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 nowf()                  # default: YYYYMMDD
 #> [1] "20260611"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-11 12:07"
+#> [1] "2026-06-11 12:14"
 ```
 
 A common pattern – timestamping an export file:
@@ -345,6 +345,31 @@ cvr_query(
   downloads the documents, named by CVR number, with a polite delay
   between requests (min. 1 second, default 3) and the same `overwrite`
   guard as the other writers in the package.
+
+**Volume – use the download step with care.** Each hit is one published
+annual report, and its `dokumenter` array typically holds several files
+(PDF, XML/XBRL, sometimes XHTML), so expect roughly 3-5 document rows
+per company per year in the hits tibble. The query selects *companies
+and periods*; selecting which *documents* to download is done in R,
+between
+[`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md)
+and
+[`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md):
+
+``` r
+
+hits <- hits |> dplyr::filter(dokumentmimetype == "application/pdf")
+```
+
+The arithmetic matters: 1000 companies for one year is ~1000 hits but
+3000–5000 documents, which at the default `sleep = 3` is 2.5–4 hours of
+downloading. Filtering to one mimetype first cuts it to ~1000 files
+(under an hour).
+
+Note that `scroll` solves a different problem: it is for when the
+*search result* holds more hits than the query’s `size` allows
+(e.g. many companies across many years) – it does not reduce the number
+of documents you download.
 
 The downloaded PDFs feed directly into
 [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
