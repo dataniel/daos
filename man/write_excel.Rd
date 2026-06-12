@@ -44,7 +44,7 @@ Creates a new \code{.xlsx} workbook with formatting applied: the header row is
 bold and frozen, \code{NA} values are shown as blank cells, and numeric columns
 are formatted with a thousand separator and no displayed decimals (\verb{#,##0})
 when the column contains at least one value >= 1000. Underlying values are
-preserved -- only the display format changes.
+preserved. Only the display format changes.
 }
 \details{
 Year-like columns are excluded from the number format automatically: a
@@ -53,7 +53,7 @@ and 2200 is assumed to hold years, so \code{2020} is not displayed as \code{2.02
 Set \code{detect_years = FALSE} to disable the heuristic, and use \code{skip_fmt}
 for columns it cannot guess (e.g. numeric period codes like \code{202001}).
 
-Only the modern \code{.xlsx} format is supported -- the legacy binary \code{.xls}
+Only the modern \code{.xlsx} format is supported. The old binary \code{.xls}
 format cannot be written.
 
 Use \code{\link[=append_excel]{append_excel()}} to add sheets to an existing file.

@@ -16,7 +16,7 @@ datasets are shown. Default: \code{FALSE}.}
 \item{focus}{A named length-1 character vector, e.g. \code{c(year = "int")}.
 When supplied, only the named column is shown, and only for datasets
 where the type does \strong{not} match the expected type. Returns an empty
-tibble (0 rows) when all types match — suitable for use in tests.}
+tibble (0 rows) when all types match, so it can be used in tests.}
 }
 \value{
 A tibble with a \code{column} column and one column per input dataset

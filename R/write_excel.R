@@ -4,7 +4,7 @@
 #' bold and frozen, `NA` values are shown as blank cells, and numeric columns
 #' are formatted with a thousand separator and no displayed decimals (`#,##0`)
 #' when the column contains at least one value >= 1000. Underlying values are
-#' preserved -- only the display format changes.
+#' preserved. Only the display format changes.
 #'
 #' Year-like columns are excluded from the number format automatically: a
 #' numeric column where every non-`NA` value is a whole number between 1800
@@ -12,7 +12,7 @@
 #' Set `detect_years = FALSE` to disable the heuristic, and use `skip_fmt`
 #' for columns it cannot guess (e.g. numeric period codes like `202001`).
 #'
-#' Only the modern `.xlsx` format is supported -- the legacy binary `.xls`
+#' Only the modern `.xlsx` format is supported. The old binary `.xls`
 #' format cannot be written.
 #'
 #' Use [daos::append_excel()] to add sheets to an existing file.

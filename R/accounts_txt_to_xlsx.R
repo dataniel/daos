@@ -21,7 +21,7 @@
 #'
 #' Amounts must be in whole kroner (periods as thousands separators are stripped
 #' automatically). If the previous year is absent, the third field may be empty
-#' -- it becomes `NA`.
+#' and becomes `NA`.
 #'
 #' Appending ` statnatio` to a category line negates all values in that
 #' category (useful when costs appear with a positive sign in notes).

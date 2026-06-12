@@ -5,7 +5,7 @@
 #' directory. A progress bar is shown while converting; messages are only
 #' emitted for skipped PDFs, plus a summary when done.
 #'
-#' PDFs with no extractable text (blank or whitespace only -- typically
+#' PDFs with no extractable text (blank or whitespace only, typically
 #' scanned/photo-printed annual reports) are skipped with a warning message;
 #' no `.txt` file is written for them.
 #'

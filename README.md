@@ -6,7 +6,7 @@
 [![pkgdown](https://img.shields.io/badge/docs-pkgdown-blue.svg)](https://dataniel.github.io/daos)
 
 > **Experimental.** This package is a personal collection of utility functions
-> that have grown out of day-to-day statistical work — things I kept wishing R
+> that have grown out of day-to-day statistical work: things I kept wishing R
 > had out of the box, patterns I found myself repeating, and new ideas I wanted
 > to try out. Rather than letting them accumulate as loose scripts, I packaged
 > them up properly with the help of Claude Code to
@@ -23,7 +23,7 @@ pak::pak("dataniel/daos")
 
 | Function | Description |
 |----------|-------------|
-| `%??%` | Null-coalescing operator — returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
+| `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `accounts_pdf_to_txt()` | Convert PDF financial statements to text files |
 | `addin_fix_path()` | RStudio addin: replace backslashes with forward slashes in Windows paths |
@@ -41,7 +41,7 @@ pak::pak("dataniel/daos")
 | `cvr_download()` | Download the documents found by a CVR search |
 | `dbdot()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
 | `drop_all_na()` | Drop rows and/or columns that are entirely `NA` |
-| `expect_empty()` | Pipeline checkpoint — warn or abort if a data frame is non-empty |
+| `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `find_signs()` | Find sign assignments that reconcile a set of values to a total |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |

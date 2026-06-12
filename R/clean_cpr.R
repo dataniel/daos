@@ -6,7 +6,7 @@
 #' days 01-09 mean that roughly a third of all CPR numbers legitimately
 #' start with a zero, which Excel silently drops from numeric cells.
 #'
-#' This is *standardisation only* -- no validation. Values that cannot be
+#' This is standardisation only, not validation. Values that cannot be
 #' brought to 10 digits are returned cleaned but otherwise untouched, so a
 #' malformed number stays visibly malformed for downstream checks. Use
 #' [daos::add_cpr_info()] for validity, or pipe through a checkpoint

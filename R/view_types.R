@@ -10,7 +10,7 @@
 #' @param focus A named length-1 character vector, e.g. `c(year = "int")`.
 #'   When supplied, only the named column is shown, and only for datasets
 #'   where the type does **not** match the expected type. Returns an empty
-#'   tibble (0 rows) when all types match — suitable for use in tests.
+#'   tibble (0 rows) when all types match, so it can be used in tests.
 #'
 #' @return A tibble with a `column` column and one column per input dataset
 #'   showing an abbreviated type string (`"int"`, `"dbl"`, `"chr"`, `"fct"`,

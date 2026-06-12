@@ -2,8 +2,8 @@
 #'
 #' A pipeline-friendly validation checkpoint. Emits a success alert when the
 #' data frame has zero rows, otherwise warns or aborts. Optionally appends a
-#' timestamped entry to a log file — useful for automated pipelines where you
-#' want a minimal audit trail without noise.
+#' timestamped entry to a log file, which is useful for automated pipelines
+#' where you want a minimal audit trail without noise.
 #'
 #' @param data A data frame or tibble.
 #' @param success_msg Message shown (and logged) when `data` is empty.
@@ -20,14 +20,14 @@
 #' @return `data` invisibly.
 #'
 #' @examples
-#' # Success — no rows
+#' # Success: no rows
 #' data.frame() |> expect_empty()
 #'
-#' # Warning — unexpected rows
+#' # Warning: unexpected rows
 #' dplyr::filter(ggplot2::mpg, cyl < 0) |>
 #'   expect_empty(warn_msg = "Negative cylinder counts found")
 #'
-#' # Abort — treat unexpected rows as a hard error
+#' # Abort: treat unexpected rows as a hard error
 #' \dontrun{
 #' dplyr::filter(dplyr::starwars, height < 0) |>
 #'   expect_empty(abort_msg = "Impossible: negative height")

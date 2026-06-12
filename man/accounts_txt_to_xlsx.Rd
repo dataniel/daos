@@ -51,7 +51,7 @@ spaces: (1) element name, (2) amount for \code{year}, (3) amount for \code{year 
 
 Amounts must be in whole kroner (periods as thousands separators are stripped
 automatically). If the previous year is absent, the third field may be empty
--- it becomes \code{NA}.
+and becomes \code{NA}.
 
 Appending \code{ statnatio} to a category line negates all values in that
 category (useful when costs appear with a positive sign in notes).

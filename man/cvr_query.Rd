@@ -8,7 +8,7 @@ cvr_query(cvr, enddate_from, enddate_to, size = 2999)
 }
 \arguments{
 \item{cvr}{A character or numeric vector of CVR numbers (8 digits each).
-At most 1000 per query -- split larger sets into batches.}
+At most 1000 per query, so split larger sets into batches.}
 
 \item{enddate_from, enddate_to}{Accounting-period end-date range as
 \code{"YYYY-MM-DD"} strings or \code{Date}s. Only reports whose period ends within

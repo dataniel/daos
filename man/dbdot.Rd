@@ -22,7 +22,7 @@ second digit. It works at any aggregation level (\code{"01.1"}, \code{"01.11"},
 \code{"01.11.00"}) and is idempotent, so mixed input comes out uniform.
 }
 \details{
-The inverse -- the bare-digit form -- is simply
+The inverse (the bare-digit form) is simply
 \code{gsub("[.]", "", x)}, so it has no function of its own.
 
 No digits are invented: a code that lost its leading zero in Excel

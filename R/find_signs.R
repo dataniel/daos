@@ -6,7 +6,7 @@
 #' efficiency.
 #'
 #' This is useful for reconciling accounting line items where the sign
-#' convention is unknown — for example, finding which items in a set of
+#' convention is unknown, for example finding which items in a set of
 #' account balances add up to a reported total.
 #'
 #' @param df A data frame containing labels and values.

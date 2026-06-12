@@ -16,7 +16,7 @@
 #' ```
 #'
 #' @param cvr A character or numeric vector of CVR numbers (8 digits each).
-#'   At most 1000 per query -- split larger sets into batches.
+#'   At most 1000 per query, so split larger sets into batches.
 #' @param enddate_from,enddate_to Accounting-period end-date range as
 #'   `"YYYY-MM-DD"` strings or `Date`s. Only reports whose period ends within
 #'   the range (inclusive) are matched.
@@ -237,7 +237,7 @@ cvr_hits <- function(response) {
 #'
 #' Each company-year typically lists several files (PDF, XML/XBRL, sometimes
 #' XHTML), so filter the hits tibble before downloading if you only need one
-#' format -- e.g. `dplyr::filter(hits, dokumentmimetype == "application/pdf")`.
+#' format, e.g. `dplyr::filter(hits, dokumentmimetype == "application/pdf")`.
 #'
 #' @param hits A tibble with `cvrnummer` and `dokumenturl` columns, typically
 #'   from [cvr_hits()].

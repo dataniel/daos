@@ -1,7 +1,7 @@
 #' Drop all-`NA` rows and/or columns
 #'
 #' @description
-#' Removes rows and/or columns that are entirely `NA` -- handy for tidying up
+#' Removes rows and/or columns that are entirely `NA`. Handy for tidying up
 #' data after a join or import has left empty rows or unused columns behind.
 #' Unlike `tidyr::drop_na()`, which drops a row as soon as it contains a single
 #' `NA`, this only drops rows (or columns) where *every* value is `NA`.
