@@ -39,6 +39,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="articles/read-files.html">Reading many files at once</a></li>
     <li><a class="dropdown-item" href="articles/validation.html">Lightweight data validation with checkpoints</a></li>
     <li><a class="dropdown-item" href="articles/accounts.html">From PDF accounts to a tidy dataset</a></li>
     <li><a class="dropdown-item" href="articles/cvr.html">Responsible use of the CVR functions</a></li>
@@ -117,8 +118,16 @@
 <td>Parse manually formatted text files and export to Excel</td>
 </tr>
 <tr>
-<td><code><a href="reference/cpr_info.html">cpr_info()</a></code></td>
-<td>Extract birth date, age, sex, and validity from Danish CPR numbers</td>
+<td><code><a href="reference/add_cpr_info.html">add_cpr_info()</a></code></td>
+<td>Add birth date, age, sex, and validity derived from Danish CPR numbers</td>
+</tr>
+<tr>
+<td><code><a href="reference/clean_cpr.html">clean_cpr()</a></code></td>
+<td>Standardise CPR numbers: strip separators, restore Excel-lost leading zeros</td>
+</tr>
+<tr>
+<td><code><a href="reference/clean_cvr.html">clean_cvr()</a></code></td>
+<td>Standardise CVR numbers: strip separators and the DK VAT prefix</td>
 </tr>
 <tr>
 <td><code><a href="reference/cvr_query.html">cvr_query()</a></code></td>
@@ -135,6 +144,10 @@
 <tr>
 <td><code><a href="reference/cvr_download.html">cvr_download()</a></code></td>
 <td>Download the documents found by a CVR search</td>
+</tr>
+<tr>
+<td><code><a href="reference/dbdot.html">dbdot()</a></code></td>
+<td>Format DB07 industry codes with dots (<code>011100</code> → <code>01.11.00</code>)</td>
 </tr>
 <tr>
 <td><code><a href="reference/drop_all_na.html">drop_all_na()</a></code></td>
@@ -166,10 +179,6 @@
 <td>Formatted current timestamp, e.g. for file names</td>
 </tr>
 <tr>
-<td><code><a href="reference/quiet.html">quiet()</a></code></td>
-<td>Suppress messages and warnings during evaluation</td>
-</tr>
-<tr>
 <td><code><a href="reference/read_access.html">read_access()</a></code></td>
 <td>Read data from a Microsoft Access database via ODBC</td>
 </tr>
@@ -194,8 +203,8 @@
 <td>Interactive Shiny dashboard for screening time-series data group by group</td>
 </tr>
 <tr>
-<td><code><a href="reference/size_env.html">size_env()</a></code></td>
-<td>Show object sizes in an environment</td>
+<td><code><a href="reference/shh.html">shh()</a></code></td>
+<td>Suppress messages and warnings during evaluation</td>
 </tr>
 <tr>
 <td><code><a href="reference/split_by.html">split_by()</a></code></td>
@@ -206,17 +215,16 @@
 <td>Retrieve objects matching a regex pattern from an environment</td>
 </tr>
 <tr>
-<td><code><a href="reference/track_last_df.html">track_last_df()</a></code></td>
-<td>Auto-save the last printed data frame as <code>.last.df</code>
-</td>
-</tr>
-<tr>
 <td><code><a href="reference/view_types.html">view_types()</a></code></td>
 <td>Compare column types across multiple data frames</td>
 </tr>
 <tr>
-<td><code><a href="reference/write_pretty_xlsx.html">write_pretty_xlsx()</a></code></td>
-<td>Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs</td>
+<td><code><a href="reference/write_excel.html">write_excel()</a></code></td>
+<td>Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs</td>
+</tr>
+<tr>
+<td><code><a href="reference/append_excel.html">append_excel()</a></code></td>
+<td>Append formatted sheets to an existing xlsx file</td>
 </tr>
 </tbody>
 </table>

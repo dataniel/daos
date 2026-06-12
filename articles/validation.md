@@ -106,6 +106,45 @@ Outside of checkpoints, the `dupid` column is also handy for
 *inspecting* the duplicates pair by pair before deciding what to do with
 them.
 
+## Column types: `view_types()` + `expect_empty()`
+
+Joins and row-binds have their own silent failure mode: the same column
+arriving as `chr` in one data frame and `dbl` in the next.
+[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+shows the type of every column across several data frames at once – a
+quick overview before a join, where an `NA` in the listing also reveals
+a column that is missing from one of the frames:
+
+``` r
+
+df_a <- tibble(cvr = "11111111", amount = 100,   year = 2024L)
+df_b <- tibble(cvr = 22222222,  amount = "100", note = "ok")
+
+view_types(df_a, df_b)
+#> # A tibble: 4 × 3
+#>   column df_a  df_b 
+#>   <chr>  <chr> <chr>
+#> 1 cvr    chr   dbl  
+#> 2 amount dbl   chr  
+#> 3 year   int   NA   
+#> 4 note   NA    chr
+```
+
+With `diff = TRUE` only the disagreeing columns remain – which means
+that compatible frames produce an *empty* result. The output is a
+violation set like any other, ready for a checkpoint:
+
+``` r
+
+view_types(df_a, df_b, diff = TRUE) |>
+  expect_empty(warn_msg = "Column types differ between df_a and df_b")
+#> Warning: Column types differ between df_a and df_b
+```
+
+The `focus` argument does the same for a single critical column
+(`view_types(df_a, df_b, focus = c(cvr = "chr"))` returns only the
+frames where `cvr` is *not* character – empty on success).
+
 ## An audit trail for scheduled pipelines
 
 For pipelines that run unattended,
@@ -118,9 +157,12 @@ minimal audit trail without any logging framework:
 log_path <- f("log/{nowf()}_checks.log")
 check    <- \(data, ...) expect_empty(data, ..., log = log_path)
 
-df |> filter(is.na(id))      |> check(abort_msg = "NA ids")
-df |> filter(amount < 0)     |> check(warn_msg  = "Negative amounts")
-df |> flag_duplicates(id) |> filter(isdup) |>
+df |> filter(is.na(id))  |> check(abort_msg = "NA ids")
+df |> filter(amount < 0) |> check(warn_msg  = "Negative amounts")
+
+df |>
+  flag_duplicates(id) |>
+  filter(isdup) |>
   check(warn_msg = "Duplicates")
 ```
 

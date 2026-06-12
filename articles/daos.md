@@ -37,9 +37,9 @@ without stopping to think about the `format(Sys.time(), ...)` signature.
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260611"
+#> [1] "20260612"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-11 14:29"
+#> [1] "2026-06-12 00:33"
 ```
 
 A common pattern – timestamping an export file:
@@ -50,17 +50,19 @@ iris |>
   writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
 ```
 
-### `quiet()` – suppress messages and warnings
+### `shh()` – suppress messages and warnings
 
 A shorthand for `suppressMessages(suppressWarnings(...))`. Useful when
 you grow tired of tidyverse startup banners, or when running R scripts
 as CLI tools (e.g. with `rapp`) or in presentation tools like
-`presenterm` where console output must be clean.
+`presenterm` where console output must be clean. The name is
+deliberately unusual – a common word like `quiet` is one masking
+conflict away from confusion.
 
 ``` r
 
-quiet(message("this will not appear"))
-quiet(warning("neither will this"))
+shh(message("this will not appear"))
+shh(warning("neither will this"))
 ```
 
 ### `is_blank()` – comprehensive blank test
@@ -186,7 +188,10 @@ column names, same types across files. If
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 handles a set of files without warnings, the workflow is in order. When
 it warns about type mismatches, that is a signal that something has
-changed upstream.
+changed upstream. The workflow thinking behind this – and how
+[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+backs it up when files refuse to stack – has its own article:
+[`vignette("read-files")`](https://dataniel.github.io/daos/articles/read-files.md).
 
 Supply a custom reader to override auto-detection or add arguments:
 
@@ -329,37 +334,49 @@ here:
   from PDF reports through hand-formatted text files to one validated,
   tidy Excel file.
 
-### `write_pretty_xlsx()` – write to Excel with sensible defaults
+### `write_excel()` / `append_excel()` – write presentable Excel files
 
+These two functions exist because of a colleague who kept complaining
+that files produced with `writexl` were too “empty”: no frozen header,
+no thousand separators, no rounding – a real concern when the audience
+works with macroeconomic statistics and reads the numbers, not the code.
 [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
-is fast but bare: no formatting, no frozen header, no number formatting.
-`openxlsx2` can do all of that, but its API requires you to build a
-workbook object, add worksheets, apply styles, and save – many lines for
-what should be a one-liner.
-[`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md)
-is the middle ground: a single call with defaults that cover the most
-common needs.
+is fast but bare, and `openxlsx2` can do all the styling but requires
+building a workbook object, adding worksheets, applying styles, and
+saving.
+[`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
+is the middle ground: a single call with defaults that make the file
+presentable.
 
 - Numeric columns with at least one value ≥ 1,000 are formatted with a
   thousand separator and no displayed decimals (`#,##0`); the underlying
   values are preserved.
+- **Year-like columns are excluded automatically**: a numeric column
+  where every value is a whole number between 1800 and 2200 is assumed
+  to hold years, so `2020` is not displayed as `2.020`. Disable with
+  `detect_years = FALSE`; use `skip_fmt` for columns the heuristic
+  cannot guess (e.g. numeric period codes like `202001`).
 - `NA` values appear as blank cells.
 - The header row is bold.
 - The first row is frozen (can be turned off with
   `freeze_header = FALSE`).
 
+Only `.xlsx` can be written – the legacy binary `.xls` format is not
+supported, and a non-`.xlsx` path fails early instead of producing a
+file Excel will complain about.
+
 **Writing a new file**
 
-Pass a data frame or a named list of data frames to `data`. Requires
+Pass a data frame or a named list of data frames. Requires
 `overwrite = TRUE` if the file already exists.
 
 ``` r
 
 # Single data frame -- sheet name defaults to "Sheet1"
-write_pretty_xlsx(mtcars, "output.xlsx")
+write_excel(mtcars, "output.xlsx")
 
 # Named list -- each element becomes a sheet
-write_pretty_xlsx(
+write_excel(
   list(Cars = mtcars, Iris = iris),
   "output.xlsx"
 )
@@ -373,26 +390,20 @@ Sheet names come from the list names. Unnamed elements get default names
 ``` r
 
 # "Hoved" is explicit; second sheet becomes "Sheet2"
-write_pretty_xlsx(list(Hoved = mtcars, iris), "output.xlsx")
+write_excel(list(Hoved = mtcars, iris), "output.xlsx")
 ```
 
 **Appending sheets to an existing file**
 
-Use `append` to add sheets without touching the existing content. The
-file must already exist, and `overwrite = TRUE` is required if a sheet
-of the same name is already present.
+[`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)
+adds sheets without touching the existing content. The file must already
+exist, and `overwrite = TRUE` is required if a sheet of the same name is
+already present.
 
 ``` r
 
-# Add one sheet
-write_pretty_xlsx(append = list(Bilag = airquality), path = "output.xlsx")
-
-# Create and append in a single call
-write_pretty_xlsx(
-  list(Hoved = mtcars),
-  "output.xlsx",
-  append = list(Bilag = iris)
-)
+write_excel(list(Hoved = mtcars), "output.xlsx")
+append_excel(list(Bilag = iris), "output.xlsx")
 ```
 
 **Other options**
@@ -400,10 +411,10 @@ write_pretty_xlsx(
 ``` r
 
 # Insert as an Excel table (filter arrows, banded rows)
-write_pretty_xlsx(mtcars, "output.xlsx", as_table = TRUE)
+write_excel(mtcars, "output.xlsx", as_table = TRUE)
 
 # Exclude columns from the #,##0 format
-write_pretty_xlsx(mtcars, "output.xlsx", skip_fmt = "hp")
+write_excel(mtcars, "output.xlsx", skip_fmt = "hp")
 ```
 
 ### `read_ta()` / `write_ta()` – read and write Greenlandic TA files
@@ -462,36 +473,6 @@ view_types(df_a, df_b, focus = c(x = "int"))
 #>   column df_b 
 #>   <chr>  <chr>
 #> 1 x      dbl
-```
-
-### `size_env()` – object sizes in an environment
-
-A simple answer to “what is taking up space?” – lists all objects in an
-environment sorted by size.
-
-``` r
-
-big   <- 1:1e6
-small <- letters
-size_env()        # all objects, largest first
-#> # A tibble: 9 × 3
-#>   name      size pretty   
-#>   <chr>    <dbl> <chr>    
-#> 1 big    4000048 3.8 Mb   
-#> 2 result    2648 2.6 Kb   
-#> 3 small     1712 1.7 Kb   
-#> 4 df_a      1064 1 Kb     
-#> 5 df_b      1064 1 Kb     
-#> 6 dat1       736 736 bytes
-#> 7 dat2       736 736 bytes
-#> 8 dat3       736 736 bytes
-#> 9 year        56 56 bytes
-size_env(n = 2)   # top 2 only
-#> # A tibble: 2 × 3
-#>   name      size pretty
-#>   <chr>    <dbl> <chr> 
-#> 1 big    4000048 3.8 Mb
-#> 2 result    2648 2.6 Kb
 ```
 
 ------------------------------------------------------------------------
@@ -642,7 +623,9 @@ entirely `NA`.
 removes them. Unlike
 [`tidyr::drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html)
 (which drops a row on the *first* `NA`), it only drops a row or column
-where *every* value is `NA`:
+where *every* value is `NA`. It is equivalent to
+`janitor::remove_empty()` with `cutoff = 1`, reimplemented here to keep
+the dependency footprint small:
 
 ``` r
 
@@ -744,12 +727,76 @@ find_signs(
 
 ## Domain-specific
 
-### `cpr_info()` – extract birth date, age, sex, and validity
+### `clean_cpr()` / `clean_cvr()` – standardise identifier columns
 
-[`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md)
+Register data arrives with identifiers in every imaginable shape:
+`111111-1118`, `12 34 56 78`, `DK12345678`, or a nine-digit CPR that
+lost its leading zero in Excel. Before a join, both sides need the same
+canonical form – and that is all these two functions do. They are
+vector-in/vector-out, so they slot into a
+[`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html):
+
+``` r
+
+clean_cpr(c("111111-1118", "101004007", "1111111118"))
+#> [1] "1111111118" "0101004007" "1111111118"
+clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
+#> [1] "12345678" "12345678" "12345678"
+```
+
+Note the deliberate asymmetry:
+[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
+zero-pads nine-digit values (birth days 01–09 mean a third of all CPR
+numbers legitimately start with a zero, which Excel drops), while
+[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
+never invents a digit – a seven-digit CVR cannot be told apart from a
+typo, and padding it would let a malformed number slip past a later
+`cvr %like% "^\\d{8}$"` checkpoint.
+
+Neither function validates – malformed values come back cleaned but
+visibly malformed. Validation is
+[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)’s
+job (below), or a checkpoint from
+[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+
+### `dbdot()` – format DB07 industry codes with dots
+
+DB07 industry codes appear both as `011100` and `01.11.00` depending on
+the source.
+[`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md)
+normalises to the dotted form – existing dots are stripped first, so
+mixed input comes out uniform and the function is idempotent. Any
+aggregation level works:
+
+``` r
+
+dbdot(c("011100", "01.1100", "0111", "011"))
+#> [1] "01.11.00" "01.11.00" "01.11"    "01.1"
+```
+
+The bare-digit inverse is just `gsub("[.]", "", x)`. Like the `clean_*`
+functions,
+[`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) never
+invents digits: a code that lost its leading zero in Excel is ambiguous
+(`111` could be group `11.1` or class `01.11`), so keep industry codes
+as character columns.
+
+### `add_cpr_info()` – add birth date, age, sex, and validity
+
+[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
 appends derived columns to a data frame using official CPR Register
 century-detection rules. Dashes and spaces are stripped automatically;
 nine-digit numbers are zero-padded.
+
+Two things are worth knowing about the design. First, *validity*:
+`valid` means ten digits encoding a real calendar date – deliberately
+**not** the modulus-11 check, because the CPR office has assigned
+numbers without mod-11 control since 2007 and states that they are fully
+valid. The check is still available as the separate `mod11` column,
+where it serves as a data-quality signal. Second, *speed*: the
+implementation is pure vectorised arithmetic (digit matrix, mod-11 as a
+matrix product, dates built as epoch day counts without string parsing),
+so it handles millions of rows in seconds.
 
 ``` r
 
@@ -758,7 +805,7 @@ df <- data.frame(
   stringsAsFactors = FALSE
 )
 
-cpr_info(df, pnr)
+add_cpr_info(df, pnr)
 #>          pnr       bday age sex mod11 valid
 #> 1 1111111118 1911-11-11 114   0  TRUE  TRUE
 #> 2 1111111118 1911-11-11 114   0  TRUE  TRUE
@@ -769,7 +816,7 @@ Choose a subset of columns and optionally rename them:
 
 ``` r
 
-cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
+add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
 #>          pnr birth_date years_old
 #> 1 1111111118 1911-11-11       114
 #> 2 1111111118 1911-11-11       114
@@ -780,7 +827,7 @@ A custom reference date shifts the age calculation:
 
 ``` r
 
-cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
+add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 #>          pnr age
 #> 1 1111111118  88
 #> 2 1111111118  88
@@ -790,22 +837,6 @@ cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 ------------------------------------------------------------------------
 
 ## Interactive tools
-
-### `track_last_df()` – auto-save the last printed data frame
-
-Automatically captures any data frame returned to the console as
-`.last.df` in the global environment. Handy when you forget to assign an
-intermediate result.
-
-``` r
-
-track_last_df()          # enable
-
-dplyr::starwars |> head(3)
-.last.df                 # the three-row data frame above
-
-track_last_df(FALSE)     # disable
-```
 
 ### `screen_timeseries()` – interactive time-series screening
 

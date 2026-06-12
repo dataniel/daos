@@ -8,7 +8,7 @@ loading packages or calling verbose functions.
 ## Usage
 
 ``` r
-quiet(expr)
+shh(expr)
 ```
 
 ## Arguments
@@ -24,11 +24,11 @@ The return value of `expr` (unchanged).
 ## Examples
 
 ``` r
-quiet(message("this message will not appear"))
-quiet(warning("this warning will not appear"))
+shh(message("this message will not appear"))
+shh(warning("this warning will not appear"))
 
 # Typical use: load packages without startup text
 if (FALSE) { # \dontrun{
-quiet(library(tidyverse))
+shh(library(tidyverse))
 } # }
 ```

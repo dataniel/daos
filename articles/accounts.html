@@ -37,6 +37,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
     <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
     <li><a class="dropdown-item" href="../articles/accounts.html">From PDF accounts to a tidy dataset</a></li>
     <li><a class="dropdown-item" href="../articles/cvr.html">Responsible use of the CVR functions</a></li>
@@ -157,6 +158,13 @@ in notes. The suffix is stripped from the final output.</li>
 <code>_spec</code> suffix is stripped automatically
 (e.g. <code>12345678_spec.txt</code> -&gt; <code>12345678</code>).</li>
 </ul>
+<p>The odd-looking tag name is by design. The negation marker has to be
+a string that stands out visually and that will, for all practical
+purposes, never occur in a real financial statement – otherwise a
+genuine label could trigger the negation by accident. <em>statnatio</em>
+is the name of the national accounts project folder at Statistics
+Greenland, suggested by the colleague who runs the national accounts and
+helps prepare these data; it scores well on both counts.</p>
 </div>
 <div class="section level2">
 <h2 id="step-3-accounts_txt_to_xlsx">Step 3: <code>accounts_txt_to_xlsx()</code><a class="anchor" aria-label="anchor" href="#step-3-accounts_txt_to_xlsx"></a>
@@ -194,6 +202,14 @@ and year – in both the returned tibble and the Excel file. The
 labels from the PDFs, lowercased but otherwise untouched. The Excel file
 is where those labels are reviewed and, if the downstream statistics
 require it, mapped to a standard classification.</p>
+<p>A practical Excel tip for the coding itself: filter the rows down to
+the labels that should get the same code, then fill the code down across
+the <em>filtered</em> rows only. The trap is that an ordinary copy-paste
+also fills the hidden rows in between. The fix is the easy-to-forget
+<em>visible cells only</em> selection: select the target cells, press
+<code>Alt+;</code> (Go To Special -&gt; Visible cells only), type the
+code, and confirm with <code>Ctrl+Enter</code> – every visible cell is
+filled and the hidden rows are left untouched.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -8,8 +8,8 @@
 - [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) :
   Formatted timestamp for now
 
-- [`quiet()`](https://dataniel.github.io/daos/reference/quiet.md) :
-  Suppress messages and warnings
+- [`shh()`](https://dataniel.github.io/daos/reference/shh.md) : Suppress
+  messages and warnings
 
 - [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
   : Test whether a value is "blank"
@@ -32,8 +32,10 @@
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
   : Write a Greenlandic TA file
-- [`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md)
-  : Write data frames to an xlsx file
+- [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
+  : Write data frames to a presentable Excel file
+- [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)
+  : Append sheets to an existing Excel file
 
 ## Data wrangling
 
@@ -57,13 +59,6 @@
 - [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
   : Find sign combinations that sum to a target
 
-## Environment
-
-- [`size_env()`](https://dataniel.github.io/daos/reference/size_env.md)
-  : Show object sizes in an environment
-- [`track_last_df()`](https://dataniel.github.io/daos/reference/track_last_df.md)
-  : Track the last data frame printed in the console
-
 ## Interactive
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
@@ -71,8 +66,14 @@
 
 ## Domain-specific
 
-- [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md)
-  : Extract information from Danish CPR numbers
+- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
+  : Add information derived from Danish CPR numbers
+- [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
+  : Standardise CPR numbers
+- [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
+  : Standardise CVR numbers
+- [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) :
+  Format DB07 industry codes with dots
 - [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)

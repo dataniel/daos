@@ -33,11 +33,14 @@ pak::pak("dataniel/daos")
 | [`addin_open_in_explorer()`](https://dataniel.github.io/daos/reference/addin_open_in_explorer.md) | RStudio addin: open the selected path (or [`getwd()`](https://rdrr.io/r/base/getwd.html)) in the file explorer |
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
-| [`cpr_info()`](https://dataniel.github.io/daos/reference/cpr_info.md) | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md) | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md) | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
+| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md) | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md) | Build an Elasticsearch query for CVR annual reports |
 | [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md) | Send a query to the CVR distribution service |
 | [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md) | Extract CVR search hits as a tibble |
 | [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md) | Download the documents found by a CVR search |
+| [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
 | [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md) | Drop rows and/or columns that are entirely `NA` |
 | [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
@@ -45,16 +48,15 @@ pak::pak("dataniel/daos")
 | [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md) | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md) | Test whether a value is blank in the broadest sense |
 | [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) | Formatted current timestamp, e.g. for file names |
-| [`quiet()`](https://dataniel.github.io/daos/reference/quiet.md) | Suppress messages and warnings during evaluation |
 | [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md) | Read data from a Microsoft Access database via ODBC |
 | [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md) | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 | [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) | Read Greenlandic TA files |
 | [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md) | Write Greenlandic TA files |
 | [`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md) | Parse an XBRL file into a tidy tibble |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md) | Interactive Shiny dashboard for screening time-series data group by group |
-| [`size_env()`](https://dataniel.github.io/daos/reference/size_env.md) | Show object sizes in an environment |
+| [`shh()`](https://dataniel.github.io/daos/reference/shh.md) | Suppress messages and warnings during evaluation |
 | [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md) | Split a data frame into a named list by grouping columns |
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md) | Retrieve objects matching a regex pattern from an environment |
-| [`track_last_df()`](https://dataniel.github.io/daos/reference/track_last_df.md) | Auto-save the last printed data frame as `.last.df` |
 | [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md) | Compare column types across multiple data frames |
-| [`write_pretty_xlsx()`](https://dataniel.github.io/daos/reference/write_pretty_xlsx.md) | Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs |
+| [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md) | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |
+| [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md) | Append formatted sheets to an existing xlsx file |

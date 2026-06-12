@@ -81,6 +81,14 @@ The conventions:
 - File names become the `cvr` column. A trailing `_spec` suffix is
   stripped automatically (e.g. `12345678_spec.txt` -\> `12345678`).
 
+The odd-looking tag name is by design. The negation marker has to be a
+string that stands out visually and that will, for all practical
+purposes, never occur in a real financial statement – otherwise a
+genuine label could trigger the negation by accident. *statnatio* is the
+name of the national accounts project folder at Statistics Greenland,
+suggested by the colleague who runs the national accounts and helps
+prepare these data; it scores well on both counts.
+
 ## Step 3: `accounts_txt_to_xlsx()`
 
 Parses every text file in the directory, validates them, and writes one
@@ -117,3 +125,11 @@ and `note` columns hold the free-text labels from the PDFs, lowercased
 but otherwise untouched. The Excel file is where those labels are
 reviewed and, if the downstream statistics require it, mapped to a
 standard classification.
+
+A practical Excel tip for the coding itself: filter the rows down to the
+labels that should get the same code, then fill the code down across the
+*filtered* rows only. The trap is that an ordinary copy-paste also fills
+the hidden rows in between. The fix is the easy-to-forget *visible cells
+only* selection: select the target cells, press `Alt+;` (Go To Special
+-\> Visible cells only), type the code, and confirm with `Ctrl+Enter` –
+every visible cell is filled and the hidden rows are left untouched.
