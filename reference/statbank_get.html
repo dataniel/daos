@@ -98,7 +98,10 @@ numeric. Set to <code>FALSE</code> to keep every variable column as character.</
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with one column per variable and a <code>value</code> column.</p>
+    <p>A tibble with one column per variable and a <code>value</code> column.
+The table's footnotes and provenance ride along as attributes:
+<code>attr(df, "notes")</code>, <code>attr(df, "source")</code>, <code>attr(df, "updated")</code>,
+and <code>attr(df, "contact")</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -129,6 +132,7 @@ so they can never collide with a variable name in <code>...</code>.</p>
 <span class="r-in"><span>  tid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2023</span>, <span class="fl">2024</span>, <span class="fl">2025</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  art <span class="op">=</span> <span class="st">"Antal"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">df</span>, <span class="st">"notes"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Codes instead of display texts, no type conversion:</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">statbank_get</span><span class="op">(</span></span></span>

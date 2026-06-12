@@ -56,7 +56,9 @@ statbank_get(
 
 ## Value
 
-A tibble with one column per variable and a `value` column.
+A tibble with one column per variable and a `value` column. The table's
+footnotes and provenance ride along as attributes: `attr(df, "notes")`,
+`attr(df, "source")`, `attr(df, "updated")`, and `attr(df, "contact")`.
 
 ## Details
 
@@ -90,6 +92,7 @@ df <- statbank_get(
   tid = c(2023, 2024, 2025),
   art = "Antal"
 )
+attr(df, "notes")
 
 # Codes instead of display texts, no type conversion:
 df <- statbank_get(
