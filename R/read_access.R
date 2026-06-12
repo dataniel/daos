@@ -27,6 +27,7 @@
 #' }
 #'
 #' @importFrom rlang arg_match
+#' @importFrom utils head
 #' @importFrom cli cli_abort cli_h1 cli_alert_info cli_alert_success cli_progress_step cli_progress_done cli_rule
 #' @importFrom glue glue
 #' @importFrom tibble as_tibble

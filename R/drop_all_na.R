@@ -6,6 +6,9 @@
 #' Unlike `tidyr::drop_na()`, which drops a row as soon as it contains a single
 #' `NA`, this only drops rows (or columns) where *every* value is `NA`.
 #'
+#' Equivalent to `janitor::remove_empty(which = which, cutoff = 1)`,
+#' reimplemented here to keep the dependency footprint small.
+#'
 #' @param data A data frame or tibble.
 #' @param which Which dimension(s) to clean: `"rows"`, `"cols"`, or both
 #'   (the default). Partial matching is allowed.

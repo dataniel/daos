@@ -9,15 +9,15 @@
 #' @return The return value of `expr` (unchanged).
 #'
 #' @examples
-#' quiet(message("this message will not appear"))
-#' quiet(warning("this warning will not appear"))
+#' shh(message("this message will not appear"))
+#' shh(warning("this warning will not appear"))
 #'
 #' # Typical use: load packages without startup text
 #' \dontrun{
-#' quiet(library(tidyverse))
+#' shh(library(tidyverse))
 #' }
 #'
 #' @export
-quiet <- function(expr) {
+shh <- function(expr) {
   suppressMessages(suppressWarnings(expr))
 }

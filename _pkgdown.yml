@@ -20,7 +20,7 @@ reference:
     contents:
       - f
       - nowf
-      - quiet
+      - shh
       - is_blank
       - "%??%"
       - "%like%"
@@ -31,7 +31,8 @@ reference:
       - summon
       - read_ta
       - write_ta
-      - write_pretty_xlsx
+      - write_excel
+      - append_excel
 
   - title: Data wrangling
     contents:
@@ -42,18 +43,16 @@ reference:
       - split_by
       - find_signs
 
-  - title: Environment
-    contents:
-      - size_env
-      - track_last_df
-
   - title: Interactive
     contents:
       - screen_timeseries
 
   - title: Domain-specific
     contents:
-      - cpr_info
+      - add_cpr_info
+      - clean_cpr
+      - clean_cvr
+      - dbdot
       - read_ta
       - write_ta
 
@@ -88,6 +87,7 @@ articles:
   - title: Guides
     navbar: Guides
     contents:
+      - read-files
       - validation
       - accounts
       - cvr

@@ -32,11 +32,14 @@ pak::pak("dataniel/daos")
 | `addin_open_in_explorer()` | RStudio addin: open the selected path (or `getwd()`) in the file explorer |
 | `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
-| `cpr_info()` | Extract birth date, age, sex, and validity from Danish CPR numbers |
+| `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
+| `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | `cvr_query()` | Build an Elasticsearch query for CVR annual reports |
 | `cvr_search()` | Send a query to the CVR distribution service |
 | `cvr_hits()` | Extract CVR search hits as a tibble |
 | `cvr_download()` | Download the documents found by a CVR search |
+| `dbdot()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
 | `drop_all_na()` | Drop rows and/or columns that are entirely `NA` |
 | `expect_empty()` | Pipeline checkpoint — warn or abort if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
@@ -44,16 +47,15 @@ pak::pak("dataniel/daos")
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
-| `quiet()` | Suppress messages and warnings during evaluation |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 | `read_ta()` | Read Greenlandic TA files |
 | `write_ta()` | Write Greenlandic TA files |
 | `read_xbrl()` | Parse an XBRL file into a tidy tibble |
 | `screen_timeseries()` | Interactive Shiny dashboard for screening time-series data group by group |
-| `size_env()` | Show object sizes in an environment |
+| `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
-| `track_last_df()` | Auto-save the last printed data frame as `.last.df` |
 | `view_types()` | Compare column types across multiple data frames |
-| `write_pretty_xlsx()` | Write data frames to xlsx with sensible defaults: bold frozen header, thousand separators, blank NAs |
+| `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |
+| `append_excel()` | Append formatted sheets to an existing xlsx file |

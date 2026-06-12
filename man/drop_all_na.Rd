@@ -21,6 +21,9 @@ Removes rows and/or columns that are entirely \code{NA} -- handy for tidying up
 data after a join or import has left empty rows or unused columns behind.
 Unlike \code{tidyr::drop_na()}, which drops a row as soon as it contains a single
 \code{NA}, this only drops rows (or columns) where \emph{every} value is \code{NA}.
+
+Equivalent to \code{janitor::remove_empty(which = which, cutoff = 1)},
+reimplemented here to keep the dependency footprint small.
 }
 \examples{
 df <- tibble::tibble(
