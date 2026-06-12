@@ -37,6 +37,9 @@ numeric. Set to \code{FALSE} to keep every variable column as character.}
 }
 \value{
 A tibble with one column per variable and a \code{value} column.
+The table's footnotes and provenance ride along as attributes:
+\code{attr(df, "notes")}, \code{attr(df, "source")}, \code{attr(df, "updated")},
+and \code{attr(df, "contact")}.
 }
 \description{
 Fetches data for a table and returns it as a tibble in long format:
@@ -65,6 +68,7 @@ df <- statbank_get(
   tid = c(2023, 2024, 2025),
   art = "Antal"
 )
+attr(df, "notes")
 
 # Codes instead of display texts, no type conversion:
 df <- statbank_get(

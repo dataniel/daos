@@ -199,6 +199,9 @@ statbank_meta <- function(table, lang = "da") {
 #'   numeric. Set to `FALSE` to keep every variable column as character.
 #'
 #' @return A tibble with one column per variable and a `value` column.
+#'   The table's footnotes and provenance ride along as attributes:
+#'   `attr(df, "notes")`, `attr(df, "source")`, `attr(df, "updated")`,
+#'   and `attr(df, "contact")`.
 #'
 #' @examples
 #' \dontrun{
@@ -207,6 +210,7 @@ statbank_meta <- function(table, lang = "da") {
 #'   tid = c(2023, 2024, 2025),
 #'   art = "Antal"
 #' )
+#' attr(df, "notes")
 #'
 #' # Codes instead of display texts, no type conversion:
 #' df <- statbank_get(
@@ -251,6 +255,12 @@ statbank_get <- function(table, ..., lang = "da",
       any(vapply(out, is.character, logical(1)))) {
     out <- suppressMessages(readr::type_convert(out))
   }
+
+  info <- .sb_extract_info(x)
+  attr(out, "notes")   <- info$notes
+  attr(out, "source")  <- info$source
+  attr(out, "updated") <- info$updated
+  attr(out, "contact") <- info$contact
   out
 }
 
@@ -373,6 +383,26 @@ statbank_get <- function(table, ..., lang = "da",
     out[[vars$code[i]]] <- unname(mapped)
   }
   out
+}
+
+# Footnotes, source, update time, and contact from a json-stat2
+# response. Dimension-level notes are prefixed with the dimension label.
+.sb_extract_info <- function(x) {
+  dim_notes <- unlist(lapply(names(x$dimension), function(d) {
+    n <- x$dimension[[d]]$note
+    if (is.null(n)) return(NULL)
+    lbl <- x$dimension[[d]]$label
+    paste0(if (!is.null(lbl) && nzchar(lbl)) paste0(lbl, ": "), unlist(n))
+  }))
+  contact <- unlist(lapply(x$extension$contact, function(k) {
+    if (!is.null(k$raw)) k$raw else unlist(k)
+  }))
+  list(
+    notes   = c(unlist(x$note), dim_notes),
+    source  = x$source,
+    updated = x$updated,
+    contact = contact
+  )
 }
 
 # Turn a parsed json-stat2 response into a long tibble. The `id` and

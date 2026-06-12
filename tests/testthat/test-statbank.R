@@ -118,6 +118,24 @@ test_that(".sb_parse_jsonstat() orders categories by index, not list order", {
   expect_equal(out$value, c(10, NA))
 })
 
+test_that(".sb_extract_info() collects notes, source, and contact", {
+  x <- list(
+    source  = "Statistics Greenland",
+    updated = "2026-02-09T06:04:30Z",
+    note    = list("1) Fodnote om opgørelsen."),
+    dimension = list(
+      time = list(label = "tid", note = list("Brud i serien i 1977.")),
+      type = list(label = "art")
+    ),
+    extension = list(contact = list(list(raw = "Lars Pedersen. LARP@stat.gl")))
+  )
+  info <- daos:::.sb_extract_info(x)
+  expect_equal(info$notes,
+               c("1) Fodnote om opgørelsen.", "tid: Brud i serien i 1977."))
+  expect_equal(info$source, "Statistics Greenland")
+  expect_equal(info$contact, "Lars Pedersen. LARP@stat.gl")
+})
+
 test_that(".sb_strip_html() removes tags and collapses whitespace", {
   expect_equal(
     daos:::.sb_strip_html("Folketal <em>[BEDSAT1]</em>"),

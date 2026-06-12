@@ -17,15 +17,17 @@ fetched).
 \description{
 Launches a Shiny app for working with the Greenland Statbank
 (bank.stat.gl). The app guides the user through three steps: find a
-table (browse the subject areas or search the titles), choose values
-for each variable, and fetch the data. The result is shown as a
-table and a plot, and the app always shows the \code{\link[=statbank_get]{statbank_get()}} call
-that reproduces the selection, so a click-built query can be pasted
-straight into a script.
+table (search the titles, or walk the subject tree in a two-column
+browser that also responds to \code{h}/\code{j}/\code{k}/\code{l} and the arrow keys),
+choose values for each variable, and fetch the data. The
+result is shown as a table and a plot, and the app always shows the
+\code{\link[=statbank_get]{statbank_get()}} call that reproduces the selection, so a
+click-built query can be pasted straight into a script.
 }
 \details{
-Time variables are selected with from/to dropdowns. Other variables
-open a popup with a searchable checkbox list, select/deselect-all
+Time variables, and numeric variables with many values (such as
+age), are selected with from/to dropdowns. Other variables open a
+popup with a searchable checkbox list, select/deselect-all
 shortcuts, and a running count; an empty selection means all values.
 The settings panel under step 3 toggles the \code{\link[=statbank_get]{statbank_get()}}
 options: codes as column names, codes in the cells, and automatic
