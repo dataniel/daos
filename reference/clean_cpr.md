@@ -25,7 +25,7 @@ A character vector of the same length.
 
 ## Details
 
-This is *standardisation only* – no validation. Values that cannot be
+This is standardisation only, not validation. Values that cannot be
 brought to 10 digits are returned cleaned but otherwise untouched, so a
 malformed number stays visibly malformed for downstream checks. Use
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)

@@ -70,9 +70,9 @@
     
 <p>The <code>cvr_*</code> functions fetch published annual reports from
 Erhvervsstyrelsens distribution service. The service is official, free,
-and built precisely for system-to-system access – annual reports are
-public documents by law. Using it is legitimate; using it <em>well</em>
-is a matter of a few habits, which is what this article is about.</p>
+and built for system-to-system access, and annual reports are public
+documents by law. Using it is legitimate. Using it <em>well</em> is a
+matter of a few habits, which is what this article is about.</p>
 <div class="section level2">
 <h2 id="the-pipeline">The pipeline<a class="anchor" aria-label="anchor" href="#the-pipeline"></a>
 </h2>
@@ -112,7 +112,7 @@ the first real API call.</p>
 </h2>
 <p>The <code>contact</code> argument is mandatory and is sent as the
 <code>User-Agent</code> header. Erhvervsstyrelsen asks requests to
-identify the sender – use a real email address you can be reached at.
+identify the sender, so use a real email address you can be reached at.
 The function refuses to run with an empty contact, but it cannot check
 that the address is honest; that part is yours.</p>
 </div>
@@ -121,7 +121,7 @@ that the address is honest; that part is yours.</p>
 </h2>
 <p>Each hit is one published annual report, and its
 <code>dokumenter</code> array typically holds several files (PDF,
-XML/XBRL, sometimes XHTML) – expect roughly 3-5 document rows per
+XML/XBRL, sometimes XHTML), so expect roughly 3-5 document rows per
 company per year in the hits tibble.</p>
 <p>The query selects <em>companies and periods</em>. Selecting which
 <em>documents</em> to download is done in R, between
@@ -129,10 +129,10 @@ company per year in the hits tibble.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="va">hits</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">dokumentmimetype</span> <span class="op">==</span> <span class="st">"application/pdf"</span><span class="op">)</span></span></code></pre></div>
 <p>The arithmetic matters: 1000 companies for one year is ~1000 hits but
-3000–5000 documents, which at the default <code>sleep = 3</code> is
-2.5–4 hours of downloading. Filtering to one mimetype first cuts it to
+3000-5000 documents, which at the default <code>sleep = 3</code> is
+2.5-4 hours of downloading. Filtering to one mimetype first cuts it to
 ~1000 files (under an hour). Always look at the hits tibble before you
-call <code><a href="../reference/cvr_download.html">cvr_download()</a></code> – it tells you exactly what you are
+call <code><a href="../reference/cvr_download.html">cvr_download()</a></code>; it tells you exactly what you are
 about to fetch.</p>
 <p><code><a href="../reference/cvr_download.html">cvr_download()</a></code> enforces a delay of at least 1 second
 between requests (default 3) and guards existing files with an
@@ -144,14 +144,14 @@ re-downloading anything.</p>
 </h2>
 <p>A single response holds at most <code>query$size</code> hits (default
 2999). <code><a href="../reference/cvr_search.html">cvr_search()</a></code> warns if the response is full, since
-the result may then be truncated. For large pulls – many companies
-across many years – use the scroll API to fetch every matching hit in
+the result may then be truncated. For large pulls (many companies across
+many years), use the scroll API to fetch every matching hit in
 batches:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">response</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cvr_query.html">cvr_query</a></span><span class="op">(</span><span class="va">many_cvrs</span>, <span class="st">"2015-01-01"</span>, <span class="st">"2024-12-31"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/cvr_search.html">cvr_search</a></span><span class="op">(</span>contact <span class="op">=</span> <span class="st">"you@example.com"</span>, scroll <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>Note that <code>scroll</code> is about the <em>completeness of the
-search result</em>; it does not reduce the number of documents you
+<p><code>scroll</code> affects the <em>completeness of the search
+result</em> only. It does not reduce the number of documents you
 download afterwards.</p>
 </div>
 <div class="section level2">
@@ -164,6 +164,49 @@ batches: <code>scroll = 2</code> on a query with a few hits walks
 through the whole flow in a couple of requests.</p>
 </div>
 <div class="section level2">
+<h2 id="working-with-the-xbrl-files">Working with the XBRL files<a class="anchor" aria-label="anchor" href="#working-with-the-xbrl-files"></a>
+</h2>
+<p>The PDF is the human-readable version of the annual report. For data
+work, the XML file next to it is usually the better download: it is
+XBRL, the machine-readable filing, and <code><a href="../reference/read_xbrl.html">read_xbrl()</a></code> parses
+it into a tidy tibble with one row per reported fact. Filter the hits to
+the XML mimetype, download, and bind the parsed files with the CVR
+number as id:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hits_xml</span> <span class="op">&lt;-</span> <span class="va">hits</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">dokumentmimetype</span> <span class="op">==</span> <span class="st">"application/xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/cvr_download.html">cvr_download</a></span><span class="op">(</span><span class="va">hits_xml</span>, <span class="st">"data/xml"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">xbrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"data/xml"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span>reader <span class="op">=</span> <span class="va">read_xbrl</span>, out <span class="op">=</span> <span class="st">"bind"</span>, .id <span class="op">=</span> <span class="st">"cvr"</span><span class="op">)</span></span></code></pre></div>
+<p>Two things to know about the result. The <code>fact</code> column is
+text and has to be converted for numeric work. And a filing carries
+<em>both</em> accounting years, so filter on the context dates
+(<code>startdate</code>, <code>enddate</code>, <code>instant</code>)
+before comparing companies.</p>
+<p>One quirk of XBRL is that amounts often arrive without a meaningful
+sign: costs can be reported as positive numbers, and the convention
+varies between preparers. <code><a href="../reference/find_signs.html">find_signs()</a></code> can recover the
+signs, because the income statement has to reconcile. It searches for
+the <code>+1</code>/<code>-1</code> assignment that makes the line items
+sum to the reported total:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">resultatopgoerelse</span> <span class="op">&lt;-</span> <span class="va">xbrl</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">elementid</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"Revenue"</span>, <span class="st">"ExternalExpenses"</span>, <span class="st">"EmployeeBenefitsExpense"</span>,</span>
+<span>    <span class="st">"TaxExpense"</span>, <span class="st">"ProfitLoss"</span></span>
+<span>  <span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>fact <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fact</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/find_signs.html">find_signs</a></span><span class="op">(</span><span class="va">resultatopgoerelse</span>, <span class="va">elementid</span>, <span class="va">fact</span>, total_label <span class="op">=</span> <span class="st">"ProfitLoss"</span><span class="op">)</span></span></code></pre></div>
+<p>This only works when the set of line items is complete: every
+component of the income statement must be there, including the reported
+result (<code>ProfitLoss</code>, årets resultat). With items missing,
+the reconciliation either fails or lands on a wrong assignment. The
+element names depend on the taxonomy the company filed under, so start
+by looking at the <code>elementid</code> values in your own data before
+hardcoding a selection.</p>
+</div>
+<div class="section level2">
 <h2 id="the-legal-frame">The legal frame<a class="anchor" aria-label="anchor" href="#the-legal-frame"></a>
 </h2>
 <p>Annual reports are public by law, and the distribution service is the
@@ -172,7 +215,7 @@ Usage falls under the general terms for Danish open public data. The one
 substantive restriction to know about is <em>reklamebeskyttelse</em>
 (CVR-lovens paragraf 19): data on protected companies must not be used
 for direct marketing. For statistical and analytical use of financial
-statements, that restriction is irrelevant – but if your use case ever
+statements, that restriction is irrelevant, but if your use case ever
 drifts toward contacting the companies, check it.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

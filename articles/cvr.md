@@ -2,9 +2,9 @@
 
 The `cvr_*` functions fetch published annual reports from
 Erhvervsstyrelsens distribution service. The service is official, free,
-and built precisely for system-to-system access – annual reports are
-public documents by law. Using it is legitimate; using it *well* is a
-matter of a few habits, which is what this article is about.
+and built for system-to-system access, and annual reports are public
+documents by law. Using it is legitimate. Using it *well* is a matter of
+a few habits, which is what this article is about.
 
 ## The pipeline
 
@@ -41,7 +41,7 @@ is local; that line is the first real API call.
 ## Identify yourself
 
 The `contact` argument is mandatory and is sent as the `User-Agent`
-header. Erhvervsstyrelsen asks requests to identify the sender – use a
+header. Erhvervsstyrelsen asks requests to identify the sender, so use a
 real email address you can be reached at. The function refuses to run
 with an empty contact, but it cannot check that the address is honest;
 that part is yours.
@@ -49,8 +49,9 @@ that part is yours.
 ## Be polite about volume
 
 Each hit is one published annual report, and its `dokumenter` array
-typically holds several files (PDF, XML/XBRL, sometimes XHTML) – expect
-roughly 3-5 document rows per company per year in the hits tibble.
+typically holds several files (PDF, XML/XBRL, sometimes XHTML), so
+expect roughly 3-5 document rows per company per year in the hits
+tibble.
 
 The query selects *companies and periods*. Selecting which *documents*
 to download is done in R, between
@@ -64,11 +65,11 @@ hits <- hits |> dplyr::filter(dokumentmimetype == "application/pdf")
 ```
 
 The arithmetic matters: 1000 companies for one year is ~1000 hits but
-3000–5000 documents, which at the default `sleep = 3` is 2.5–4 hours of
+3000-5000 documents, which at the default `sleep = 3` is 2.5-4 hours of
 downloading. Filtering to one mimetype first cuts it to ~1000 files
 (under an hour). Always look at the hits tibble before you call
-[`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
-– it tells you exactly what you are about to fetch.
+[`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md);
+it tells you exactly what you are about to fetch.
 
 [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
 enforces a delay of at least 1 second between requests (default 3) and
@@ -80,7 +81,7 @@ rerun stops before re-downloading anything.
 A single response holds at most `query$size` hits (default 2999).
 [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md)
 warns if the response is full, since the result may then be truncated.
-For large pulls – many companies across many years – use the scroll API
+For large pulls (many companies across many years), use the scroll API
 to fetch every matching hit in batches:
 
 ``` r
@@ -89,8 +90,8 @@ response <- cvr_query(many_cvrs, "2015-01-01", "2024-12-31") |>
   cvr_search(contact = "you@example.com", scroll = TRUE)
 ```
 
-Note that `scroll` is about the *completeness of the search result*; it
-does not reduce the number of documents you download afterwards.
+`scroll` affects the *completeness of the search result* only. It does
+not reduce the number of documents you download afterwards.
 
 ## Test small first
 
@@ -100,6 +101,57 @@ you want to see the scroll mechanics work without load, force small
 batches: `scroll = 2` on a query with a few hits walks through the whole
 flow in a couple of requests.
 
+## Working with the XBRL files
+
+The PDF is the human-readable version of the annual report. For data
+work, the XML file next to it is usually the better download: it is
+XBRL, the machine-readable filing, and
+[`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md)
+parses it into a tidy tibble with one row per reported fact. Filter the
+hits to the XML mimetype, download, and bind the parsed files with the
+CVR number as id:
+
+``` r
+
+hits_xml <- hits |> dplyr::filter(dokumentmimetype == "application/xml")
+cvr_download(hits_xml, "data/xml")
+
+xbrl <- list.files("data/xml", full.names = TRUE) |>
+  read_files(reader = read_xbrl, out = "bind", .id = "cvr")
+```
+
+Two things to know about the result. The `fact` column is text and has
+to be converted for numeric work. And a filing carries *both* accounting
+years, so filter on the context dates (`startdate`, `enddate`,
+`instant`) before comparing companies.
+
+One quirk of XBRL is that amounts often arrive without a meaningful
+sign: costs can be reported as positive numbers, and the convention
+varies between preparers.
+[`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
+can recover the signs, because the income statement has to reconcile. It
+searches for the `+1`/`-1` assignment that makes the line items sum to
+the reported total:
+
+``` r
+
+resultatopgoerelse <- xbrl |>
+  dplyr::filter(elementid %in% c(
+    "Revenue", "ExternalExpenses", "EmployeeBenefitsExpense",
+    "TaxExpense", "ProfitLoss"
+  )) |>
+  dplyr::mutate(fact = as.numeric(fact))
+
+find_signs(resultatopgoerelse, elementid, fact, total_label = "ProfitLoss")
+```
+
+This only works when the set of line items is complete: every component
+of the income statement must be there, including the reported result
+(`ProfitLoss`, årets resultat). With items missing, the reconciliation
+either fails or lands on a wrong assignment. The element names depend on
+the taxonomy the company filed under, so start by looking at the
+`elementid` values in your own data before hardcoding a selection.
+
 ## The legal frame
 
 Annual reports are public by law, and the distribution service is the
@@ -108,5 +160,5 @@ Usage falls under the general terms for Danish open public data. The one
 substantive restriction to know about is *reklamebeskyttelse*
 (CVR-lovens paragraf 19): data on protected companies must not be used
 for direct marketing. For statistical and analytical use of financial
-statements, that restriction is irrelevant – but if your use case ever
+statements, that restriction is irrelevant, but if your use case ever
 drifts toward contacting the companies, check it.

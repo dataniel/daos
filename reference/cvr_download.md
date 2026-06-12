@@ -43,7 +43,7 @@ downloads are not included).
 
 Each company-year typically lists several files (PDF, XML/XBRL,
 sometimes XHTML), so filter the hits tibble before downloading if you
-only need one format – e.g.
+only need one format, e.g.
 `dplyr::filter(hits, dokumentmimetype == "application/pdf")`.
 
 ## See also

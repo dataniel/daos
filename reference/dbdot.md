@@ -26,8 +26,8 @@ A character vector of the same length.
 
 ## Details
 
-The inverse – the bare-digit form – is simply `gsub("[.]", "", x)`, so
-it has no function of its own.
+The inverse (the bare-digit form) is simply `gsub("[.]", "", x)`, so it
+has no function of its own.
 
 No digits are invented: a code that lost its leading zero in Excel (e.g.
 `11100` for `"011100"`) cannot be repaired safely, because a 3- or

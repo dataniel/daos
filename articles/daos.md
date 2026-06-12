@@ -8,13 +8,12 @@ with short, self-contained examples.
 
 ## Convenience shorthands
 
-### `f()` – string interpolation
+### `f()`: string interpolation
 
 [`f()`](https://dataniel.github.io/daos/reference/f.md) is a short alias
 for [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html),
-inspired by Python’s f-string syntax. The name is deliberately brief –
-not self-explanatory, but fast to type and visually unobtrusive in a
-pipeline.
+inspired by Python’s f-string syntax. The name is not self-explanatory,
+but it is fast to type and stays out of the way in a pipeline.
 
 ``` r
 
@@ -25,24 +24,23 @@ f("1 + 1 = {1 + 1}")
 #> 1 + 1 = 2
 ```
 
-### `nowf()` – formatted timestamp
+### `nowf()`: formatted timestamp
 
 [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) combines
 [`format()`](https://rdrr.io/r/base/format.html) and
-[`Sys.time()`](https://rdrr.io/r/base/Sys.time.html) into a single call.
-The motivation is simple: when timestamping an export, you want to write
-[`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) inline
-without stopping to think about the `format(Sys.time(), ...)` signature.
+[`Sys.time()`](https://rdrr.io/r/base/Sys.time.html) in a single call,
+so you can timestamp an export inline without stopping to look up the
+`format(Sys.time(), ...)` signature.
 
 ``` r
 
 nowf()                  # default: YYYYMMDD
 #> [1] "20260612"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-12 00:33"
+#> [1] "2026-06-12 10:13"
 ```
 
-A common pattern – timestamping an export file:
+A typical use is timestamping an export file:
 
 ``` r
 
@@ -50,14 +48,14 @@ iris |>
   writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
 ```
 
-### `shh()` – suppress messages and warnings
+### `shh()`: suppress messages and warnings
 
 A shorthand for `suppressMessages(suppressWarnings(...))`. Useful when
-you grow tired of tidyverse startup banners, or when running R scripts
-as CLI tools (e.g. with `rapp`) or in presentation tools like
-`presenterm` where console output must be clean. The name is
-deliberately unusual – a common word like `quiet` is one masking
-conflict away from confusion.
+you are tired of tidyverse startup banners, or when an R script runs as
+a CLI tool (e.g. with `rapp`) or in a presentation tool like
+`presenterm`, where console output has to be clean. The odd name is on
+purpose: a function called `quiet` is one masking conflict away from
+trouble.
 
 ``` r
 
@@ -65,14 +63,14 @@ shh(message("this will not appear"))
 shh(warning("neither will this"))
 ```
 
-### `is_blank()` – comprehensive blank test
+### `is_blank()`: comprehensive blank test
 
-[`is.na()`](https://rdrr.io/r/base/NA.html) only catches `NA`.
+[`is.na()`](https://rdrr.io/r/base/NA.html) only catches `NA`, and
 [`rlang::is_empty()`](https://rlang.r-lib.org/reference/is_empty.html)
 only catches `NULL` and zero-length vectors.
 [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
-covers all three plus empty strings – useful when validating input that
-may arrive in any of these forms.
+covers all three plus empty strings, which is handy when validating
+input that can arrive in any of these forms.
 
 ``` r
 
@@ -90,7 +88,7 @@ is_blank("text")      # FALSE
 #> [1] FALSE
 ```
 
-### `%??%` – null-coalescing with blank detection
+### `%??%`: null-coalescing with blank detection
 
 Like `rlang::%||%` but uses
 [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)
@@ -109,14 +107,14 @@ NA   %??% 0
 #> [1] 42
 ```
 
-### `%like%` – regex matching with NA preservation
+### `%like%`: regex matching with NA preservation
 
-`%like%` is intended as a more readable replacement for `str_detect()`.
-The infix form reads naturally in a
+`%like%` is a more readable replacement for `str_detect()`. The infix
+form reads naturally in a
 [`filter()`](https://dplyr.tidyverse.org/reference/filter.html) call,
 and unlike [`grepl()`](https://rdrr.io/r/base/grep.html), `NA` values
-are preserved as `NA` rather than silently coerced to `FALSE` – which
-matters when filtering on optional fields.
+stay `NA` instead of being coerced to `FALSE`. That matters when
+filtering on optional fields.
 
 ``` r
 
@@ -154,16 +152,15 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 
 ## File workflows
 
-### `read_files()` – validate, read, and collect
+### `read_files()`: validate, read, and collect
 
-Reading a set of files in base R or tidyverse requires a pipeline of
-[`list.files()`](https://rdrr.io/r/base/list.files.html),
-[`lapply()`](https://rdrr.io/r/base/lapply.html) or
+Reading a set of files normally takes a small pipeline:
+[`list.files()`](https://rdrr.io/r/base/list.files.html), a loop or
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html), and
-manual naming. As a statistician you want one function for one thing.
+manual naming.
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-handles path expansion, existence checks, format detection, naming, and
-collection in a single call.
+does it in one call and handles path expansion, existence checks, format
+detection, and naming along the way.
 
 A single path returns the object directly; multiple paths return a named
 list with a progress bar.
@@ -183,14 +180,14 @@ Supported formats: `csv`, `tsv`, `parquet`, `feather`, `xlsx`, `xls`,
 
 In practice,
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-works best when data production is consistent – same formats, same
-column names, same types across files. If
+works best when data production is consistent: same formats, same column
+names, same types across files. If
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 handles a set of files without warnings, the workflow is in order. When
-it warns about type mismatches, that is a signal that something has
-changed upstream. The workflow thinking behind this – and how
+it warns about type mismatches, something has changed upstream. There is
+a separate article about this way of working, and about using
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-backs it up when files refuse to stack – has its own article:
+when files refuse to stack:
 [`vignette("read-files")`](https://dataniel.github.io/daos/articles/read-files.md).
 
 Supply a custom reader to override auto-detection or add arguments:
@@ -235,7 +232,7 @@ The `.id` column is always excluded from this reconciliation.
 Set `out = "unpack"` to assign each file as its own named variable in
 the calling environment. By default,
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-aborts if any name already exists – set `.overwrite = TRUE` to allow
+aborts if any name already exists. Set `.overwrite = TRUE` to allow
 overwriting.
 
 ``` r
@@ -243,11 +240,10 @@ overwriting.
 read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
 ```
 
-### `summon()` – retrieve objects by name pattern
+### `summon()`: retrieve objects by name pattern
 
 A regex-based alternative to [`ls()`](https://rdrr.io/r/base/ls.html) +
-[`mget()`](https://rdrr.io/r/base/get.html). The base R equivalent is
-functional but somewhat clunky:
+[`mget()`](https://rdrr.io/r/base/get.html):
 
 ``` r
 
@@ -270,7 +266,7 @@ names(result)
 #> [1] "dat1" "dat2" "dat3"
 ```
 
-### `read_access()` – read from a Microsoft Access database
+### `read_access()`: read from a Microsoft Access database
 
 Connects to an `.mdb` or `.accdb` file via ODBC, executes a SQL query,
 and returns the result as a tibble. Requires the `DBI` and `odbc`
@@ -278,9 +274,9 @@ packages and a Microsoft Access ODBC driver.
 
 The `verbosity` argument controls output:
 
-- `"compact"` (default) – one line per file, best when looping
-- `"full"` – header, spinners, and summary; best for single files
-- `"quiet"` – no output
+- `"compact"` (default): one line per file, best when looping
+- `"full"`: header, spinners, and summary, best for single files
+- `"quiet"`: no output
 
 ``` r
 
@@ -293,7 +289,7 @@ files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
 results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
 
-### `read_xbrl()` – parse an XBRL file
+### `read_xbrl()`: parse an XBRL file
 
 Parses an XBRL XML document and returns a tidy tibble with one row per
 fact, joined to context (dates) and unit information. Requires `xml2`.
@@ -314,54 +310,59 @@ For non-UTF-8 files, pass `encoding`:
 df <- read_xbrl("report.xml", encoding = "latin1")
 ```
 
-### Accounts and CVR workflows – see the dedicated articles
+The full path from downloaded annual reports to parsed facts, including
+sign reconciliation with
+[`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md),
+is shown in
+[`vignette("cvr")`](https://dataniel.github.io/daos/articles/cvr.md).
+
+### Accounts and CVR workflows
 
 Two larger workflows have their own articles instead of a walkthrough
 here:
 
-- [`vignette("cvr")`](https://dataniel.github.io/daos/articles/cvr.md) –
-  responsible use of the `cvr_*` pipeline for fetching published annual
-  reports from Erhvervsstyrelsens distribution service:
+- [`vignette("cvr")`](https://dataniel.github.io/daos/articles/cvr.md)
+  covers responsible use of the `cvr_*` pipeline for fetching published
+  annual reports from Erhvervsstyrelsens distribution service:
   [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md),
   [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md),
   [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md),
   [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md).
 - [`vignette("accounts")`](https://dataniel.github.io/daos/articles/accounts.md)
-  – the manual accounts workflow behind
+  covers the manual accounts workflow behind
   [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
   and
   [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md):
   from PDF reports through hand-formatted text files to one validated,
   tidy Excel file.
 
-### `write_excel()` / `append_excel()` – write presentable Excel files
+### `write_excel()` / `append_excel()`: write presentable Excel files
 
-These two functions exist because of a colleague who kept complaining
-that files produced with `writexl` were too “empty”: no frozen header,
-no thousand separators, no rounding – a real concern when the audience
-works with macroeconomic statistics and reads the numbers, not the code.
+These two functions exist because a plain data export is hard to read
+for the people the file is meant for. The complaint from a colleague who
+works with macroeconomic statistics was concrete: no frozen header, no
+thousand separators, no rounding.
 [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
-is fast but bare, and `openxlsx2` can do all the styling but requires
-building a workbook object, adding worksheets, applying styles, and
-saving.
+is fast but writes exactly such unformatted files, and `openxlsx2` can
+do all the styling but wants a workbook object, worksheets, styles, and
+a save call.
 [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
-is the middle ground: a single call with defaults that make the file
-presentable.
+sits in between: one call, with defaults that make the file presentable.
 
 - Numeric columns with at least one value ≥ 1,000 are formatted with a
   thousand separator and no displayed decimals (`#,##0`); the underlying
   values are preserved.
-- **Year-like columns are excluded automatically**: a numeric column
-  where every value is a whole number between 1800 and 2200 is assumed
-  to hold years, so `2020` is not displayed as `2.020`. Disable with
-  `detect_years = FALSE`; use `skip_fmt` for columns the heuristic
+- Year-like columns are excluded automatically: a numeric column where
+  every value is a whole number between 1800 and 2200 is assumed to hold
+  years, so `2020` is not displayed as `2.020`. Disable with
+  `detect_years = FALSE`, and use `skip_fmt` for columns the heuristic
   cannot guess (e.g. numeric period codes like `202001`).
 - `NA` values appear as blank cells.
 - The header row is bold.
 - The first row is frozen (can be turned off with
   `freeze_header = FALSE`).
 
-Only `.xlsx` can be written – the legacy binary `.xls` format is not
+Only `.xlsx` can be written. The old binary `.xls` format is not
 supported, and a non-`.xlsx` path fails early instead of producing a
 file Excel will complain about.
 
@@ -372,10 +373,10 @@ Pass a data frame or a named list of data frames. Requires
 
 ``` r
 
-# Single data frame -- sheet name defaults to "Sheet1"
+# Single data frame: sheet name defaults to "Sheet1"
 write_excel(mtcars, "output.xlsx")
 
-# Named list -- each element becomes a sheet
+# Named list: each element becomes a sheet
 write_excel(
   list(Cars = mtcars, Iris = iris),
   "output.xlsx"
@@ -417,7 +418,7 @@ write_excel(mtcars, "output.xlsx", as_table = TRUE)
 write_excel(mtcars, "output.xlsx", skip_fmt = "hp")
 ```
 
-### `read_ta()` / `write_ta()` – read and write Greenlandic TA files
+### `read_ta()` / `write_ta()`: read and write Greenlandic TA files
 
 ``` r
 
@@ -429,13 +430,12 @@ write_ta(df, "ta.file")
 
 ## Data inspection
 
-### `view_types()` – compare column types across data frames
+### `view_types()`: compare column types across data frames
 
-Think of
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-as [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
-multiple data frames at once – it shows the type of each column for
-every dataset supplied. Invaluable before joins or before binding with
+is [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
+several data frames at once: one row per column, with the type in each
+dataset. Useful before a join, or before binding with
 `read_files(out = "bind")`.
 
 ``` r
@@ -479,23 +479,21 @@ view_types(df_a, df_b, focus = c(x = "int"))
 
 ## Data validation
 
-The checkpoint pattern behind these two functions – and how to build
-lightweight validation into pipelines with them – has its own article:
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+The checkpoint pattern behind these two functions has its own article,
+[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md),
+which shows how to build lightweight validation into pipelines with
+them.
 
-### `expect_empty()` – assert a data frame is empty
+### `expect_empty()`: assert a data frame is empty
 
-Often you want to assert that a filtering condition finds nothing – and
-if it does find something, you want to know immediately with a clear
-message. Writing a custom `if (nrow(x) > 0) cli::cli_abort(...)` every
-time is repetitive.
+Often you want to assert that a filter finds nothing, and to hear about
+it right away when it does. Writing a custom
+`if (nrow(x) > 0) cli::cli_abort(...)` every time gets repetitive.
 [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-does this in one step, fits into a pipeline, and optionally writes to a
-log file.
+does it in one step, fits into a pipeline, and can write to a log file.
 
-By filtering for impossibilities and piping through
-[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md),
-you have the offending rows at hand the moment something goes wrong.
+Filter for the rows that should not exist, pipe them in, and the
+offending rows are at hand the moment something goes wrong.
 
 ``` r
 
@@ -511,7 +509,7 @@ dplyr::starwars |>
 
 ``` r
 
-# Warning -- rows found:
+# Warning: rows found
 dplyr::starwars |>
   filter(mass > 1000) |>
   expect_empty(warn_msg = "Unrealistic mass values")
@@ -526,9 +524,9 @@ dplyr::starwars |>
   expect_empty(abort_msg = "Unrealistic mass values")
 ```
 
-The `log` argument writes a timestamped entry to a file. When you
-eventually open RStudio to investigate, the errors are already
-collected:
+The `log` argument writes a timestamped entry to a file, so when a
+scheduled run misbehaves, the errors are already collected by the time
+you sit down to investigate:
 
 ``` r
 
@@ -544,16 +542,16 @@ dplyr::starwars |>
   checker(warn_msg = "Unusually tall characters")
 ```
 
-### `flag_duplicates()` – detect and label duplicate rows
+### `flag_duplicates()`: detect and label duplicate rows
 
 Base R’s [`duplicated()`](https://rdrr.io/r/base/duplicated.html) only
 marks the second occurrence of a duplicate.
 [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
-marks all copies and assigns them a shared group ID – making it easy to
-inspect all instances at once. The ID can also serve as an implicit
-record linkage key: if multiple respondents have reported the same
-information but background data is missing for one person, the shared
-`dupid` reveals the connection.
+marks all copies and gives them a shared group ID, so the whole group
+can be inspected together. The ID can also serve as an implicit record
+linkage key: if several respondents have reported the same information
+but background data is missing for one of them, the shared `dupid`
+reveals the connection.
 
 ``` r
 
@@ -615,7 +613,7 @@ ggplot2::mpg |>
 
 ## Data manipulation
 
-### `drop_all_na()` – drop empty rows and/or columns
+### `drop_all_na()`: drop empty rows and/or columns
 
 After a join or import you often end up with rows or columns that are
 entirely `NA`.
@@ -656,7 +654,7 @@ drop_all_na(df, which = "cols")  # only column b
 #> 3     3 z
 ```
 
-### `split_by()` – split a data frame into a named list
+### `split_by()`: split a data frame into a named list
 
 [`dplyr::group_split()`](https://dplyr.tidyverse.org/reference/group_split.html)
 returns an unnamed list.
@@ -690,13 +688,13 @@ names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
 ```
 
-### `find_signs()` – reconcile accounting line items
+### `find_signs()`: reconcile accounting line items
 
 [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
-uses a *meet-in-the-middle* algorithm to find the sign assignment (`+1`,
-`-1`, or `0`) for a set of values such that their signed sum equals a
-specified total. Useful when importing accounting data where sign
-conventions are unknown.
+finds the signs (`+1`, `-1`, or `0`) that make a set of values sum to a
+given total. Useful when importing accounting data where the sign
+conventions are unknown. It uses a *meet-in-the-middle* algorithm, so it
+stays fast even with many line items.
 
 ``` r
 
@@ -727,13 +725,13 @@ find_signs(
 
 ## Domain-specific
 
-### `clean_cpr()` / `clean_cvr()` – standardise identifier columns
+### `clean_cpr()` / `clean_cvr()`: standardise identifier columns
 
-Register data arrives with identifiers in every imaginable shape:
-`111111-1118`, `12 34 56 78`, `DK12345678`, or a nine-digit CPR that
-lost its leading zero in Excel. Before a join, both sides need the same
-canonical form – and that is all these two functions do. They are
-vector-in/vector-out, so they slot into a
+Identifiers rarely arrive in one consistent shape: `111111-1118`,
+`12 34 56 78`, `DK12345678`, or a nine-digit CPR that lost its leading
+zero in Excel. Before a join, both sides need the same form, and that is
+all these two functions do. They take a vector and return a vector, so
+the natural place for them is inside a
 [`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html):
 
 ``` r
@@ -744,28 +742,28 @@ clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
 #> [1] "12345678" "12345678" "12345678"
 ```
 
-Note the deliberate asymmetry:
+The two differ on one point.
 [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-zero-pads nine-digit values (birth days 01–09 mean a third of all CPR
-numbers legitimately start with a zero, which Excel drops), while
+zero-pads nine-digit values, because birth days 01 to 09 mean that a
+third of all CPR numbers start with a zero, which Excel drops.
 [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
-never invents a digit – a seven-digit CVR cannot be told apart from a
-typo, and padding it would let a malformed number slip past a later
+never adds a digit: a seven-digit CVR cannot be told apart from a typo,
+and padding it would let a malformed number slip past a later
 `cvr %like% "^\\d{8}$"` checkpoint.
 
-Neither function validates – malformed values come back cleaned but
+Neither function validates. Malformed values come back cleaned but still
 visibly malformed. Validation is
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)’s
 job (below), or a checkpoint from
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
 
-### `dbdot()` – format DB07 industry codes with dots
+### `dbdot()`: format DB07 industry codes with dots
 
 DB07 industry codes appear both as `011100` and `01.11.00` depending on
 the source.
 [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md)
-normalises to the dotted form – existing dots are stripped first, so
-mixed input comes out uniform and the function is idempotent. Any
+normalises to the dotted form. Existing dots are stripped first, so
+mixed input comes out uniform and running it twice changes nothing. Any
 aggregation level works:
 
 ``` r
@@ -781,22 +779,21 @@ invents digits: a code that lost its leading zero in Excel is ambiguous
 (`111` could be group `11.1` or class `01.11`), so keep industry codes
 as character columns.
 
-### `add_cpr_info()` – add birth date, age, sex, and validity
+### `add_cpr_info()`: add birth date, age, sex, and validity
 
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
 appends derived columns to a data frame using official CPR Register
-century-detection rules. Dashes and spaces are stripped automatically;
-nine-digit numbers are zero-padded.
+century-detection rules. Dashes and spaces are stripped automatically,
+and nine-digit numbers are zero-padded.
 
-Two things are worth knowing about the design. First, *validity*:
-`valid` means ten digits encoding a real calendar date – deliberately
-**not** the modulus-11 check, because the CPR office has assigned
-numbers without mod-11 control since 2007 and states that they are fully
-valid. The check is still available as the separate `mod11` column,
-where it serves as a data-quality signal. Second, *speed*: the
-implementation is pure vectorised arithmetic (digit matrix, mod-11 as a
-matrix product, dates built as epoch day counts without string parsing),
-so it handles millions of rows in seconds.
+A word on validity: `valid` means ten digits encoding a real calendar
+date, and nothing more. The modulus-11 check is not part of it, because
+the CPR office has assigned numbers without mod-11 control since 2007
+and states that they are fully valid. The check is still available as
+the separate `mod11` column, where it works as a data quality signal.
+The implementation is plain vectorised arithmetic (a digit matrix,
+mod-11 as a matrix product, dates built as day counts instead of parsed
+strings), so a few million rows take seconds.
 
 ``` r
 
@@ -838,13 +835,13 @@ add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 
 ## Interactive tools
 
-### `screen_timeseries()` – interactive time-series screening
+### `screen_timeseries()`: interactive time-series screening
 
-Many people find it hard to get close enough to data when working in a
-console – Excel’s immediate, visual feedback is difficult to replicate.
+It is hard to get as close to data in a console as in Excel, where the
+feedback is immediate and visual.
 [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
-is an attempt to bridge that gap: it launches a Shiny app where you
-navigate time series group by group, zoom in, and flag anomalies –
+is an attempt to bridge that gap. It launches a Shiny app where you walk
+through the time series group by group, zoom, and flag anomalies –
 without writing any filtering code.
 
 All columns that are not `x`, `y`, `series`, or excluded automatically
@@ -896,8 +893,8 @@ palette (`Ctrl+Shift+P`). Keyboard shortcuts can be bound under *Tools
 ### Fix Windows paths
 
 Replaces backslashes with forward slashes in Windows-style paths
-(`C:\...` or `\\server\...`). Only path-like backslashes are converted –
-`\(x)` lambda syntax and escape sequences like `\n` are left untouched.
+(`C:\...` or `\\server\...`). Only path-like backslashes are converted;
+`\(x)` lambda syntax and escape sequences like `\n` are left alone.
 
 - **Text selected:** operates on the selection only
 - **Nothing selected:** operates on the entire active file and restores
@@ -926,7 +923,7 @@ c(
 ```
 
 Useful for quickly wrapping CVR numbers, variable names, or any
-line-delimited list copied from Excel or a mail.
+line-delimited list copied from Excel or an email.
 
 ### Open in file explorer
 

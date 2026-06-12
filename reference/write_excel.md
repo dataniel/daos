@@ -4,7 +4,7 @@ Creates a new `.xlsx` workbook with formatting applied: the header row
 is bold and frozen, `NA` values are shown as blank cells, and numeric
 columns are formatted with a thousand separator and no displayed
 decimals (`#,##0`) when the column contains at least one value \>= 1000.
-Underlying values are preserved – only the display format changes.
+Underlying values are preserved. Only the display format changes.
 
 ## Usage
 
@@ -70,7 +70,7 @@ and 2200 is assumed to hold years, so `2020` is not displayed as
 `skip_fmt` for columns it cannot guess (e.g. numeric period codes like
 `202001`).
 
-Only the modern `.xlsx` format is supported – the legacy binary `.xls`
+Only the modern `.xlsx` format is supported. The old binary `.xls`
 format cannot be written.
 
 Use

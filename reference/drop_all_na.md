@@ -1,7 +1,7 @@
 # Drop all-`NA` rows and/or columns
 
-Removes rows and/or columns that are entirely `NA` – handy for tidying
-up data after a join or import has left empty rows or unused columns
+Removes rows and/or columns that are entirely `NA`. Handy for tidying up
+data after a join or import has left empty rows or unused columns
 behind. Unlike
 [`tidyr::drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html),
 which drops a row as soon as it contains a single `NA`, this only drops

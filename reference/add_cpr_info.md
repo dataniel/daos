@@ -29,13 +29,13 @@ add_cpr_info(
 
   Which info types to add. Either:
 
-  - An **unnamed** character vector, e.g. `c("bday", "age")` — uses the
-    type names as column names.
+  - An **unnamed** character vector, e.g. `c("bday", "age")`, which uses
+    the type names as column names.
 
   - A **named** character vector, e.g.
-    `c(birth_date = "bday", years_old = "age")` — left-hand side becomes
-    the column name, right-hand side is the type. Default: all five
-    types.
+    `c(birth_date = "bday", years_old = "age")`, where the left-hand
+    side becomes the column name and the right-hand side is the type.
+    Default: all five types.
 
 - ref_date:
 
@@ -60,33 +60,33 @@ The original data frame with the requested columns appended.
 | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
 | `"valid"` | logical | Format valid *and* the encoded birth date is a real calendar date |
 
-**What `valid` means – and what it deliberately does not:**
-`valid = TRUE` requires exactly two things: the cleaned value is ten
-digits, and those digits encode a real calendar date under the official
-century rules. **The modulus-11 check is *not* part of `valid`.** Since
-2007 the CPR office has assigned numbers *without* modulus-11 control,
-because some birth dates have run out of mod-11-compatible sequence
-numbers; cpr.dk states that these are "fuldt ud gyldige personnumre" (so
-far assigned to persons born on certain 1 January dates between 1960 and
-the 1990s). A failed mod-11 therefore does not make a CPR number invalid
-– validators that reject on mod-11 wrongly reject real, living people.
-The check is still reported separately as `mod11`, because it remains a
-useful data-quality signal: a high failure rate in older data suggests
-keying errors. Note also that the official assignment series start at
-sequence number 0001, so `0000` never occurs in practice; it is not
-rejected here, since the date check is the documented criterion.
+**What `valid` means, and what it does not:** `valid = TRUE` requires
+exactly two things: the cleaned value is ten digits, and those digits
+encode a real calendar date under the official century rules. **The
+modulus-11 check is *not* part of `valid`.** Since 2007 the CPR office
+has assigned numbers *without* modulus-11 control, because some birth
+dates have run out of mod-11-compatible sequence numbers. cpr.dk states
+that these are "fuldt ud gyldige personnumre" (so far assigned to
+persons born on certain 1 January dates between 1960 and the 1990s). A
+failed mod-11 therefore does not make a CPR number invalid. Validators
+that reject on mod-11 wrongly reject real, living people. The check is
+still reported separately as `mod11`, where it works as a data quality
+signal: a high failure rate in older data suggests keying errors. The
+official assignment series start at sequence number 0001, so `0000`
+never occurs in practice. It is not rejected here, since the date check
+is the documented criterion.
 
 **Century detection** follows the official CPR rules based on digit 7
 and the two-digit year component (see the table in the source code).
 
 **Input tolerance:** the CPR column is standardised with
-[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-– dashes and spaces are stripped and nine-digit numbers are zero-padded
-on the left (recovering values that lost a leading zero in Excel). The
-CPR column in the returned data frame is always returned in the
-standardised 10-digit format `xxxxxxxxxx`.
+[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md):
+dashes and spaces are stripped and nine-digit numbers are zero-padded on
+the left (recovering values that lost a leading zero in Excel). The CPR
+column in the returned data frame is always returned in the standardised
+10-digit format `xxxxxxxxxx`.
 
-**Implementation note:** the function is pure vectorised arithmetic –
+**Implementation note:** the function is plain vectorised arithmetic:
 one string-to-number conversion, digits peeled into an n-by-10 matrix,
 the mod-11 checksum as a single matrix product, and birth dates
 constructed directly as epoch day counts (no date-string parsing). It
@@ -127,7 +127,7 @@ add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
 #> 2 1111111118 1911-11-11       114
 #> 3 0111111118 1911-11-01       114
 
-# Unnamed — uses type names directly:
+# Unnamed: uses type names directly
 add_cpr_info(df, pnr, add = c("bday", "sex"))
 #>          pnr       bday sex
 #> 1 1111111118 1911-11-11   0

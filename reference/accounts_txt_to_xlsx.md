@@ -64,7 +64,7 @@ Each line is either a *category line* or a *data line*:
 
 Amounts must be in whole kroner (periods as thousands separators are
 stripped automatically). If the previous year is absent, the third field
-may be empty – it becomes `NA`.
+may be empty and becomes `NA`.
 
 Appending ` statnatio` to a category line negates all values in that
 category (useful when costs appear with a positive sign in notes).

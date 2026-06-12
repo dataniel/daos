@@ -68,7 +68,7 @@ solution are silently dropped (`NULL`).
 ## Details
 
 This is useful for reconciling accounting line items where the sign
-convention is unknown — for example, finding which items in a set of
+convention is unknown, for example finding which items in a set of
 account balances add up to a reported total.
 
 ## Examples

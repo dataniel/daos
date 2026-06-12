@@ -46,9 +46,9 @@ stop with `abort_msg`:
 
 df |>
   filter(is.na(id)) |>
-  expect_empty(abort_msg = "Rows without an id -- cannot continue")
+  expect_empty(abort_msg = "Rows without an id, cannot continue")
 #> Error in `expect_empty()`:
-#> ! Rows without an id -- cannot continue
+#> ! Rows without an id, cannot continue
 ```
 
 Because
@@ -64,19 +64,23 @@ Some checkpoints from real pipelines:
 ``` r
 
 # Identifiers must look right (%like% preserves NA, unlike grepl)
-df |> filter(!cvr %like% "^\\d{8}$") |>
+df |>
+  filter(!cvr %like% "^\\d{8}$") |>
   expect_empty(abort_msg = "Malformed CVR numbers")
 
 # Amounts must reconcile within tolerance
-df |> filter(abs(total - rowSums(across(starts_with("post_")))) > 1) |>
+df |>
+  filter(abs(total - rowSums(across(starts_with("post_")))) > 1) |>
   expect_empty(warn_msg = "Totals do not reconcile")
 
 # Categorical values must be in the codebook
-df |> filter(!branche %in% codebook$branche) |>
+df |>
+  filter(!branche %in% codebook$branche) |>
   expect_empty(abort_msg = "Unknown industry codes")
 
 # Every expected unit must be present (anti-join as violation set)
-expected |> anti_join(df, by = "cvr") |>
+expected |>
+  anti_join(df, by = "cvr") |>
   expect_empty(warn_msg = "Units missing from the delivery")
 ```
 
@@ -111,9 +115,9 @@ them.
 Joins and row-binds have their own silent failure mode: the same column
 arriving as `chr` in one data frame and `dbl` in the next.
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-shows the type of every column across several data frames at once – a
-quick overview before a join, where an `NA` in the listing also reveals
-a column that is missing from one of the frames:
+shows the type of every column across several data frames at once. That
+gives a quick overview before a join, and an `NA` in the listing also
+reveals a column that is missing from one of the frames:
 
 ``` r
 
@@ -130,9 +134,9 @@ view_types(df_a, df_b)
 #> 4 note   NA    chr
 ```
 
-With `diff = TRUE` only the disagreeing columns remain – which means
-that compatible frames produce an *empty* result. The output is a
-violation set like any other, ready for a checkpoint:
+With `diff = TRUE` only the disagreeing columns remain, so compatible
+frames produce an *empty* result. The output is a violation set like any
+other, ready for a checkpoint:
 
 ``` r
 
@@ -141,24 +145,29 @@ view_types(df_a, df_b, diff = TRUE) |>
 #> Warning: Column types differ between df_a and df_b
 ```
 
-The `focus` argument does the same for a single critical column
-(`view_types(df_a, df_b, focus = c(cvr = "chr"))` returns only the
-frames where `cvr` is *not* character – empty on success).
+The `focus` argument does the same for a single critical column:
+`view_types(df_a, df_b, focus = c(cvr = "chr"))` returns only the frames
+where `cvr` is *not* character, and is empty on success.
 
 ## An audit trail for scheduled pipelines
 
 For pipelines that run unattended,
 [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-takes a `log` argument and appends one timestamped line per check – a
-minimal audit trail without any logging framework:
+takes a `log` argument and appends one timestamped line per check. That
+gives a minimal audit trail without any logging framework:
 
 ``` r
 
 log_path <- f("log/{nowf()}_checks.log")
 check    <- \(data, ...) expect_empty(data, ..., log = log_path)
 
-df |> filter(is.na(id))  |> check(abort_msg = "NA ids")
-df |> filter(amount < 0) |> check(warn_msg  = "Negative amounts")
+df |>
+  filter(is.na(id)) |>
+  check(abort_msg = "NA ids")
+
+df |>
+  filter(amount < 0) |>
+  check(warn_msg = "Negative amounts")
 
 df |>
   flag_duplicates(id) |>
@@ -181,5 +190,5 @@ place.
 uses exactly this philosophy internally: every parsed company is checked
 for malformed values, and all violations are collected and reported
 together before anything is written. If you adopt one habit from this
-article, make it that one – validate *before* you write output, and make
+article, make it that one: validate *before* you write output, and make
 the empty set the definition of success.

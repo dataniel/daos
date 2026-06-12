@@ -77,12 +77,11 @@ through every function with short, self-contained examples.</p>
 </h2>
 <div class="section level3">
 <h3 id="f-string-interpolation">
-<code>f()</code> – string interpolation<a class="anchor" aria-label="anchor" href="#f-string-interpolation"></a>
+<code>f()</code>: string interpolation<a class="anchor" aria-label="anchor" href="#f-string-interpolation"></a>
 </h3>
 <p><code><a href="../reference/f.html">f()</a></code> is a short alias for <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code>,
-inspired by Python’s f-string syntax. The name is deliberately brief –
-not self-explanatory, but fast to type and visually unobtrusive in a
-pipeline.</p>
+inspired by Python’s f-string syntax. The name is not self-explanatory,
+but it is fast to type and stays out of the way in a pipeline.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fl">2026</span></span>
 <span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"Report for {year}"</span><span class="op">)</span></span>
@@ -92,46 +91,45 @@ pipeline.</p>
 </div>
 <div class="section level3">
 <h3 id="nowf-formatted-timestamp">
-<code>nowf()</code> – formatted timestamp<a class="anchor" aria-label="anchor" href="#nowf-formatted-timestamp"></a>
+<code>nowf()</code>: formatted timestamp<a class="anchor" aria-label="anchor" href="#nowf-formatted-timestamp"></a>
 </h3>
 <p><code><a href="../reference/nowf.html">nowf()</a></code> combines <code><a href="https://rdrr.io/r/base/format.html" class="external-link">format()</a></code> and
-<code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time()</a></code> into a single call. The motivation is simple:
-when timestamping an export, you want to write <code><a href="../reference/nowf.html">nowf()</a></code>
-inline without stopping to think about the
+<code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time()</a></code> in a single call, so you can timestamp an export
+inline without stopping to look up the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20260612"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-12 00:33"</span></span></code></pre></div>
-<p>A common pattern – timestamping an export file:</p>
+<span><span class="co">#&gt; [1] "2026-06-12 10:13"</span></span></code></pre></div>
+<p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"iris_{nowf('%Y%B')}.xlsx"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="shh-suppress-messages-and-warnings">
-<code>shh()</code> – suppress messages and warnings<a class="anchor" aria-label="anchor" href="#shh-suppress-messages-and-warnings"></a>
+<code>shh()</code>: suppress messages and warnings<a class="anchor" aria-label="anchor" href="#shh-suppress-messages-and-warnings"></a>
 </h3>
 <p>A shorthand for <code>suppressMessages(suppressWarnings(...))</code>.
-Useful when you grow tired of tidyverse startup banners, or when running
-R scripts as CLI tools (e.g. with <code>rapp</code>) or in presentation
-tools like <code>presenterm</code> where console output must be clean.
-The name is deliberately unusual – a common word like <code>quiet</code>
-is one masking conflict away from confusion.</p>
+Useful when you are tired of tidyverse startup banners, or when an R
+script runs as a CLI tool (e.g. with <code>rapp</code>) or in a
+presentation tool like <code>presenterm</code>, where console output has
+to be clean. The odd name is on purpose: a function called
+<code>quiet</code> is one masking conflict away from trouble.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/shh.html">shh</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"this will not appear"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/shh.html">shh</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"neither will this"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="is_blank-comprehensive-blank-test">
-<code>is_blank()</code> – comprehensive blank test<a class="anchor" aria-label="anchor" href="#is_blank-comprehensive-blank-test"></a>
+<code>is_blank()</code>: comprehensive blank test<a class="anchor" aria-label="anchor" href="#is_blank-comprehensive-blank-test"></a>
 </h3>
-<p><code><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na()</a></code> only catches <code>NA</code>.
+<p><code><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na()</a></code> only catches <code>NA</code>, and
 <code><a href="https://rlang.r-lib.org/reference/is_empty.html" class="external-link">rlang::is_empty()</a></code> only catches <code>NULL</code> and
 zero-length vectors. <code><a href="../reference/is_blank.html">is_blank()</a></code> covers all three plus empty
-strings – useful when validating input that may arrive in any of these
-forms.</p>
+strings, which is handy when validating input that can arrive in any of
+these forms.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/is_blank.html">is_blank</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span>        <span class="co"># TRUE</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -148,7 +146,7 @@ forms.</p>
 </div>
 <div class="section level3">
 <h3 id="null-coalescing-with-blank-detection">
-<code>%??%</code> – null-coalescing with blank detection<a class="anchor" aria-label="anchor" href="#null-coalescing-with-blank-detection"></a>
+<code>%??%</code>: null-coalescing with blank detection<a class="anchor" aria-label="anchor" href="#null-coalescing-with-blank-detection"></a>
 </h3>
 <p>Like <code>rlang::%||%</code> but uses <code><a href="../reference/is_blank.html">is_blank()</a></code>
 instead of <code><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null()</a></code>, so it also triggers on
@@ -165,14 +163,13 @@ instead of <code><a href="https://rdrr.io/r/base/NULL.html" class="external-link
 </div>
 <div class="section level3">
 <h3 id="like-regex-matching-with-na-preservation">
-<code>%like%</code> – regex matching with NA preservation<a class="anchor" aria-label="anchor" href="#like-regex-matching-with-na-preservation"></a>
+<code>%like%</code>: regex matching with NA preservation<a class="anchor" aria-label="anchor" href="#like-regex-matching-with-na-preservation"></a>
 </h3>
-<p><code>%like%</code> is intended as a more readable replacement for
+<p><code>%like%</code> is a more readable replacement for
 <code>str_detect()</code>. The infix form reads naturally in a
 <code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter()</a></code> call, and unlike <code><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl()</a></code>,
-<code>NA</code> values are preserved as <code>NA</code> rather than
-silently coerced to <code>FALSE</code> – which matters when filtering on
-optional fields.</p>
+<code>NA</code> values stay <code>NA</code> instead of being coerced to
+<code>FALSE</code>. That matters when filtering on optional fields.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sedan"</span>, <span class="st">"SUV"</span>, <span class="cn">NA</span>, <span class="st">"truck"</span><span class="op">)</span> <span class="op"><a href="../reference/grapes-like-grapes.html">%like%</a></span> <span class="st">"^S"</span></span>
 <span><span class="co">#&gt; [1] FALSE  TRUE    NA FALSE</span></span>
@@ -210,14 +207,13 @@ optional fields.</p>
 </h2>
 <div class="section level3">
 <h3 id="read_files-validate-read-and-collect">
-<code>read_files()</code> – validate, read, and collect<a class="anchor" aria-label="anchor" href="#read_files-validate-read-and-collect"></a>
+<code>read_files()</code>: validate, read, and collect<a class="anchor" aria-label="anchor" href="#read_files-validate-read-and-collect"></a>
 </h3>
-<p>Reading a set of files in base R or tidyverse requires a pipeline of
-<code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files()</a></code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> or
-<code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code>, and manual naming. As a statistician you want
-one function for one thing. <code><a href="../reference/read_files.html">read_files()</a></code> handles path
-expansion, existence checks, format detection, naming, and collection in
-a single call.</p>
+<p>Reading a set of files normally takes a small pipeline:
+<code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files()</a></code>, a loop or <code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code>, and
+manual naming. <code><a href="../reference/read_files.html">read_files()</a></code> does it in one call and handles
+path expansion, existence checks, format detection, and naming along the
+way.</p>
 <p>A single path returns the object directly; multiple paths return a
 named list with a progress bar.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -233,13 +229,12 @@ named list with a progress bar.</p>
 <code>json</code>, <code>ndjson</code>, <code>jsonl</code>,
 <code>yaml</code>, <code>yml</code>, <code>txt</code>.</p>
 <p>In practice, <code><a href="../reference/read_files.html">read_files()</a></code> works best when data
-production is consistent – same formats, same column names, same types
+production is consistent: same formats, same column names, same types
 across files. If <code><a href="../reference/read_files.html">read_files()</a></code> handles a set of files
 without warnings, the workflow is in order. When it warns about type
-mismatches, that is a signal that something has changed upstream. The
-workflow thinking behind this – and how <code><a href="../reference/view_types.html">view_types()</a></code> backs
-it up when files refuse to stack – has its own article:
-<code><a href="../articles/read-files.html">vignette("read-files")</a></code>.</p>
+mismatches, something has changed upstream. There is a separate article
+about this way of working, and about using <code><a href="../reference/view_types.html">view_types()</a></code>
+when files refuse to stack: <code><a href="../articles/read-files.html">vignette("read-files")</a></code>.</p>
 <p>Supply a custom reader to override auto-detection or add
 arguments:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -269,17 +264,17 @@ are reconciled with <code><a href="https://readr.tidyverse.org/reference/type_co
 <p><strong>Unpacking into individual variables</strong></p>
 <p>Set <code>out = "unpack"</code> to assign each file as its own named
 variable in the calling environment. By default,
-<code><a href="../reference/read_files.html">read_files()</a></code> aborts if any name already exists – set
+<code><a href="../reference/read_files.html">read_files()</a></code> aborts if any name already exists. Set
 <code>.overwrite = TRUE</code> to allow overwriting.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span>, names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"dat"</span>, <span class="fl">0</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span>, out <span class="op">=</span> <span class="st">"unpack"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="summon-retrieve-objects-by-name-pattern">
-<code>summon()</code> – retrieve objects by name pattern<a class="anchor" aria-label="anchor" href="#summon-retrieve-objects-by-name-pattern"></a>
+<code>summon()</code>: retrieve objects by name pattern<a class="anchor" aria-label="anchor" href="#summon-retrieve-objects-by-name-pattern"></a>
 </h3>
-<p>A regex-based alternative to <code><a href="https://rdrr.io/r/base/ls.html" class="external-link">ls()</a></code> + <code><a href="https://rdrr.io/r/base/get.html" class="external-link">mget()</a></code>.
-The base R equivalent is functional but somewhat clunky:</p>
+<p>A regex-based alternative to <code><a href="https://rdrr.io/r/base/ls.html" class="external-link">ls()</a></code> +
+<code><a href="https://rdrr.io/r/base/get.html" class="external-link">mget()</a></code>:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/get.html" class="external-link">mget</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ls.html" class="external-link">ls</a></span><span class="op">(</span>pattern <span class="op">=</span> <span class="st">"dat\\d"</span><span class="op">)</span><span class="op">)</span>   <span class="co"># base R</span></span>
 <span><span class="fu"><a href="../reference/summon.html">summon</a></span><span class="op">(</span><span class="st">"dat\\d"</span><span class="op">)</span>               <span class="co"># daos</span></span></code></pre></div>
@@ -297,7 +292,7 @@ list:</p>
 </div>
 <div class="section level3">
 <h3 id="read_access-read-from-a-microsoft-access-database">
-<code>read_access()</code> – read from a Microsoft Access
+<code>read_access()</code>: read from a Microsoft Access
 database<a class="anchor" aria-label="anchor" href="#read_access-read-from-a-microsoft-access-database"></a>
 </h3>
 <p>Connects to an <code>.mdb</code> or <code>.accdb</code> file via
@@ -307,13 +302,13 @@ Access ODBC driver.</p>
 <p>The <code>verbosity</code> argument controls output:</p>
 <ul>
 <li>
-<code>"compact"</code> (default) – one line per file, best when
+<code>"compact"</code> (default): one line per file, best when
 looping</li>
 <li>
-<code>"full"</code> – header, spinners, and summary; best for single
+<code>"full"</code>: header, spinners, and summary, best for single
 files</li>
 <li>
-<code>"quiet"</code> – no output</li>
+<code>"quiet"</code>: no output</li>
 </ul>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Full output for interactive use:</span></span>
@@ -326,7 +321,7 @@ files</li>
 </div>
 <div class="section level3">
 <h3 id="read_xbrl-parse-an-xbrl-file">
-<code>read_xbrl()</code> – parse an XBRL file<a class="anchor" aria-label="anchor" href="#read_xbrl-parse-an-xbrl-file"></a>
+<code>read_xbrl()</code>: parse an XBRL file<a class="anchor" aria-label="anchor" href="#read_xbrl-parse-an-xbrl-file"></a>
 </h3>
 <p>Parses an XBRL XML document and returns a tidy tibble with one row
 per fact, joined to context (dates) and unit information. Requires
@@ -341,49 +336,51 @@ per fact, joined to context (dates) and unit information. Requires
 <p>For non-UTF-8 files, pass <code>encoding</code>:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_xbrl.html">read_xbrl</a></span><span class="op">(</span><span class="st">"report.xml"</span>, encoding <span class="op">=</span> <span class="st">"latin1"</span><span class="op">)</span></span></code></pre></div>
+<p>The full path from downloaded annual reports to parsed facts,
+including sign reconciliation with <code><a href="../reference/find_signs.html">find_signs()</a></code>, is shown
+in <code><a href="../articles/cvr.html">vignette("cvr")</a></code>.</p>
 </div>
 <div class="section level3">
-<h3 id="accounts-and-cvr-workflows-see-the-dedicated-articles">Accounts and CVR workflows – see the dedicated articles<a class="anchor" aria-label="anchor" href="#accounts-and-cvr-workflows-see-the-dedicated-articles"></a>
+<h3 id="accounts-and-cvr-workflows">Accounts and CVR workflows<a class="anchor" aria-label="anchor" href="#accounts-and-cvr-workflows"></a>
 </h3>
 <p>Two larger workflows have their own articles instead of a walkthrough
 here:</p>
 <ul>
 <li>
-<code><a href="../articles/cvr.html">vignette("cvr")</a></code> – responsible use of the
+<code><a href="../articles/cvr.html">vignette("cvr")</a></code> covers responsible use of the
 <code>cvr_*</code> pipeline for fetching published annual reports from
 Erhvervsstyrelsens distribution service: <code><a href="../reference/cvr_query.html">cvr_query()</a></code>,
 <code><a href="../reference/cvr_search.html">cvr_search()</a></code>, <code><a href="../reference/cvr_hits.html">cvr_hits()</a></code>,
 <code><a href="../reference/cvr_download.html">cvr_download()</a></code>.</li>
 <li>
-<code><a href="../articles/accounts.html">vignette("accounts")</a></code> – the manual accounts workflow
-behind <code><a href="../reference/accounts_pdf_to_txt.html">accounts_pdf_to_txt()</a></code> and
+<code><a href="../articles/accounts.html">vignette("accounts")</a></code> covers the manual accounts
+workflow behind <code><a href="../reference/accounts_pdf_to_txt.html">accounts_pdf_to_txt()</a></code> and
 <code><a href="../reference/accounts_txt_to_xlsx.html">accounts_txt_to_xlsx()</a></code>: from PDF reports through
 hand-formatted text files to one validated, tidy Excel file.</li>
 </ul>
 </div>
 <div class="section level3">
 <h3 id="write_excel-append_excel-write-presentable-excel-files">
-<code>write_excel()</code> / <code>append_excel()</code> – write
+<code>write_excel()</code> / <code>append_excel()</code>: write
 presentable Excel files<a class="anchor" aria-label="anchor" href="#write_excel-append_excel-write-presentable-excel-files"></a>
 </h3>
-<p>These two functions exist because of a colleague who kept complaining
-that files produced with <code>writexl</code> were too “empty”: no
-frozen header, no thousand separators, no rounding – a real concern when
-the audience works with macroeconomic statistics and reads the numbers,
-not the code. <code><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">writexl::write_xlsx()</a></code> is fast but bare, and
-<code>openxlsx2</code> can do all the styling but requires building a
-workbook object, adding worksheets, applying styles, and saving.
-<code><a href="../reference/write_excel.html">write_excel()</a></code> is the middle ground: a single call with
-defaults that make the file presentable.</p>
+<p>These two functions exist because a plain data export is hard to read
+for the people the file is meant for. The complaint from a colleague who
+works with macroeconomic statistics was concrete: no frozen header, no
+thousand separators, no rounding. <code><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">writexl::write_xlsx()</a></code> is
+fast but writes exactly such unformatted files, and
+<code>openxlsx2</code> can do all the styling but wants a workbook
+object, worksheets, styles, and a save call. <code><a href="../reference/write_excel.html">write_excel()</a></code>
+sits in between: one call, with defaults that make the file
+presentable.</p>
 <ul>
 <li>Numeric columns with at least one value ≥ 1,000 are formatted with a
 thousand separator and no displayed decimals (<code>#,##0</code>); the
 underlying values are preserved.</li>
-<li>
-<strong>Year-like columns are excluded automatically</strong>: a
-numeric column where every value is a whole number between 1800 and 2200
-is assumed to hold years, so <code>2020</code> is not displayed as
-<code>2.020</code>. Disable with <code>detect_years = FALSE</code>; use
+<li>Year-like columns are excluded automatically: a numeric column where
+every value is a whole number between 1800 and 2200 is assumed to hold
+years, so <code>2020</code> is not displayed as <code>2.020</code>.
+Disable with <code>detect_years = FALSE</code>, and use
 <code>skip_fmt</code> for columns the heuristic cannot guess
 (e.g. numeric period codes like <code>202001</code>).</li>
 <li>
@@ -392,7 +389,7 @@ is assumed to hold years, so <code>2020</code> is not displayed as
 <li>The first row is frozen (can be turned off with
 <code>freeze_header = FALSE</code>).</li>
 </ul>
-<p>Only <code>.xlsx</code> can be written – the legacy binary
+<p>Only <code>.xlsx</code> can be written. The old binary
 <code>.xls</code> format is not supported, and a non-<code>.xlsx</code>
 path fails early instead of producing a file Excel will complain
 about.</p>
@@ -400,10 +397,10 @@ about.</p>
 <p>Pass a data frame or a named list of data frames. Requires
 <code>overwrite = TRUE</code> if the file already exists.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Single data frame -- sheet name defaults to "Sheet1"</span></span>
+<code class="sourceCode R"><span><span class="co"># Single data frame: sheet name defaults to "Sheet1"</span></span>
 <span><span class="fu"><a href="../reference/write_excel.html">write_excel</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="st">"output.xlsx"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Named list -- each element becomes a sheet</span></span>
+<span><span class="co"># Named list: each element becomes a sheet</span></span>
 <span><span class="fu"><a href="../reference/write_excel.html">write_excel</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cars <span class="op">=</span> <span class="va">mtcars</span>, Iris <span class="op">=</span> <span class="va">iris</span><span class="op">)</span>,</span>
 <span>  <span class="st">"output.xlsx"</span></span>
@@ -432,7 +429,7 @@ is required if a sheet of the same name is already present.</p>
 </div>
 <div class="section level3">
 <h3 id="read_ta-write_ta-read-and-write-greenlandic-ta-files">
-<code>read_ta()</code> / <code>write_ta()</code> – read and write
+<code>read_ta()</code> / <code>write_ta()</code>: read and write
 Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-write_ta-read-and-write-greenlandic-ta-files"></a>
 </h3>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
@@ -446,12 +443,12 @@ Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-write_t
 </h2>
 <div class="section level3">
 <h3 id="view_types-compare-column-types-across-data-frames">
-<code>view_types()</code> – compare column types across data
+<code>view_types()</code>: compare column types across data
 frames<a class="anchor" aria-label="anchor" href="#view_types-compare-column-types-across-data-frames"></a>
 </h3>
-<p>Think of <code><a href="../reference/view_types.html">view_types()</a></code> as <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across
-multiple data frames at once – it shows the type of each column for
-every dataset supplied. Invaluable before joins or before binding with
+<p><code><a href="../reference/view_types.html">view_types()</a></code> is <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across several
+data frames at once: one row per column, with the type in each dataset.
+Useful before a join, or before binding with
 <code>read_files(out = "bind")</code>.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>,  y <span class="op">=</span> <span class="st">"a"</span>, z <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -486,22 +483,20 @@ expected type and returns only the datasets where it does not:</p>
 <div class="section level2">
 <h2 id="data-validation">Data validation<a class="anchor" aria-label="anchor" href="#data-validation"></a>
 </h2>
-<p>The checkpoint pattern behind these two functions – and how to build
-lightweight validation into pipelines with them – has its own article:
-<code><a href="../articles/validation.html">vignette("validation")</a></code>.</p>
+<p>The checkpoint pattern behind these two functions has its own
+article, <code><a href="../articles/validation.html">vignette("validation")</a></code>, which shows how to build
+lightweight validation into pipelines with them.</p>
 <div class="section level3">
 <h3 id="expect_empty-assert-a-data-frame-is-empty">
-<code>expect_empty()</code> – assert a data frame is empty<a class="anchor" aria-label="anchor" href="#expect_empty-assert-a-data-frame-is-empty"></a>
+<code>expect_empty()</code>: assert a data frame is empty<a class="anchor" aria-label="anchor" href="#expect_empty-assert-a-data-frame-is-empty"></a>
 </h3>
-<p>Often you want to assert that a filtering condition finds nothing –
-and if it does find something, you want to know immediately with a clear
-message. Writing a custom
-<code>if (nrow(x) &gt; 0) cli::cli_abort(...)</code> every time is
-repetitive. <code><a href="../reference/expect_empty.html">expect_empty()</a></code> does this in one step, fits into
-a pipeline, and optionally writes to a log file.</p>
-<p>By filtering for impossibilities and piping through
-<code><a href="../reference/expect_empty.html">expect_empty()</a></code>, you have the offending rows at hand the
-moment something goes wrong.</p>
+<p>Often you want to assert that a filter finds nothing, and to hear
+about it right away when it does. Writing a custom
+<code>if (nrow(x) &gt; 0) cli::cli_abort(...)</code> every time gets
+repetitive. <code><a href="../reference/expect_empty.html">expect_empty()</a></code> does it in one step, fits into a
+pipeline, and can write to a log file.</p>
+<p>Filter for the rows that should not exist, pipe them in, and the
+offending rows are at hand the moment something goes wrong.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Success:</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
@@ -512,7 +507,7 @@ moment something goes wrong.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No Harry Potter rows in starwars</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Warning -- rows found:</span></span>
+<code class="sourceCode R"><span><span class="co"># Warning: rows found</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Unrealistic mass values"</span><span class="op">)</span></span>
@@ -522,9 +517,9 @@ moment something goes wrong.</p>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>abort_msg <span class="op">=</span> <span class="st">"Unrealistic mass values"</span><span class="op">)</span></span></code></pre></div>
-<p>The <code>log</code> argument writes a timestamped entry to a file.
-When you eventually open RStudio to investigate, the errors are already
-collected:</p>
+<p>The <code>log</code> argument writes a timestamped entry to a file,
+so when a scheduled run misbehaves, the errors are already collected by
+the time you sit down to investigate:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/checks.log"</span><span class="op">)</span></span>
 <span><span class="va">checker</span>  <span class="op">&lt;-</span> \<span class="op">(</span><span class="va">data</span>, <span class="va">...</span><span class="op">)</span> <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">...</span>, log <span class="op">=</span> <span class="va">log_path</span><span class="op">)</span></span>
@@ -539,15 +534,14 @@ collected:</p>
 </div>
 <div class="section level3">
 <h3 id="flag_duplicates-detect-and-label-duplicate-rows">
-<code>flag_duplicates()</code> – detect and label duplicate
-rows<a class="anchor" aria-label="anchor" href="#flag_duplicates-detect-and-label-duplicate-rows"></a>
+<code>flag_duplicates()</code>: detect and label duplicate rows<a class="anchor" aria-label="anchor" href="#flag_duplicates-detect-and-label-duplicate-rows"></a>
 </h3>
 <p>Base R’s <code><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated()</a></code> only marks the second occurrence
 of a duplicate. <code><a href="../reference/flag_duplicates.html">flag_duplicates()</a></code> marks all copies and
-assigns them a shared group ID – making it easy to inspect all instances
-at once. The ID can also serve as an implicit record linkage key: if
-multiple respondents have reported the same information but background
-data is missing for one person, the shared <code>dupid</code> reveals
+gives them a shared group ID, so the whole group can be inspected
+together. The ID can also serve as an implicit record linkage key: if
+several respondents have reported the same information but background
+data is missing for one of them, the shared <code>dupid</code> reveals
 the connection.</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span><span class="op">)</span></span>
@@ -602,7 +596,7 @@ gate:</p>
 </h2>
 <div class="section level3">
 <h3 id="drop_all_na-drop-empty-rows-andor-columns">
-<code>drop_all_na()</code> – drop empty rows and/or columns<a class="anchor" aria-label="anchor" href="#drop_all_na-drop-empty-rows-andor-columns"></a>
+<code>drop_all_na()</code>: drop empty rows and/or columns<a class="anchor" aria-label="anchor" href="#drop_all_na-drop-empty-rows-andor-columns"></a>
 </h3>
 <p>After a join or import you often end up with rows or columns that are
 entirely <code>NA</code>. <code><a href="../reference/drop_all_na.html">drop_all_na()</a></code> removes them.
@@ -640,7 +634,7 @@ reimplemented here to keep the dependency footprint small:</p>
 </div>
 <div class="section level3">
 <h3 id="split_by-split-a-data-frame-into-a-named-list">
-<code>split_by()</code> – split a data frame into a named list<a class="anchor" aria-label="anchor" href="#split_by-split-a-data-frame-into-a-named-list"></a>
+<code>split_by()</code>: split a data frame into a named list<a class="anchor" aria-label="anchor" href="#split_by-split-a-data-frame-into-a-named-list"></a>
 </h3>
 <p><code><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">dplyr::group_split()</a></code> returns an unnamed list.
 <code><a href="../reference/split_by.html">split_by()</a></code> adds names derived from the grouping values,
@@ -667,13 +661,13 @@ making it straightforward to index by group:</p>
 </div>
 <div class="section level3">
 <h3 id="find_signs-reconcile-accounting-line-items">
-<code>find_signs()</code> – reconcile accounting line items<a class="anchor" aria-label="anchor" href="#find_signs-reconcile-accounting-line-items"></a>
+<code>find_signs()</code>: reconcile accounting line items<a class="anchor" aria-label="anchor" href="#find_signs-reconcile-accounting-line-items"></a>
 </h3>
-<p><code><a href="../reference/find_signs.html">find_signs()</a></code> uses a <em>meet-in-the-middle</em>
-algorithm to find the sign assignment (<code>+1</code>, <code>-1</code>,
-or <code>0</code>) for a set of values such that their signed sum equals
-a specified total. Useful when importing accounting data where sign
-conventions are unknown.</p>
+<p><code><a href="../reference/find_signs.html">find_signs()</a></code> finds the signs (<code>+1</code>,
+<code>-1</code>, or <code>0</code>) that make a set of values sum to a
+given total. Useful when importing accounting data where the sign
+conventions are unknown. It uses a <em>meet-in-the-middle</em>
+algorithm, so it stays fast even with many line items.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"revenue"</span>, <span class="st">"costs"</span>, <span class="st">"tax"</span>, <span class="st">"total"</span><span class="op">)</span>,</span>
@@ -701,39 +695,38 @@ conventions are unknown.</p>
 </h2>
 <div class="section level3">
 <h3 id="clean_cpr-clean_cvr-standardise-identifier-columns">
-<code>clean_cpr()</code> / <code>clean_cvr()</code> – standardise
+<code>clean_cpr()</code> / <code>clean_cvr()</code>: standardise
 identifier columns<a class="anchor" aria-label="anchor" href="#clean_cpr-clean_cvr-standardise-identifier-columns"></a>
 </h3>
-<p>Register data arrives with identifiers in every imaginable shape:
+<p>Identifiers rarely arrive in one consistent shape:
 <code>111111-1118</code>, <code>12 34 56 78</code>,
 <code>DK12345678</code>, or a nine-digit CPR that lost its leading zero
-in Excel. Before a join, both sides need the same canonical form – and
-that is all these two functions do. They are vector-in/vector-out, so
-they slot into a <code><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate()</a></code>:</p>
+in Excel. Before a join, both sides need the same form, and that is all
+these two functions do. They take a vector and return a vector, so the
+natural place for them is inside a <code><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate()</a></code>:</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"111111-1118"</span>, <span class="st">"101004007"</span>, <span class="st">"1111111118"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "1111111118" "0101004007" "1111111118"</span></span>
 <span><span class="fu"><a href="../reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK12345678"</span>, <span class="st">"12 34 56 78"</span>, <span class="st">"12345678"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "12345678" "12345678" "12345678"</span></span></code></pre></div>
-<p>Note the deliberate asymmetry: <code><a href="../reference/clean_cpr.html">clean_cpr()</a></code> zero-pads
-nine-digit values (birth days 01–09 mean a third of all CPR numbers
-legitimately start with a zero, which Excel drops), while
-<code><a href="../reference/clean_cvr.html">clean_cvr()</a></code> never invents a digit – a seven-digit CVR
-cannot be told apart from a typo, and padding it would let a malformed
-number slip past a later <code>cvr %like% "^\\d{8}$"</code>
-checkpoint.</p>
-<p>Neither function validates – malformed values come back cleaned but
-visibly malformed. Validation is <code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code>’s job
+<p>The two differ on one point. <code><a href="../reference/clean_cpr.html">clean_cpr()</a></code> zero-pads
+nine-digit values, because birth days 01 to 09 mean that a third of all
+CPR numbers start with a zero, which Excel drops.
+<code><a href="../reference/clean_cvr.html">clean_cvr()</a></code> never adds a digit: a seven-digit CVR cannot be
+told apart from a typo, and padding it would let a malformed number slip
+past a later <code>cvr %like% "^\\d{8}$"</code> checkpoint.</p>
+<p>Neither function validates. Malformed values come back cleaned but
+still visibly malformed. Validation is <code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code>’s job
 (below), or a checkpoint from <code><a href="../articles/validation.html">vignette("validation")</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="dbdot-format-db07-industry-codes-with-dots">
-<code>dbdot()</code> – format DB07 industry codes with dots<a class="anchor" aria-label="anchor" href="#dbdot-format-db07-industry-codes-with-dots"></a>
+<code>dbdot()</code>: format DB07 industry codes with dots<a class="anchor" aria-label="anchor" href="#dbdot-format-db07-industry-codes-with-dots"></a>
 </h3>
 <p>DB07 industry codes appear both as <code>011100</code> and
 <code>01.11.00</code> depending on the source. <code><a href="../reference/dbdot.html">dbdot()</a></code>
-normalises to the dotted form – existing dots are stripped first, so
-mixed input comes out uniform and the function is idempotent. Any
+normalises to the dotted form. Existing dots are stripped first, so
+mixed input comes out uniform and running it twice changes nothing. Any
 aggregation level works:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dbdot.html">dbdot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
@@ -746,22 +739,21 @@ digits: a code that lost its leading zero in Excel is ambiguous
 </div>
 <div class="section level3">
 <h3 id="add_cpr_info-add-birth-date-age-sex-and-validity">
-<code>add_cpr_info()</code> – add birth date, age, sex, and
+<code>add_cpr_info()</code>: add birth date, age, sex, and
 validity<a class="anchor" aria-label="anchor" href="#add_cpr_info-add-birth-date-age-sex-and-validity"></a>
 </h3>
 <p><code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code> appends derived columns to a data frame
 using official CPR Register century-detection rules. Dashes and spaces
-are stripped automatically; nine-digit numbers are zero-padded.</p>
-<p>Two things are worth knowing about the design. First,
-<em>validity</em>: <code>valid</code> means ten digits encoding a real
-calendar date – deliberately <strong>not</strong> the modulus-11 check,
-because the CPR office has assigned numbers without mod-11 control since
-2007 and states that they are fully valid. The check is still available
-as the separate <code>mod11</code> column, where it serves as a
-data-quality signal. Second, <em>speed</em>: the implementation is pure
-vectorised arithmetic (digit matrix, mod-11 as a matrix product, dates
-built as epoch day counts without string parsing), so it handles
-millions of rows in seconds.</p>
+are stripped automatically, and nine-digit numbers are zero-padded.</p>
+<p>A word on validity: <code>valid</code> means ten digits encoding a
+real calendar date, and nothing more. The modulus-11 check is not part
+of it, because the CPR office has assigned numbers without mod-11
+control since 2007 and states that they are fully valid. The check is
+still available as the separate <code>mod11</code> column, where it
+works as a data quality signal. The implementation is plain vectorised
+arithmetic (a digit matrix, mod-11 as a matrix product, dates built as
+day counts instead of parsed strings), so a few million rows take
+seconds.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span>, <span class="st">"111111118"</span><span class="op">)</span>,</span>
@@ -795,15 +787,14 @@ millions of rows in seconds.</p>
 </h2>
 <div class="section level3">
 <h3 id="screen_timeseries-interactive-time-series-screening">
-<code>screen_timeseries()</code> – interactive time-series
+<code>screen_timeseries()</code>: interactive time-series
 screening<a class="anchor" aria-label="anchor" href="#screen_timeseries-interactive-time-series-screening"></a>
 </h3>
-<p>Many people find it hard to get close enough to data when working in
-a console – Excel’s immediate, visual feedback is difficult to
-replicate. <code><a href="../reference/screen_timeseries.html">screen_timeseries()</a></code> is an attempt to bridge that
-gap: it launches a Shiny app where you navigate time series group by
-group, zoom in, and flag anomalies – without writing any filtering
-code.</p>
+<p>It is hard to get as close to data in a console as in Excel, where
+the feedback is immediate and visual. <code><a href="../reference/screen_timeseries.html">screen_timeseries()</a></code>
+is an attempt to bridge that gap. It launches a Shiny app where you walk
+through the time series group by group, zoom, and flag anomalies –
+without writing any filtering code.</p>
 <p>All columns that are not <code>x</code>, <code>y</code>,
 <code>series</code>, or excluded automatically become dropdown filters.
 Requires <code>shiny</code>, <code>ggplot2</code>, and
@@ -869,8 +860,8 @@ be bound under <em>Tools -&gt; Modify Keyboard Shortcuts</em>.</p>
 </h3>
 <p>Replaces backslashes with forward slashes in Windows-style paths
 (<code>C:\...</code> or <code>\\server\...</code>). Only path-like
-backslashes are converted – <code>\(x)</code> lambda syntax and escape
-sequences like <code>\n</code> are left untouched.</p>
+backslashes are converted; <code>\(x)</code> lambda syntax and escape
+sequences like <code>\n</code> are left alone.</p>
 <ul>
 <li>
 <strong>Text selected:</strong> operates on the selection only</li>
@@ -896,7 +887,7 @@ expression. Empty lines are ignored.</p>
 <span>  <span class="st">"11223344"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Useful for quickly wrapping CVR numbers, variable names, or any
-line-delimited list copied from Excel or a mail.</p>
+line-delimited list copied from Excel or an email.</p>
 </div>
 <div class="section level3">
 <h3 id="open-in-file-explorer">Open in file explorer<a class="anchor" aria-label="anchor" href="#open-in-file-explorer"></a>

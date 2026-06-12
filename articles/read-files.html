@@ -77,12 +77,12 @@ one <code>read_*()</code> call per file.</p>
 <span><span class="va">dat2023</span> <span class="op">&lt;-</span> <span class="fu">read_parquet</span><span class="op">(</span><span class="st">"data/dat2023.parquet"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">dat2020</span>, <span class="va">dat2021</span>, <span class="va">dat2022</span>, <span class="va">dat2023</span><span class="op">)</span></span></code></pre></div>
-<p>Reading files one by one can go well – and it can go quietly wrong.
+<p>Reading files one by one can go well, and it can go quietly wrong.
 The block grows with every new delivery, the calls drift apart as one of
 them picks up an extra argument, a missing file is only discovered when
 its own line runs, and <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code> at the end either fails
 or, worse, succeeds while hiding a type change. This article is about
-replacing the block with one <code><a href="../reference/read_files.html">read_files()</a></code> call – and about
+replacing the block with one <code><a href="../reference/read_files.html">read_files()</a></code> call, and about
 using <code><a href="../reference/view_types.html">view_types()</a></code> when the files turn out not to be as
 stackable as they looked.</p>
 <div class="section level2">
@@ -109,8 +109,8 @@ becomes a problem (<code>.lowercase = FALSE</code> to opt out).</li>
 <div class="section level2">
 <h2 id="stacking-files-that-belong-together">Stacking files that belong together<a class="anchor" aria-label="anchor" href="#stacking-files-that-belong-together"></a>
 </h2>
-<p>When the files are slices of the same dataset – years, regions,
-batches – bind them directly with <code>out = "bind"</code>, and use
+<p>When the files are slices of the same dataset (years, regions,
+batches), bind them directly with <code>out = "bind"</code>, and use
 <code>.id</code> to keep track of where each row came from:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span></span>
@@ -126,19 +126,18 @@ batches – bind them directly with <code>out = "bind"</code>, and use
 <p>Files that <em>should</em> be identical often are not: the same
 column arrives as <code>chr</code> in one year and <code>dbl</code> in
 the next, or a column was renamed upstream. With the one-call-per-file
-pattern this surfaces – if at all – as a confusing
+pattern this surfaces, if at all, as a confusing
 <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code> error or a silently mistyped column.</p>
-<p><code>read_files(out = "bind")</code> makes it a managed event
-instead. If the files cannot be bound as-is, it warns, coerces
-everything to character, re-types the result with
-<code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>, and points you to
-<code><a href="../reference/view_types.html">view_types()</a></code>:</p>
+<p><code>read_files(out = "bind")</code> handles it instead. If the
+files cannot be bound as-is, it warns, coerces everything to character,
+re-types the result with <code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>, and points
+you to <code><a href="../reference/view_types.html">view_types()</a></code>:</p>
 <pre><code>Warning: Column types differ across files -- coercing to character and
 re-typing with `readr::type_convert()`.
 i Use `daos::view_types` to inspect the differences.</code></pre>
 <p>The rule of thumb: if <code><a href="../reference/read_files.html">read_files()</a></code> handles a set of
 files without warnings, the data production is consistent. When it
-warns, something changed upstream – and the next step is to find out
+warns, something changed upstream, and the next step is to find out
 what.</p>
 </div>
 <div class="section level2">
@@ -175,10 +174,10 @@ disagree:</p>
 <p>Read the output like this:</p>
 <ul>
 <li>A row with two different type strings (<code>chr</code> vs
-<code>dbl</code> for <code>cvr</code>) is a type mismatch – the classic
+<code>dbl</code> for <code>cvr</code>) is a type mismatch, the classic
 cause of a failed bind or a corrupted join key.</li>
 <li>An <code>NA</code> means the column does not exist in that dataset
-at all (<code>year</code> vs <code>turnover</code> above) – typically a
+at all (<code>year</code> vs <code>turnover</code> above), typically a
 rename or a dropped column upstream.</li>
 </ul>
 <p>The same overview is just as useful <em>before a join</em>: two
@@ -187,8 +186,8 @@ its type, and <code><a href="../reference/view_types.html">view_types()</a></cod
 of two <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> calls and a visual diff.</p>
 <p>For pipelines, the <code>focus</code> argument turns the inspection
 into a check: it returns only the datasets where a critical column does
-<em>not</em> have the expected type, and an empty result on success –
-which plugs straight into the checkpoint pattern from
+<em>not</em> have the expected type, and an empty result on success.
+That plugs straight into the checkpoint pattern from
 <code><a href="../articles/validation.html">vignette("validation")</a></code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -200,8 +199,8 @@ which plugs straight into the checkpoint pattern from
 </h2>
 <p>Not every set of files should be stacked. The default (a named list)
 pairs well with <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> or <code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code>, and
-<code>out = "unpack"</code> assigns each file as its own variable –
-closest to the one-call-per-file pattern, but with the validation,
+<code>out = "unpack"</code> assigns each file as its own variable. That
+is closest to the one-call-per-file pattern, but with the validation,
 naming, and progress handled for you:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>,</span>

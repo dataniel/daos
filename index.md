@@ -6,12 +6,12 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![pkgdown](https://img.shields.io/badge/docs-pkgdown-blue.svg)](https://dataniel.github.io/daos)
 
 > **Experimental.** This package is a personal collection of utility
-> functions that have grown out of day-to-day statistical work — things
-> I kept wishing R had out of the box, patterns I found myself
-> repeating, and new ideas I wanted to try out. Rather than letting them
-> accumulate as loose scripts, I packaged them up properly with the help
-> of Claude Code to get a solid starting point: documentation, tests,
-> and a vignette from the start. Consider it a living experiment.
+> functions that have grown out of day-to-day statistical work: things I
+> kept wishing R had out of the box, patterns I found myself repeating,
+> and new ideas I wanted to try out. Rather than letting them accumulate
+> as loose scripts, I packaged them up properly with the help of Claude
+> Code to get a solid starting point: documentation, tests, and a
+> vignette from the start. Consider it a living experiment.
 
 ## Installation
 
@@ -24,7 +24,7 @@ pak::pak("dataniel/daos")
 
 | Function | Description |
 |----|----|
-| `%??%` | Null-coalescing operator — returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
+| `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md) | Convert PDF financial statements to text files |
 | [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md) | RStudio addin: replace backslashes with forward slashes in Windows paths |
@@ -42,7 +42,7 @@ pak::pak("dataniel/daos")
 | [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md) | Download the documents found by a CVR search |
 | [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
 | [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md) | Drop rows and/or columns that are entirely `NA` |
-| [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint — warn or abort if a data frame is non-empty |
+| [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md) | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
 | [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md) | Find sign assignments that reconcile a set of values to a total |
 | [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md) | Prepend `isdup`/`dupid` columns to mark duplicate rows |

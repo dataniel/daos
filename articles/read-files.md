@@ -13,7 +13,7 @@ dat2023 <- read_parquet("data/dat2023.parquet")
 df <- bind_rows(dat2020, dat2021, dat2022, dat2023)
 ```
 
-Reading files one by one can go well – and it can go quietly wrong. The
+Reading files one by one can go well, and it can go quietly wrong. The
 block grows with every new delivery, the calls drift apart as one of
 them picks up an extra argument, a missing file is only discovered when
 its own line runs, and
@@ -21,7 +21,7 @@ its own line runs, and
 the end either fails or, worse, succeeds while hiding a type change.
 This article is about replacing the block with one
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-call – and about using
+call, and about using
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
 when the files turn out not to be as stackable as they looked.
 
@@ -48,8 +48,8 @@ Two things are easy to miss but matter in practice:
 
 ## Stacking files that belong together
 
-When the files are slices of the same dataset – years, regions, batches
-– bind them directly with `out = "bind"`, and use `.id` to keep track of
+When the files are slices of the same dataset (years, regions, batches),
+bind them directly with `out = "bind"`, and use `.id` to keep track of
 where each row came from:
 
 ``` r
@@ -66,14 +66,14 @@ df <- read_files(
 
 Files that *should* be identical often are not: the same column arrives
 as `chr` in one year and `dbl` in the next, or a column was renamed
-upstream. With the one-call-per-file pattern this surfaces – if at all –
+upstream. With the one-call-per-file pattern this surfaces, if at all,
 as a confusing
 [`bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)
 error or a silently mistyped column.
 
-`read_files(out = "bind")` makes it a managed event instead. If the
-files cannot be bound as-is, it warns, coerces everything to character,
-re-types the result with
+`read_files(out = "bind")` handles it instead. If the files cannot be
+bound as-is, it warns, coerces everything to character, re-types the
+result with
 [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html),
 and points you to
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md):
@@ -85,8 +85,8 @@ and points you to
 The rule of thumb: if
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 handles a set of files without warnings, the data production is
-consistent. When it warns, something changed upstream – and the next
-step is to find out what.
+consistent. When it warns, something changed upstream, and the next step
+is to find out what.
 
 ## Finding the culprit with `view_types()`
 
@@ -129,11 +129,10 @@ view_types(dat2023, dat2024, diff = TRUE)
 Read the output like this:
 
 - A row with two different type strings (`chr` vs `dbl` for `cvr`) is a
-  type mismatch – the classic cause of a failed bind or a corrupted join
+  type mismatch, the classic cause of a failed bind or a corrupted join
   key.
 - An `NA` means the column does not exist in that dataset at all (`year`
-  vs `turnover` above) – typically a rename or a dropped column
-  upstream.
+  vs `turnover` above), typically a rename or a dropped column upstream.
 
 The same overview is just as useful *before a join*: two frames that are
 about to be joined on `cvr` should agree on its type, and
@@ -144,8 +143,8 @@ a visual diff.
 
 For pipelines, the `focus` argument turns the inspection into a check:
 it returns only the datasets where a critical column does *not* have the
-expected type, and an empty result on success – which plugs straight
-into the checkpoint pattern from
+expected type, and an empty result on success. That plugs straight into
+the checkpoint pattern from
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md):
 
 ``` r
@@ -160,9 +159,9 @@ view_types(dat2023, dat2024, focus = c(amount = "dbl")) |>
 Not every set of files should be stacked. The default (a named list)
 pairs well with [`lapply()`](https://rdrr.io/r/base/lapply.html) or
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html), and
-`out = "unpack"` assigns each file as its own variable – closest to the
-one-call-per-file pattern, but with the validation, naming, and progress
-handled for you:
+`out = "unpack"` assigns each file as its own variable. That is closest
+to the one-call-per-file pattern, but with the validation, naming, and
+progress handled for you:
 
 ``` r
 
