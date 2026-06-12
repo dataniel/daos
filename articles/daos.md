@@ -37,7 +37,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20260612"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-12 10:13"
+#> [1] "2026-06-12 14:10"
 ```
 
 A typical use is timestamping an export file:
@@ -829,6 +829,65 @@ add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 #> 1 1111111118  88
 #> 2 1111111118  88
 #> 3 0111111118  88
+```
+
+### `statbank_*`: the Greenland Statbank
+
+The `statbank_*` family is a small client for the Greenland Statbank
+(bank.stat.gl). Search the table list, look up a table’s variables, and
+download the data as a tidy tibble:
+
+``` r
+
+statbank_search("befolkning")
+
+meta <- statbank_meta("BE/BE01/BEXSAT1.PX")
+meta$variables
+
+df <- statbank_get(
+  "BE/BE01/BEXSAT1.PX",
+  tid = c(2023, 2024, 2025),
+  art = "Antal"
+)
+```
+
+Selections in
+[`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
+are matched against both variable codes and their Danish display texts,
+and against both value codes and value texts, so you can write
+`art = "Antal"` without knowing that the internal code is `Number`.
+Matching also folds Danish letters (`foedested` matches `fødested`).
+Variables you do not mention default to all values.
+
+The result can be shaped with three dot-prefixed options:
+`.col_names = "code"` names the columns by variable codes instead of
+display texts, `.values = "code"` fills the cells with value codes (so a
+sex variable coded 0/1 comes back as 0/1), and `.type_convert = FALSE`
+turns off the automatic
+[`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html)
+that otherwise makes e.g. year columns numeric.
+
+The first call to
+[`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
+or
+[`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md)
+walks the statbank’s table tree (one small request per folder) and
+caches the list for the rest of the session.
+
+[`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
+wraps the family in a Shiny app: find a table by browsing the subjects
+or searching, pick values in popup checklists, preview the data and a
+plot, and copy the
+[`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
+call that reproduces the selection. The app is meant as the bridge from
+clicking to scripting; the code tab always shows the query you built.
+Data can be downloaded as formatted Excel, and pressing Q closes the app
+and returns the last fetched dataset to R. Requires `shiny` and
+`ggplot2`.
+
+``` r
+
+statbank_app()
 ```
 
 ------------------------------------------------------------------------

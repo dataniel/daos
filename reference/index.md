@@ -101,6 +101,21 @@
 - [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
   : Download CVR documents
 
+## Greenland Statbank
+
+- [`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
+  : Interactive explorer for the Greenland Statbank
+- [`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
+  : Download a table from the Greenland Statbank
+- [`statbank_meta()`](https://dataniel.github.io/daos/reference/statbank_meta.md)
+  : Get the metadata for a Greenland Statbank table
+- [`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
+  : Search Greenland Statbank tables by title
+- [`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md)
+  : List every table in the Greenland Statbank
+- [`statbank_nodes()`](https://dataniel.github.io/daos/reference/statbank_nodes.md)
+  : List one level of the Greenland Statbank table tree
+
 ## RStudio addins
 
 - [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)
