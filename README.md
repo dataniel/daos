@@ -55,6 +55,12 @@ pak::pak("dataniel/daos")
 | `screen_timeseries()` | Interactive Shiny dashboard for screening time-series data group by group |
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
+| `statbank_app()` | Shiny explorer for the Greenland Statbank: search, select, preview, and copy R code |
+| `statbank_get()` | Download a Greenland Statbank table as a tidy tibble |
+| `statbank_meta()` | Get a statbank table's variables and values |
+| `statbank_nodes()` | Browse one level of the statbank table tree |
+| `statbank_search()` | Search statbank tables by title |
+| `statbank_tables()` | List every table in the statbank (cached per session) |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `view_types()` | Compare column types across multiple data frames |
 | `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |

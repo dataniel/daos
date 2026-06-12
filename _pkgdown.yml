@@ -70,6 +70,15 @@ reference:
       - cvr_hits
       - cvr_download
 
+  - title: Greenland Statbank
+    contents:
+      - statbank_app
+      - statbank_get
+      - statbank_meta
+      - statbank_search
+      - statbank_tables
+      - statbank_nodes
+
   - title: RStudio addins
     contents:
       - addin_fix_path
