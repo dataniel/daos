@@ -35,9 +35,10 @@ test_that(".bf_list() returns an empty tibble for a missing directory", {
   expect_equal(names(out), c("name", "type", "full", "size", "mtime"))
 })
 
-test_that(".bf_rstring() quotes one path and vectorises several", {
+test_that(".bf_rstring() quotes one path and vectorises several (one per line)", {
   expect_equal(daos:::.bf_rstring("C:/data/fil.csv"), '"C:/data/fil.csv"')
-  expect_equal(daos:::.bf_rstring(c("C:/a", "C:/b")), 'c("C:/a", "C:/b")')
+  expect_equal(daos:::.bf_rstring(c("C:/a", "C:/b")),
+               'c(\n  "C:/a",\n  "C:/b"\n)')
   expect_equal(daos:::.bf_rstring(character()), "")
 })
 

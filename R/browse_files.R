@@ -1,8 +1,8 @@
 # A yazi-inspired filesystem browser, built on the same three-column
 # navigation as statbank_app() but over local directories instead of a
 # PXWeb tree. Listing is plain base R, so there is no network and no new
-# dependency. Pressing Q returns the marked paths (or the cursor path) to
-# R as a string or a character vector.
+# dependency. Enter inserts the marked paths into the active RStudio
+# document; Q closes the app and returns them to R.
 
 # List one directory as a tibble: directories first, then files, each
 # alphabetical. Returns full paths with forward slashes. Permission or
@@ -48,14 +48,15 @@
 }
 
 # Render one or more paths as an R expression: a single path becomes a
-# quoted string, several become c("a", "b"). Backslashes are flipped to
-# forward slashes so the result drops straight into R code.
+# quoted string, several become a c() with one path per line (like
+# addin_text_to_vector). Backslashes are flipped to forward slashes so
+# the result drops straight into R code.
 .bf_rstring <- function(paths) {
   if (length(paths) == 0) return("")
   paths <- gsub("\\\\", "/", paths)
   quoted <- paste0('"', paths, '"')
   if (length(quoted) == 1) return(quoted)
-  paste0("c(", paste(quoted, collapse = ", "), ")")
+  paste0("c(\n  ", paste(quoted, collapse = ",\n  "), "\n)")
 }
 
 # Human-readable file size.
@@ -76,22 +77,27 @@
 #' one or more files or folders and copy them, or return them to R.
 #'
 #' - `Space` marks/unmarks the item under the cursor (files or folders).
-#' - `y` (or the button) copies the marked paths as an R expression -- a
-#'   quoted string for one, a `c("a", "b")` vector for several -- with
-#'   forward slashes, ready to paste into a script.
-#' - `o` (or the button) opens the item under the cursor in the system
-#'   file explorer via [daos::open_in_explorer()] (a folder opens, a file
-#'   is revealed in its folder).
-#' - `l`/Enter enters a folder or copies a file's path; `h` goes up a
-#'   level, all the way to the drive chooser at the root.
-#' - `Q` closes the app and returns the marked paths (or, if none are
-#'   marked, the path under the cursor).
+#'   The *target* is the marked paths, or the cursor path when none are
+#'   marked.
+#' - `Enter` (or the button) inserts the target into the active RStudio
+#'   editor or console as an R expression and closes the app -- a quoted
+#'   string for one path, a multi-line `c(...)` (one path per line) for
+#'   several, with forward slashes. Outside RStudio it falls back to the
+#'   clipboard.
+#' - `y` copies that same expression to the clipboard without closing.
+#' - `o` opens the item under the cursor in the system file explorer via
+#'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
+#' - `l`/`->` enters a folder; `h`/`<-` goes up, all the way to the drive
+#'   chooser at the root. The cursor remembers its place in each folder,
+#'   so going back up lands on the folder you came from.
+#' - `Q` closes the app without inserting.
 #'
-#' @param path Directory to start in. Default: the working directory.
+#' @param path Directory to start in. Default: the working directory
+#'   ([getwd()]).
 #'
-#' @return A character vector of the marked paths, invisibly -- a single
-#'   string when one path is marked or the cursor path is used, a vector
-#'   when several are marked. `character(0)` if nothing is resolved.
+#' @return The target paths, invisibly -- a single string when one path
+#'   is marked or the cursor path is used, a character vector when
+#'   several are marked. `character(0)` if nothing is resolved.
 #'
 #' @examples
 #' \dontrun{
@@ -111,6 +117,12 @@ browse_files <- function(path = getwd()) {
   if (!dir.exists(path))
     cli::cli_abort("Directory {.path {path}} does not exist.")
   start_path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+
+  # Carries the result out of the app: the chosen paths, and whether the
+  # user asked to insert them into the editor (Enter) or just close (Q).
+  result <- new.env(parent = emptyenv())
+  result$paths  <- character()
+  result$insert <- FALSE
 
   theme <- if (requireNamespace("bslib", quietly = TRUE)) {
     tryCatch(bslib::bs_theme(version = 5, bootswatch = "zephyr"),
@@ -202,6 +214,7 @@ browse_files <- function(path = getwd()) {
       if (document.querySelector('.modal-backdrop')) return;
 
       var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (key === 'Enter') { e.preventDefault(); Shiny.setInputValue('do_insert', Date.now()); return; }
       if (key === 'y') { e.preventDefault(); Shiny.setInputValue('do_copy', Date.now()); return; }
       if (key === 'o') { e.preventDefault(); Shiny.setInputValue('do_open', Date.now()); return; }
 
@@ -210,7 +223,7 @@ browse_files <- function(path = getwd()) {
 
       var down = (key === 'j' || key === 'ArrowDown');
       var up   = (key === 'k' || key === 'ArrowUp');
-      var open = (key === 'l' || key === 'ArrowRight' || key === 'Enter');
+      var open = (key === 'l' || key === 'ArrowRight');
       var back = (key === 'h' || key === 'ArrowLeft');
       var mark = (key === ' ' || e.code === 'Space');
       if (!(down || up || open || back || mark)) return;
@@ -281,14 +294,16 @@ browse_files <- function(path = getwd()) {
       shiny::uiOutput("browser"),
       shiny::div(
         class = "bf-bar",
-        shiny::actionButton("do_copy", "Kopier R-sti (y)", class = "btn-primary"),
+        shiny::actionButton("do_insert", "Inds\u00e6t i editor (Enter)", class = "btn-primary"),
+        shiny::actionButton("do_copy", "Kopier (y)", class = "btn-default"),
         shiny::actionButton("do_open", "\u00c5bn i stifinder (o)", class = "btn-default"),
         shiny::span(class = "bf-count", shiny::textOutput("count", inline = TRUE)),
         shiny::div(class = "bf-selbox", shiny::tags$pre(shiny::textOutput("rstring")))
       ),
       shiny::helpText(
-        "Tastatur: j/k flytter, l/Enter \u00e5bner mappe, h g\u00e5r op, mellemrum",
-        " mark\u00e9rer, y kopierer, o \u00e5bner i stifinder, Q lukker og returnerer stierne.")
+        "Tastatur: j/k flytter, l eller \u2192 \u00e5bner mappe, h g\u00e5r op, mellemrum",
+        " mark\u00e9rer, Enter inds\u00e6tter i editoren, y kopierer, o \u00e5bner i stifinder,",
+        " Q lukker.")
     )
   )
 
@@ -305,7 +320,7 @@ browse_files <- function(path = getwd()) {
     }
 
     # Target set: the marked paths, or the cursor path when nothing is
-    # marked. Drives the copy action and the return value.
+    # marked. Drives every action and the return value.
     target <- shiny::reactive({
       m <- marked()
       if (length(m) > 0) return(m)
@@ -313,21 +328,43 @@ browse_files <- function(path = getwd()) {
       if (!is.null(cu)) cu$full else character()
     })
 
-    shiny::observeEvent(input$quit, {
-      shiny::stopApp(invisible(target()))
-    })
+    # Per-directory cursor memory (plain env, non-reactive). `mem` maps a
+    # directory to the path the cursor last sat on there; `prev` is the
+    # directory we just left, so going up lands on the folder we came
+    # from -- both consulted by initial_cursor().
+    nav <- new.env(parent = emptyenv())
+    nav$mem  <- list()
+    nav$prev <- NULL
 
-    # Reset the cursor to the first row whenever the directory changes.
-    shiny::observe({
-      nodes <- listing(cur_path())
-      if (nrow(nodes) > 0) {
-        cursor(list(full = nodes$full[1], type = nodes$type[1]))
-      } else {
-        cursor(NULL)
+    initial_cursor <- function(dir) {
+      nodes <- listing(dir)
+      if (nrow(nodes) == 0) return(NULL)
+      pick <- NULL
+      if (!is.null(nav$prev) && nav$prev %in% nodes$full) pick <- nav$prev
+      if (is.null(pick)) {
+        m <- nav$mem[[dir]]
+        if (!is.null(m) && m %in% nodes$full) pick <- m
       }
+      if (is.null(pick)) pick <- nodes$full[1]
+      i <- match(pick, nodes$full)
+      list(full = nodes$full[i], type = nodes$type[i])
+    }
+
+    finish <- function(insert) {
+      result$paths  <- target()
+      result$insert <- insert
+      shiny::stopApp()
+    }
+    shiny::observeEvent(input$quit, finish(FALSE))
+    shiny::observeEvent(input$do_insert, finish(TRUE))
+
+    # Place the cursor when the directory changes, honouring the memory.
+    shiny::observe({
+      cursor(initial_cursor(cur_path()))
     })
     shiny::observeEvent(input$bf_cursor, {
       cursor(list(full = input$bf_cursor$full, type = input$bf_cursor$type))
+      nav$mem[[cur_path()]] <- input$bf_cursor$full
     })
 
     shiny::observeEvent(input$bf_toggle, {
@@ -336,9 +373,18 @@ browse_files <- function(path = getwd()) {
       if (p %in% m) marked(setdiff(m, p)) else marked(c(m, p))
     })
 
-    shiny::observeEvent(input$go, cur_path(input$go))
+    shiny::observeEvent(input$go, {
+      old <- cur_path()
+      nav$prev <- old
+      # Descending into a child: remember it as our place in the parent.
+      if (identical(normalizePath(dirname(input$go), winslash = "/", mustWork = FALSE), old)) {
+        nav$mem[[old]] <- input$go
+      }
+      cur_path(input$go)
+    })
     shiny::observeEvent(input$pick_file, {
       cursor(list(full = input$pick_file, type = "f"))
+      nav$mem[[cur_path()]] <- input$pick_file
     })
 
     # Clicking a folder navigates; clicking a file selects it (so it can
@@ -397,11 +443,14 @@ browse_files <- function(path = getwd()) {
       path <- cur_path()
       nodes <- listing(path)
 
+      init <- initial_cursor(path)
       cur_col <- shiny::div(
         class = "bf-col bf-col-current",
         shiny::div(class = "bf-colhead", basename(path)),
         if (nrow(nodes) == 0) shiny::p(class = "bf-hint", style = "padding:8px;", "Tom mappe.")
-        else lapply(seq_len(nrow(nodes)), function(i) item_row(nodes[i, ], cursor_on = i == 1))
+        else lapply(seq_len(nrow(nodes)), function(i) {
+          item_row(nodes[i, ], cursor_on = !is.null(init) && nodes$full[i] == init$full)
+        })
       )
 
       # Left column: parent directory, or the drive chooser at the root.
@@ -467,7 +516,7 @@ browse_files <- function(path = getwd()) {
           shiny::p(paste0("St\u00f8rrelse: ", .bf_size(info$size))),
           if (!is.na(info$mtime)) shiny::p(paste0("\u00c6ndret: ", format(info$mtime, "%Y-%m-%d %H:%M"))),
           if (nzchar(ext)) shiny::p(paste0("Type: .", ext)),
-          shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 y kopierer \u00b7 o \u00e5bner i stifinder.")
+          shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 o \u00e5bner i stifinder.")
         )
       }
     })
@@ -500,5 +549,21 @@ browse_files <- function(path = getwd()) {
     })
   }
 
-  invisible(shiny::runApp(shiny::shinyApp(ui, server), quiet = TRUE))
+  shiny::runApp(shiny::shinyApp(ui, server), quiet = TRUE)
+
+  # Deliver the result after the app has closed, so the active document
+  # is the user's script/console again, not the app viewer.
+  if (result$insert && length(result$paths) > 0) {
+    expr <- .bf_rstring(result$paths)
+    if (requireNamespace("rstudioapi", quietly = TRUE) &&
+        rstudioapi::isAvailable()) {
+      rstudioapi::insertText(expr)
+    } else if (.Platform$OS.type == "windows") {
+      utils::writeClipboard(expr)
+      cli::cli_alert_info("Not in RStudio -- copied to the clipboard instead.")
+    } else {
+      cli::cli_alert_info("Not in RStudio -- returning the paths.")
+    }
+  }
+  invisible(result$paths)
 }

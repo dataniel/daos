@@ -7,12 +7,13 @@
 browse_files(path = getwd())
 }
 \arguments{
-\item{path}{Directory to start in. Default: the working directory.}
+\item{path}{Directory to start in. Default: the working directory
+(\code{\link[=getwd]{getwd()}}).}
 }
 \value{
-A character vector of the marked paths, invisibly -- a single
-string when one path is marked or the cursor path is used, a vector
-when several are marked. \code{character(0)} if nothing is resolved.
+The target paths, invisibly -- a single string when one path
+is marked or the cursor path is used, a character vector when
+several are marked. \code{character(0)} if nothing is resolved.
 }
 \description{
 Launches a Shiny app that walks the local filesystem in a three-column,
@@ -24,16 +25,20 @@ one or more files or folders and copy them, or return them to R.
 \details{
 \itemize{
 \item \code{Space} marks/unmarks the item under the cursor (files or folders).
-\item \code{y} (or the button) copies the marked paths as an R expression -- a
-quoted string for one, a \code{c("a", "b")} vector for several -- with
-forward slashes, ready to paste into a script.
-\item \code{o} (or the button) opens the item under the cursor in the system
-file explorer via \code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file
-is revealed in its folder).
-\item \code{l}/Enter enters a folder or copies a file's path; \code{h} goes up a
-level, all the way to the drive chooser at the root.
-\item \code{Q} closes the app and returns the marked paths (or, if none are
-marked, the path under the cursor).
+The \emph{target} is the marked paths, or the cursor path when none are
+marked.
+\item \code{Enter} (or the button) inserts the target into the active RStudio
+editor or console as an R expression and closes the app -- a quoted
+string for one path, a multi-line \code{c(...)} (one path per line) for
+several, with forward slashes. Outside RStudio it falls back to the
+clipboard.
+\item \code{y} copies that same expression to the clipboard without closing.
+\item \code{o} opens the item under the cursor in the system file explorer via
+\code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file is revealed).
+\item \code{l}/\verb{->} enters a folder; \code{h}/\verb{<-} goes up, all the way to the drive
+chooser at the root. The cursor remembers its place in each folder,
+so going back up lands on the folder you came from.
+\item \code{Q} closes the app without inserting.
 }
 }
 \examples{
