@@ -131,14 +131,40 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-people { margin-top: 8px; }
     .tk-people .tk-p-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 4px; border-bottom: 1px solid #f6f8fb; }
     .tk-people .tk-p-n { color: #64748b; }
+    #reset_filters { margin-top: 4px; }
+    .tk-legend { margin-top: 16px; padding-top: 14px; border-top: 1px solid #eef2f7;
+      font-size: 11.5px; color: #94a3b8; line-height: 2; }
+    .tk-legend b { display: block; color: #475569; font-size: 10.5px; text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 6px; }
+    .tk-k { display: inline-block; min-width: 17px; text-align: center;
+      font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: #f1f5f9;
+      border: 1px solid #e2e8f0; border-radius: 5px; padding: 0 4px; margin-right: 6px; color: #334155; }
   "
 
-  quit_js <- "
+  app_js <- "
     document.addEventListener('keydown', function(e) {
       var t = (e.target.tagName || '').toLowerCase();
       if (t === 'input' || t === 'textarea' || t === 'select') return;
       if (document.querySelector('.modal-backdrop')) return;
-      if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('quit', Date.now());
+      var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      function fire(id) { e.preventDefault(); Shiny.setInputValue(id, Date.now()); }
+      if (k === 'q') { fire('quit'); return; }
+      if (k === 'o') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Opgaver',   {priority:'event'}); return; }
+      if (k === 'p') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Projekter', {priority:'event'}); return; }
+      if (k === 'r') { fire('reset_filters'); return; }
+      if (k === 'f') { fire('act_done'); return; }
+      if (k === 'e') { fire('act_edit'); return; }
+      if (k === 'n') { fire('act_annotate'); return; }
+      if (k === 'g') { fire('act_reopen'); return; }
+      if (k === 'x' || k === 'Delete') { fire('act_delete'); return; }
+      if (k === 'j' || k === 'ArrowDown') {
+        e.preventDefault();
+        Shiny.setInputValue('move_sel', 'down', {priority: 'event'}); return;
+      }
+      if (k === 'k' || k === 'ArrowUp') {
+        e.preventDefault();
+        Shiny.setInputValue('move_sel', 'up', {priority: 'event'}); return;
+      }
     });
   "
 
@@ -146,7 +172,7 @@ task_app <- function(db = "tasks.sqlite") {
     theme = theme,
     shiny::tags$head(
       shiny::tags$style(shiny::HTML(css)),
-      shiny::tags$script(shiny::HTML(quit_js))
+      shiny::tags$script(shiny::HTML(app_js))
     ),
     shiny::div(
       class = "tk-hero",
@@ -197,13 +223,27 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::selectInput("f_sort", "Sort\u00e9r efter",
             choices = c("Vigtighed" = "urgency", "Forfald" = "due",
                         "Oprettet" = "entry", "Projekt" = "project")),
-          shiny::helpText("Listen opdateres automatisk. Tryk Q for at lukke.")
+          shiny::actionButton("reset_filters", "Nulstil filtre (R)",
+                              class = "btn-default", width = "100%"),
+          shiny::div(class = "tk-legend",
+            shiny::HTML(paste(
+              "<b>Genveje</b>",
+              "<span class='tk-k'>j</span><span class='tk-k'>k</span> v\u00e6lg",
+              "<span class='tk-k'>f</span> f\u00e6rdig",
+              "<span class='tk-k'>e</span> rediger",
+              "<span class='tk-k'>n</span> note",
+              "<span class='tk-k'>g</span> gen\u00e5bn",
+              "<span class='tk-k'>x</span> slet",
+              "<span class='tk-k'>r</span> nulstil",
+              "<span class='tk-k'>o</span> opgaver",
+              "<span class='tk-k'>p</span> projekter",
+              "<span class='tk-k'>q</span> luk", sep = "<br>")))
         )
       ),
       shiny::mainPanel(
         width = 8,
         shiny::tabsetPanel(
-          type = "pills",
+          id = "main_tabs", type = "pills",
           shiny::tabPanel(
             "Opgaver",
             shiny::div(style = "margin-top: 16px;", shiny::uiOutput("stats")),
@@ -246,6 +286,29 @@ task_app <- function(db = "tasks.sqlite") {
     }
 
     shiny::observeEvent(input$quit, shiny::stopApp())
+
+    shiny::observeEvent(input$goto_tab,
+      shiny::updateTabsetPanel(session, "main_tabs", selected = input$goto_tab))
+
+    shiny::observeEvent(input$reset_filters, {
+      shiny::updateSelectInput(session, "f_status",   selected = "pending")
+      shiny::updateSelectInput(session, "f_assignee", selected = "")
+      shiny::updateSelectInput(session, "f_project",  selected = "")
+      shiny::updateSelectInput(session, "f_tag",      selected = "")
+      shiny::updateSelectInput(session, "f_sort",     selected = "urgency")
+    })
+
+    # j/k (or arrows) move the selection through the current list.
+    shiny::observeEvent(input$move_sel, {
+      ids <- tasks()$id
+      if (length(ids) == 0) return()
+      cur <- selected()
+      i <- if (is.null(cur)) NA_integer_ else match(cur, ids)
+      ni <- if (is.na(i)) 1L
+            else if (input$move_sel == "down") min(i + 1L, length(ids))
+            else max(i - 1L, 1L)
+      selected(ids[ni])
+    })
 
     # Re-read the list/projects on a timer so other people's changes show
     # up. This deliberately does not touch the form pickers.
@@ -408,14 +471,14 @@ task_app <- function(db = "tasks.sqlite") {
             ann$text[i]))),
         shiny::div(class = "tk-actions",
           if (t$status == "pending")
-            shiny::actionButton("act_done", "F\u00e6rdig", class = "btn-primary"),
+            shiny::actionButton("act_done", "F\u00e6rdig (F)", class = "btn-primary"),
           if (t$status != "pending")
-            shiny::actionButton("act_reopen", "Gen\u00e5bn", class = "btn-primary"),
+            shiny::actionButton("act_reopen", "Gen\u00e5bn (G)", class = "btn-primary"),
           if (t$status == "pending")
-            shiny::actionButton("act_edit", "Rediger", class = "btn-default"),
-          shiny::actionButton("act_annotate", "Tilf\u00f8j note", class = "btn-default"),
+            shiny::actionButton("act_edit", "Rediger (E)", class = "btn-default"),
+          shiny::actionButton("act_annotate", "Tilf\u00f8j note (N)", class = "btn-default"),
           if (t$status == "pending")
-            shiny::actionButton("act_delete", "Slet", class = "btn-default"))
+            shiny::actionButton("act_delete", "Slet (X)", class = "btn-default"))
       )
     })
 
@@ -470,6 +533,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::showNotification("Opgave slettet.", duration = 2)
     })
     shiny::observeEvent(input$act_annotate, {
+      shiny::req(selected())
       shiny::showModal(shiny::modalDialog(
         title = "Tilf\u00f8j note",
         shiny::textAreaInput("ann_text", NULL, placeholder = "Skriv en note ...", width = "100%"),
