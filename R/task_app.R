@@ -50,13 +50,17 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-hero-text h2 { font-weight: 800; margin: 0 0 4px; color: #fff; font-size: 23px; letter-spacing: -.4px; }
     .tk-hero .tk-db { color: #b7d0ea; font-size: 12.5px; word-break: break-all; }
     .tk-hero-actions { position: absolute; top: 22px; right: 30px; display: flex; gap: 8px; }
-    .tk-ghost {
-      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
-      color: #eef5fc; font-weight: 600; font-size: 13px; border-radius: 9px; padding: 6px 14px;
-      transition: background .12s, border-color .12s;
+    .tk-hero .tk-ghost {
+      background: rgba(255,255,255,.14) !important; border: 1px solid rgba(255,255,255,.35) !important;
+      color: #ffffff !important; font-weight: 600; font-size: 13px; border-radius: 9px; padding: 6px 14px;
+      box-shadow: none !important; transition: background .12s, border-color .12s;
     }
-    .tk-ghost:hover { background: rgba(255,255,255,.22); color: #fff; border-color: rgba(255,255,255,.4); }
-    .tk-ghost-quit:hover { background: rgba(248,113,113,.28); border-color: rgba(248,113,113,.5); }
+    .tk-hero .tk-ghost:hover, .tk-hero .tk-ghost:focus {
+      background: rgba(255,255,255,.26) !important; color: #ffffff !important; border-color: rgba(255,255,255,.55) !important;
+    }
+    .tk-hero .tk-ghost-quit:hover, .tk-hero .tk-ghost-quit:focus {
+      background: rgba(248,113,113,.32) !important; border-color: rgba(248,113,113,.6) !important;
+    }
     .tk-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px;
       box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06); padding: 20px; margin-bottom: 18px; }
     .tk-card h4 { font-weight: 700; font-size: 14px; margin: 0 0 14px; color: #0f172a;
