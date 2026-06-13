@@ -110,9 +110,21 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-people .tk-p-n { color: #64748b; }
   "
 
+  quit_js <- "
+    document.addEventListener('keydown', function(e) {
+      var t = (e.target.tagName || '').toLowerCase();
+      if (t === 'input' || t === 'textarea' || t === 'select') return;
+      if (document.querySelector('.modal-backdrop')) return;
+      if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('quit', Date.now());
+    });
+  "
+
   ui <- shiny::fluidPage(
     theme = theme,
-    shiny::tags$head(shiny::tags$style(shiny::HTML(css))),
+    shiny::tags$head(
+      shiny::tags$style(shiny::HTML(css)),
+      shiny::tags$script(shiny::HTML(quit_js))
+    ),
     shiny::div(
       class = "tk-hero",
       shiny::span(class = "tk-tag-app", "daos"),
@@ -128,9 +140,11 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::textInput("n_desc", NULL, placeholder = "Hvad skal der g\u00f8res?"),
           shiny::fluidRow(
             shiny::column(6, shiny::selectizeInput("n_project", "Projekt", choices = NULL,
-                                options = list(create = TRUE, placeholder = "valgfrit"))),
+                                options = list(create = TRUE, createOnBlur = TRUE,
+                                               persist = FALSE, placeholder = "skriv eller v\u00e6lg"))),
             shiny::column(6, shiny::selectizeInput("n_assignee", "Person", choices = NULL,
-                                options = list(create = TRUE, placeholder = "valgfrit")))
+                                options = list(create = TRUE, createOnBlur = TRUE,
+                                               persist = FALSE, placeholder = "skriv eller v\u00e6lg")))
           ),
           shiny::textInput("n_tags", "Tags", placeholder = "fx skrivning, vigtig"),
           shiny::fluidRow(
@@ -155,7 +169,9 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::selectInput("f_sort", "Sort\u00e9r efter",
             choices = c("Vigtighed" = "urgency", "Forfald" = "due",
                         "Oprettet" = "entry", "Projekt" = "project")),
-          shiny::actionButton("refresh", "Opdater", class = "btn-default", width = "100%")
+          shiny::actionButton("refresh", "Opdater", class = "btn-default", width = "100%"),
+          shiny::actionButton("quit", "Luk appen (Q)", class = "btn-default",
+                              width = "100%", style = "margin-top: 8px;")
         )
       ),
       shiny::mainPanel(
@@ -188,12 +204,19 @@ task_app <- function(db = "tasks.sqlite") {
   function(input, output, session) {
     db_path <- shiny::reactiveVal(start_db)
     refresh <- shiny::reactiveVal(0)
+    form_ver <- shiny::reactiveVal(0)
     selected <- shiny::reactiveVal(NULL)
-    # Isolate the read so bump() never makes its caller depend on refresh()
-    # -- otherwise the timer observe below would loop on itself.
-    bump <- function() refresh(shiny::isolate(refresh()) + 1)
+    # Isolate the read so the bumps never make their caller depend on the
+    # value -- otherwise the timer observe below would loop on itself.
+    bump  <- function() refresh(shiny::isolate(refresh()) + 1)
+    # form_ver only changes on the user's own actions, so the timer never
+    # rebuilds the form pickers and never resets what is being typed.
+    fbump <- function() form_ver(shiny::isolate(form_ver()) + 1)
 
-    # Re-read on a timer too, so other people's changes show up.
+    shiny::observeEvent(input$quit, shiny::stopApp())
+
+    # Re-read the list/projects on a timer so other people's changes show
+    # up. This deliberately does not touch the form pickers.
     shiny::observe({
       shiny::invalidateLater(10000, session)
       bump()
@@ -218,9 +241,11 @@ task_app <- function(db = "tasks.sqlite") {
       task_list(db_path(), status = "pending")
     })
 
-    # Keep the project/tag pickers in sync with what exists.
+    # Keep the project/person/tag pickers in sync. Driven by form_ver
+    # (your own actions + startup), NOT the timer, so a refresh never
+    # clears a half-typed entry.
     shiny::observe({
-      refresh()
+      form_ver()
       everyone <- task_list(db_path(), status = "all")
       pr <- sort(unique(everyone$project[!is.na(everyone$project)]))
       # Client-side selectize (no server = TRUE) so a freshly typed,
@@ -260,7 +285,7 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::updateTextInput(session, "n_desc", value = "")
         shiny::updateTextInput(session, "n_tags", value = "")
         shiny::updateTextInput(session, "n_due", value = "")
-        bump()
+        bump(); fbump()
         shiny::showNotification("Opgave tilf\u00f8jet.", duration = 2, type = "message")
       }
     })
@@ -410,7 +435,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::showNotification("Opgave gen\u00e5bnet.", duration = 2)
     })
     shiny::observeEvent(input$act_delete, {
-      shiny::req(selected()); task_delete(db_path(), selected()); selected(NULL); bump()
+      shiny::req(selected()); task_delete(db_path(), selected()); selected(NULL); bump(); fbump()
       shiny::showNotification("Opgave slettet.", duration = 2)
     })
     shiny::observeEvent(input$act_annotate, {
@@ -457,7 +482,7 @@ task_app <- function(db = "tasks.sqlite") {
           due      = if (shiny::isTruthy(input$e_due)) input$e_due else NULL)
         TRUE
       }, error = function(e) { shiny::showNotification(conditionMessage(e), type = "error"); FALSE })
-      if (ok) { shiny::removeModal(); bump() }
+      if (ok) { shiny::removeModal(); bump(); fbump() }
     })
   }
 }
