@@ -69,7 +69,7 @@ pak::pak("dataniel/daos")
 | `task_people()` | Per-person pending task counts |
 | `task_done()` / `task_delete()` / `task_modify()` | Complete, delete, or edit a task |
 | `task_annotate()` | Add a timestamped note to a task |
-| `task_projects()` | Per-project pending/completed counts |
+| `task_projects()` | Per-project progress: counts, completion %, overdue, dates |
 | `task_app()` | Shiny task manager over a shared task database |
 | `view_types()` | Compare column types across multiple data frames |
 | `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |

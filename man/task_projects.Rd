@@ -10,8 +10,11 @@ task_projects(db)
 \item{db}{Path to the task database, or an open DBI connection.}
 }
 \value{
-A tibble with \code{project}, \code{pending}, \code{completed}.
+A tibble with \code{project}, \code{pending}, \code{completed}, \code{total},
+\code{pct_done}, \code{overdue}, \code{created}, \code{last_activity}.
 }
 \description{
-Counts of pending and completed tasks per project.
+One row per project with pending/completed/total counts, completion
+percentage, the number of overdue pending tasks, the project's start
+(earliest task creation) and the most recent activity.
 }

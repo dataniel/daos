@@ -148,7 +148,19 @@ test_that("task_projects counts per project and status", {
   pr <- task_projects(db)
   expect_equal(pr$pending[pr$project == "P1"], 1)
   expect_equal(pr$completed[pr$project == "P1"], 1)
+  expect_equal(pr$total[pr$project == "P1"], 2)
+  expect_equal(pr$pct_done[pr$project == "P1"], 50)
   expect_equal(pr$pending[pr$project == "P2"], 1)
+  expect_true(all(c("created", "last_activity", "overdue") %in% names(pr)))
+  expect_match(pr$created[pr$project == "P1"], "^\\d{4}-\\d{2}-\\d{2}$")
+})
+
+test_that("task_projects counts overdue pending tasks", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "late", project = "P", due = format(Sys.Date() - 1, "%Y-%m-%d"))
+  task_add(db, "soon", project = "P", due = format(Sys.Date() + 5, "%Y-%m-%d"))
+  pr <- task_projects(db)
+  expect_equal(pr$overdue[pr$project == "P"], 1)
 })
 
 test_that("invalid priority and date are rejected", {

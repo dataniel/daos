@@ -460,11 +460,14 @@ task_annotations <- function(db, id) {
 
 #' Project overview
 #'
-#' Counts of pending and completed tasks per project.
+#' One row per project with pending/completed/total counts, completion
+#' percentage, the number of overdue pending tasks, the project's start
+#' (earliest task creation) and the most recent activity.
 #'
 #' @inheritParams task_add
 #'
-#' @return A tibble with `project`, `pending`, `completed`.
+#' @return A tibble with `project`, `pending`, `completed`, `total`,
+#'   `pct_done`, `overdue`, `created`, `last_activity`.
 #'
 #' @importFrom tibble as_tibble
 #' @export
@@ -472,20 +475,26 @@ task_projects <- function(db) {
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   df <- DBI::dbGetQuery(con,
-    "SELECT COALESCE(project, '(intet projekt)') AS project, status, COUNT(*) AS n
-     FROM tasks WHERE status IN ('pending','completed') GROUP BY project, status")
+    "SELECT COALESCE(project, '(intet projekt)') AS project,
+            SUM(status = 'pending')   AS pending,
+            SUM(status = 'completed') AS completed,
+            SUM(status = 'pending' AND due IS NOT NULL AND due < date('now')) AS overdue,
+            MIN(entry)    AS created,
+            MAX(modified) AS last_activity
+     FROM tasks WHERE status IN ('pending','completed')
+     GROUP BY COALESCE(project, '(intet projekt)')
+     ORDER BY project")
   if (nrow(df) == 0)
-    return(tibble::tibble(project = character(), pending = integer(), completed = integer()))
-  projects <- sort(unique(df$project))
-  get_n <- function(p, s) {
-    v <- df$n[df$project == p & df$status == s]
-    if (length(v) == 0) 0L else as.integer(v)
-  }
-  tibble::tibble(
-    project   = projects,
-    pending   = unname(vapply(projects, get_n, integer(1), s = "pending")),
-    completed = unname(vapply(projects, get_n, integer(1), s = "completed"))
-  )
+    return(tibble::tibble(project = character(), pending = integer(),
+                          completed = integer(), total = integer(),
+                          pct_done = numeric(), overdue = integer(),
+                          created = character(), last_activity = character()))
+  df$total    <- df$pending + df$completed
+  df$pct_done <- ifelse(df$total == 0, 0, round(100 * df$completed / df$total))
+  df$created       <- substr(df$created, 1, 10)
+  df$last_activity <- substr(df$last_activity, 1, 10)
+  tibble::as_tibble(df[, c("project", "pending", "completed", "total",
+                           "pct_done", "overdue", "created", "last_activity")])
 }
 
 #' People overview

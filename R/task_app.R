@@ -102,6 +102,8 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-bar { height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
     .tk-bar-fill { height: 100%; background: #1d62a8; border-radius: 999px; transition: width .3s; }
     .tk-bar-fill.tk-full { background: #16a34a; }
+    .tk-proj-meta { margin-top: 6px; font-size: 11.5px; color: #94a3b8; }
+    .tk-proj-meta.tk-has-over { color: #b45309; }
     .tk-done-badge { font-size: 11px; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 999px; padding: 2px 11px; }
     .tk-people { margin-top: 8px; }
     .tk-people .tk-p-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 4px; border-bottom: 1px solid #f6f8fb; }
@@ -221,13 +223,15 @@ task_app <- function(db = "tasks.sqlite") {
       refresh()
       everyone <- task_list(db_path(), status = "all")
       pr <- sort(unique(everyone$project[!is.na(everyone$project)]))
+      # Client-side selectize (no server = TRUE) so a freshly typed,
+      # newly-created option registers reliably as the input value.
       shiny::updateSelectizeInput(session, "n_project", choices = pr,
-                                  selected = shiny::isolate(input$n_project), server = TRUE)
+                                  selected = shiny::isolate(input$n_project))
       shiny::updateSelectInput(session, "f_project", choices = c("Alle" = "", pr),
                                selected = shiny::isolate(input$f_project))
       who <- sort(unique(everyone$assignee[!is.na(everyone$assignee) & everyone$assignee != ""]))
       shiny::updateSelectizeInput(session, "n_assignee", choices = who,
-                                  selected = shiny::isolate(input$n_assignee), server = TRUE)
+                                  selected = shiny::isolate(input$n_assignee))
       shiny::updateSelectInput(session, "f_assignee", choices = c("Alle" = "", who),
                                selected = shiny::isolate(input$f_assignee))
       tg <- everyone$tags
@@ -370,19 +374,23 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::p(class = "tk-l", "Tilf\u00f8j opgaver med et projekt for at se overblikket.")))
       rows <- lapply(seq_len(nrow(pr)), function(i) {
         p <- pr[i, ]
-        total <- p$pending + p$completed
-        pct   <- if (total == 0) 0 else round(100 * p$completed / total)
-        done  <- p$pending == 0 && total > 0
+        done <- p$pending == 0 && p$total > 0
+        meta <- paste(c(
+          paste0("Oprettet ", p$created),
+          paste0("Sidst aktiv ", p$last_activity),
+          if (p$overdue > 0) paste0(p$overdue, " forfaldne")
+        ), collapse = "  \u00b7  ")
         shiny::div(
           class = "tk-proj-row",
           shiny::div(class = "tk-proj-head",
             shiny::span(class = "tk-proj-name", p$project),
             if (done) shiny::span(class = "tk-done-badge", "Klaret")
             else shiny::span(class = "tk-proj-count",
-                             paste0(p$completed, " af ", total, " klaret (", p$pending, " mangler)"))),
+                             paste0(p$completed, " af ", p$total, " klaret \u00b7 ", p$pending, " mangler"))),
           shiny::div(class = "tk-bar",
             shiny::div(class = paste("tk-bar-fill", if (done) "tk-full"),
-                       style = sprintf("width:%d%%;", pct))))
+                       style = sprintf("width:%d%%;", p$pct_done))),
+          shiny::div(class = paste("tk-proj-meta", if (p$overdue > 0) "tk-has-over"), meta))
       })
       people <- if (nrow(ppl) > 0) shiny::tagList(
         shiny::h4(style = "margin-top: 18px;", "Personer"),
