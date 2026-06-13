@@ -91,7 +91,21 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .tk-note { font-size: 12.5px; color: #475569; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
     .tk-note .tk-note-t { color: #94a3b8; font-size: 11px; }
-    .nav-pills .nav-link.active { background-color: #1d62a8 !important; }
+    .nav-pills { margin-bottom: 4px; }
+    .nav-pills .nav-link { font-weight: 600; color: #334155; }
+    .nav-pills .nav-link.active { background-color: #1d62a8 !important; color: #fff !important; }
+    .tk-proj-row { padding: 13px 4px; border-bottom: 1px solid #f1f5f9; }
+    .tk-proj-row:last-child { border-bottom: none; }
+    .tk-proj-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+    .tk-proj-name { font-weight: 600; color: #0f172a; }
+    .tk-proj-count { font-size: 12.5px; color: #64748b; }
+    .tk-bar { height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+    .tk-bar-fill { height: 100%; background: #1d62a8; border-radius: 999px; transition: width .3s; }
+    .tk-bar-fill.tk-full { background: #16a34a; }
+    .tk-done-badge { font-size: 11px; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 999px; padding: 2px 11px; }
+    .tk-people { margin-top: 8px; }
+    .tk-people .tk-p-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 4px; border-bottom: 1px solid #f6f8fb; }
+    .tk-people .tk-p-n { color: #64748b; }
   "
 
   ui <- shiny::fluidPage(
@@ -144,9 +158,20 @@ task_app <- function(db = "tasks.sqlite") {
       ),
       shiny::mainPanel(
         width = 8,
-        shiny::uiOutput("stats"),
-        shiny::div(class = "tk-card", shiny::uiOutput("tasklist")),
-        shiny::uiOutput("detail")
+        shiny::tabsetPanel(
+          type = "pills",
+          shiny::tabPanel(
+            "Opgaver",
+            shiny::div(style = "margin-top: 16px;", shiny::uiOutput("stats")),
+            shiny::div(class = "tk-card", shiny::uiOutput("tasklist")),
+            shiny::uiOutput("detail")
+          ),
+          shiny::tabPanel(
+            "Projekter",
+            shiny::div(style = "margin-top: 16px;", class = "tk-card",
+                       shiny::uiOutput("projects"))
+          )
+        )
       )
     )
   )
@@ -292,6 +317,7 @@ task_app <- function(db = "tasks.sqlite") {
     })
 
     sel_task <- shiny::reactive({
+      refresh()                       # re-read after notes / edits / status changes
       id <- selected()
       if (is.null(id)) return(NULL)
       df <- task_list(db_path(), status = "all")
@@ -323,6 +349,8 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::div(class = "tk-actions",
           if (t$status == "pending")
             shiny::actionButton("act_done", "F\u00e6rdig", class = "btn-primary"),
+          if (t$status != "pending")
+            shiny::actionButton("act_reopen", "Gen\u00e5bn", class = "btn-primary"),
           if (t$status == "pending")
             shiny::actionButton("act_edit", "Rediger", class = "btn-default"),
           shiny::actionButton("act_annotate", "Tilf\u00f8j note", class = "btn-default"),
@@ -331,9 +359,47 @@ task_app <- function(db = "tasks.sqlite") {
       )
     })
 
+    output$projects <- shiny::renderUI({
+      refresh()
+      pr <- task_projects(db_path())
+      ppl <- task_people(db_path())
+      if (nrow(pr) == 0)
+        return(shiny::div(class = "tk-empty",
+          shiny::div(class = "tk-empty-ico", "\U0001F4CA"),
+          shiny::p(shiny::strong("Ingen projekter endnu")),
+          shiny::p(class = "tk-l", "Tilf\u00f8j opgaver med et projekt for at se overblikket.")))
+      rows <- lapply(seq_len(nrow(pr)), function(i) {
+        p <- pr[i, ]
+        total <- p$pending + p$completed
+        pct   <- if (total == 0) 0 else round(100 * p$completed / total)
+        done  <- p$pending == 0 && total > 0
+        shiny::div(
+          class = "tk-proj-row",
+          shiny::div(class = "tk-proj-head",
+            shiny::span(class = "tk-proj-name", p$project),
+            if (done) shiny::span(class = "tk-done-badge", "Klaret")
+            else shiny::span(class = "tk-proj-count",
+                             paste0(p$completed, " af ", total, " klaret (", p$pending, " mangler)"))),
+          shiny::div(class = "tk-bar",
+            shiny::div(class = paste("tk-bar-fill", if (done) "tk-full"),
+                       style = sprintf("width:%d%%;", pct))))
+      })
+      people <- if (nrow(ppl) > 0) shiny::tagList(
+        shiny::h4(style = "margin-top: 18px;", "Personer"),
+        shiny::div(class = "tk-people",
+          lapply(seq_len(nrow(ppl)), function(i) shiny::div(class = "tk-p-row",
+            shiny::span(paste0("\U0001F464 ", ppl$assignee[i])),
+            shiny::span(class = "tk-p-n", paste(ppl$pending[i], "afventer"))))))
+      shiny::tagList(shiny::h4("Projektoverblik"), rows, people)
+    })
+
     shiny::observeEvent(input$act_done, {
       shiny::req(selected()); task_done(db_path(), selected()); bump()
       shiny::showNotification("Opgave fuldf\u00f8rt.", duration = 2)
+    })
+    shiny::observeEvent(input$act_reopen, {
+      shiny::req(selected()); task_reopen(db_path(), selected()); bump()
+      shiny::showNotification("Opgave gen\u00e5bnet.", duration = 2)
     })
     shiny::observeEvent(input$act_delete, {
       shiny::req(selected()); task_delete(db_path(), selected()); selected(NULL); bump()
@@ -351,6 +417,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::req(selected(), shiny::isTruthy(input$ann_text))
       task_annotate(db_path(), selected(), input$ann_text)
       shiny::removeModal(); bump()
+      shiny::showNotification("Note tilf\u00f8jet.", duration = 2)
     })
     shiny::observeEvent(input$act_edit, {
       t <- sel_task(); shiny::req(t)

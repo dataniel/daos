@@ -65,6 +65,17 @@ test_that("task_done without recurrence does not spawn", {
   expect_equal(nrow(task_list(db, status = "pending")), 0)
 })
 
+test_that("task_reopen undoes completion", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Reopen me")
+  id <- task_list(db)$id[1]
+  task_done(db, id)
+  expect_equal(nrow(task_list(db, status = "pending")), 0)
+  task_reopen(db, id)
+  expect_equal(nrow(task_list(db, status = "pending")), 1)
+  expect_equal(nrow(task_list(db, status = "completed")), 0)
+})
+
 test_that("dependencies mark a task as blocked", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "First")

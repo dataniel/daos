@@ -340,6 +340,26 @@ task_done <- function(db, id) {
   invisible(TRUE)
 }
 
+#' Reopen a task
+#'
+#' Sets a completed or deleted task back to pending and clears its end
+#' time -- the undo for [daos::task_done()] and [daos::task_delete()].
+#'
+#' @inheritParams task_done
+#'
+#' @return `TRUE`, invisibly.
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_reopen <- function(db, id) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  row <- .task_row(con, id)
+  DBI::dbExecute(con, "UPDATE tasks SET status='pending', end=NULL, modified=? WHERE id=?",
+                 params = list(.task_now(), row$id))
+  invisible(TRUE)
+}
+
 #' Delete a task
 #'
 #' Marks the task deleted (it is kept in the database, not removed).
