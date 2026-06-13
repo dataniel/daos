@@ -176,7 +176,9 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::fluidRow(
             shiny::column(6, shiny::selectInput("n_priority", "Prioritet",
               choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"))),
-            shiny::column(6, shiny::textInput("n_due", "Forfald", placeholder = "YYYY-MM-DD"))
+            shiny::column(6, suppressWarnings(shiny::dateInput("n_due", "Forfald",
+              value = NA, format = "dd-mm-yyyy", language = "da", weekstart = 1,
+              autoclose = TRUE)))
           ),
           shiny::selectInput("n_recur", "Gentag",
             choices = c("Nej" = "", "Dagligt" = "daily", "Ugentligt" = "weekly",
@@ -236,6 +238,12 @@ task_app <- function(db = "tasks.sqlite") {
     # form_ver only changes on the user's own actions, so the timer never
     # rebuilds the form pickers and never resets what is being typed.
     fbump <- function() form_ver(shiny::isolate(form_ver()) + 1)
+
+    # ISO date (yyyy-mm-dd) -> Danish dd-mm-yyyy for display.
+    ddmm <- function(iso) {
+      if (length(iso) == 0 || is.na(iso) || !nzchar(iso)) return("")
+      format(as.Date(iso), "%d-%m-%Y")
+    }
 
     shiny::observeEvent(input$quit, shiny::stopApp())
 
@@ -308,7 +316,6 @@ task_app <- function(db = "tasks.sqlite") {
       if (ok) {
         shiny::updateTextInput(session, "n_desc", value = "")
         shiny::updateTextInput(session, "n_tags", value = "")
-        shiny::updateTextInput(session, "n_due", value = "")
         bump(); fbump()
         shiny::showNotification("Opgave tilf\u00f8jet.", duration = 2, type = "message")
       }
@@ -343,7 +350,7 @@ task_app <- function(db = "tasks.sqlite") {
         if (!is.na(t$due) && nzchar(t$due)) {
           dd <- as.Date(t$due); dleft <- as.numeric(dd - Sys.Date())
           due_cls <- if (dleft < 0) "tk-over" else if (dleft <= 3) "tk-soon" else ""
-          due_txt <- format(dd, "%d. %b")
+          due_txt <- ddmm(t$due)
         }
         tagchips <- if (nzchar(t$tags))
           lapply(strsplit(t$tags, ",", fixed = TRUE)[[1]],
@@ -391,7 +398,7 @@ task_app <- function(db = "tasks.sqlite") {
         if (!is.na(t$project)) drow("Projekt", t$project),
         if (!is.na(t$assignee) && nzchar(t$assignee)) drow("Person", t$assignee),
         if (!is.na(t$priority)) drow("Prioritet", t$priority),
-        if (!is.na(t$due)) drow("Forfald", t$due),
+        if (!is.na(t$due)) drow("Forfald", ddmm(t$due)),
         if (nzchar(t$tags)) drow("Tags", t$tags),
         if (!is.na(t$recur)) drow("Gentag", t$recur),
         drow("Vigtighed", formatC(t$urgency, format = "f", digits = 1)),
@@ -425,8 +432,8 @@ task_app <- function(db = "tasks.sqlite") {
         p <- pr[i, ]
         done <- p$pending == 0 && p$total > 0
         meta <- paste(c(
-          paste0("Oprettet ", p$created),
-          paste0("Sidst aktiv ", p$last_activity),
+          paste0("Oprettet ", ddmm(p$created)),
+          paste0("Sidst aktiv ", ddmm(p$last_activity)),
           if (p$overdue > 0) paste0(p$overdue, " forfaldne")
         ), collapse = "  \u00b7  ")
         shiny::div(
@@ -487,8 +494,9 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::selectInput("e_priority", "Prioritet",
           choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"),
           selected = if (is.na(t$priority)) "" else t$priority),
-        shiny::textInput("e_due", "Forfald (YYYY-MM-DD)",
-          value = if (is.na(t$due)) "" else t$due),
+        suppressWarnings(shiny::dateInput("e_due", "Forfald",
+          value = if (is.na(t$due)) NA else as.Date(t$due),
+          format = "dd-mm-yyyy", language = "da", weekstart = 1, autoclose = TRUE)),
         footer = shiny::tagList(shiny::modalButton("Annuller"),
                                 shiny::actionButton("edit_ok", "Gem", class = "btn-primary")),
         easyClose = TRUE))
