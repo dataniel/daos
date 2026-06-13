@@ -1,0 +1,186 @@
+---
+title: "Handling paths and files without a file explorer on the side"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Handling paths and files without a file explorer on the side}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+library(daos)
+```
+
+The national accounts run on many sources. Compiling them means reaching
+into a lot of folders on a lot of drives -- ministry files, register
+extracts, survey results, last year's spreadsheets -- and every one of
+them is a path that has to be found, typed correctly, and kept current.
+The default way to do this is to keep a file explorer open next to RStudio
+and shuttle between the two: locate the file over there, copy the path,
+paste it here, fix the backslashes, repeat. It is slow, it breaks
+concentration, and it is where a surprising number of "file not found"
+errors come from.
+
+Several functions in **daos** exist to close that gap, so that finding,
+fixing, and loading paths all happen without leaving the editor. This
+article ties them together; each has its own help page.
+
+## The friction is real and specific
+
+Three small annoyances do most of the damage:
+
+1. **Windows paths arrive with backslashes**, which R reads as escape
+   characters. Every pasted path needs `\` turned into `/` (or doubled)
+   before it is a valid string.
+2. **Finding the file means leaving R.** The explorer and the editor are
+   two windows, and the path makes a round trip through the clipboard.
+3. **Many files at once** -- a dozen sources for one compilation -- turn
+   all of the above into a dozen-times chore.
+
+The tools below attack each of these.
+
+## Grab paths without typing them: `browse_files()`
+
+`browse_files()` brings the file explorer *into* R. It launches a small
+Shiny app with the same three-column, yazi-style browser as
+`statbank_app()` -- parent directory, current directory, and a live
+preview -- navigated entirely by keyboard with `h`/`j`/`k`/`l` or the
+arrow keys. The point is not to look at files but to grab their paths.
+
+```{r}
+p <- browse_files()    # navigate, mark with Space, press Q
+```
+
+Mark one or more files or folders with `Space`, then `Q` returns them to
+R -- a single string for one, a `c("a", "b")` vector for several -- with
+forward slashes already, so the result drops straight into a script with
+nothing to fix. `y` copies the same R expression to the clipboard, and `o`
+opens the item under the cursor in the system explorer when you do need the
+real thing. There is no network and no path round-trip through another
+window: you found the file and you have its path, in one place.
+
+## Jump from a path in your code to its folder: `addin_open_in_explorer()`
+
+The reverse direction is just as common: you have a path in your script and
+you want to see it on disk -- check that the file is there, that it is the
+right version, that the folder has what you expect. `open_in_explorer()`
+does it from the console, and the **Open in file explorer** addin does it
+from wherever your cursor is.
+
+```{r}
+open_in_explorer("//server/share/sources/2026")
+open_in_explorer(my_source_dir)   # an object holding a path works too
+```
+
+The addin resolves its target intelligently: the selected text if there is
+a selection; otherwise the path-like token under the cursor, so you can
+just rest the cursor on a path or on a variable holding one; otherwise the
+working directory. A literal path is opened as-is, anything else is
+evaluated as R code, and a file is *revealed* (selected) inside its folder
+rather than opened. So `my_source_dir`, `file.path(root, "data.csv")`, or a
+bare path all take you to the right place without selecting and copying
+first.
+
+This is also why directory links in the package's `cli` messages are
+clickable -- they point at this same `open_in_explorer()`.
+
+## Fix backslashes after a paste
+
+When a path does come in over the clipboard -- from an email, a colleague,
+a dialog box -- three tools turn it into valid R, depending on how it
+arrived:
+
+- **`addin_paste_path()`** reads the clipboard, flips the backslashes, and
+  inserts the result as a quoted string at the cursor. This is the
+  one-step "I just copied a path in Explorer" path: paste straight into R,
+  already quoted and corrected.
+- **`addin_fix_path()`** repairs paths *already in your file*. With a
+  selection it fixes the selection; with nothing selected it fixes the
+  whole file, touching only genuine Windows paths (`C:\...`, `\\server\...`)
+  and leaving `\(x)` lambdas and `\n` escapes alone.
+- **`addin_flip_backslash()`** is the blunt version: every `\` in the
+  selection becomes `/`, no questions asked, for when you know that is all
+  you want.
+
+Bind whichever you reach for most to a keyboard shortcut under *Tools ->
+Modify Keyboard Shortcuts*, and the backslash problem stops being a
+problem.
+
+## Turn a list of files into an R vector
+
+Sources often arrive as a list -- filenames in an email, codes in a
+spreadsheet column, one per line. `addin_text_to_vector()` wraps a
+selection of lines into a `c(...)` expression:
+
+```
+2026_q1.parquet
+2026_q2.parquet
+2026_q3.parquet
+```
+
+becomes
+
+```r
+c(
+  "2026_q1.parquet",
+  "2026_q2.parquet",
+  "2026_q3.parquet"
+)
+```
+
+so a pasted column becomes a vector you can `read_files()` over, without
+hand-quoting each line.
+
+## From paths to data: `read_files()` and `summon()`
+
+Once the paths are in hand, `read_files()` is the step that turns many
+sources into many objects -- one call that expands `glue`-style patterns,
+checks existence, detects the format, reads, and names the results, with a
+progress bar for a batch. It is the natural other end of `browse_files()`:
+find the files, then read them.
+
+```{r}
+# many quarterly sources at once
+read_files("//server/share/sources/2026_q{1:4}.parquet", names = 1:4)
+
+# or bind them into one tibble, tracking the origin
+read_files(
+  "//server/share/sources/{2015:2024}.parquet",
+  names = 2015:2024, out = "bind", .id = "year"
+)
+```
+
+`summon()` is the bookkeeping companion: a regex over the objects you have
+loaded, so a family of sources read as separate variables can be gathered
+back into a list without retyping their names.
+
+```{r}
+summon("^source_\\d+$")
+```
+
+The reading side -- formats, custom readers, and what to do when files
+refuse to stack because their types drifted -- has its own article,
+`vignette("read-files")`. This one is about the step before that: getting
+the paths right, fast, without a second window.
+
+## The shape of the workflow
+
+Put together, a national-accounts compilation stops needing a file explorer
+alongside it:
+
+1. `browse_files()` to mark this cycle's sources and drop their paths into
+   the script.
+2. `addin_paste_path()` / `addin_fix_path()` for the odd path that comes in
+   over the clipboard.
+3. `read_files()` to load them all in one call.
+4. `open_in_explorer()` (or the addin) when you do need to see a file on
+   disk -- straight from the path in your code.
+
+Every step stays inside RStudio, which is the whole point: the paths never
+make a round trip through another window, so there is nowhere for a
+backslash or a stale path to sneak in.

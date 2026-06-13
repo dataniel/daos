@@ -9,6 +9,8 @@ Description: A collection of utility functions for day-to-day statistical work.
     time-series screening, and various convenience shortcuts for common
     tidyverse patterns.
 License: MIT + file LICENSE
+URL: https://dataniel.github.io/daos, https://github.com/dataniel/daos
+BugReports: https://github.com/dataniel/daos/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports:
