@@ -37,7 +37,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20260613"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-13 11:13"
+#> [1] "2026-06-13 12:59"
 ```
 
 A typical use is timestamping an export file:
@@ -954,6 +954,30 @@ screen_timeseries(df, year, gdp,
                   .y_min = 0, .y_max = 500,
                   .title = "GDP by country")
 ```
+
+### `browse_files()`: grab filesystem paths without typing them
+
+Typing or hand-fixing long Windows paths is tedious.
+[`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
+launches a small Shiny app that walks the filesystem in the same
+three-column, yazi-style browser as
+[`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
+– parent directory, current directory, and a live preview – navigated
+with `h`/`j`/`k`/`l` or the arrow keys. The point is to grab paths: mark
+one or more files or folders with `Space`, then take them into R.
+
+``` r
+
+p <- browse_files()           # navigate, mark, press Q
+```
+
+Pressing `Q` returns the marked paths – a single string for one, a
+`c("a", "b")` vector for several – with forward slashes, so the result
+drops straight into a script. `y` copies the same R expression to the
+clipboard, and `o` opens the item under the cursor in the system file
+explorer (reusing
+[`open_in_explorer()`](https://dataniel.github.io/daos/reference/open_in_explorer.md)).
+Requires `shiny`.
 
 ------------------------------------------------------------------------
 

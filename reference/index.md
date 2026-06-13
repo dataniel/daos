@@ -63,6 +63,8 @@
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
+- [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
+  : Browse the filesystem and copy paths to R
 
 ## Domain-specific
 

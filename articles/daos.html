@@ -101,7 +101,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20260613"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-13 11:13"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-13 12:59"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -903,6 +903,28 @@ figures:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="browse_files-grab-filesystem-paths-without-typing-them">
+<code>browse_files()</code>: grab filesystem paths without typing
+them<a class="anchor" aria-label="anchor" href="#browse_files-grab-filesystem-paths-without-typing-them"></a>
+</h3>
+<p>Typing or hand-fixing long Windows paths is tedious.
+<code><a href="../reference/browse_files.html">browse_files()</a></code> launches a small Shiny app that walks the
+filesystem in the same three-column, yazi-style browser as
+<code><a href="../reference/statbank_app.html">statbank_app()</a></code> – parent directory, current directory, and a
+live preview – navigated with
+<code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
+keys. The point is to grab paths: mark one or more files or folders with
+<code>Space</code>, then take them into R.</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/browse_files.html">browse_files</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># navigate, mark, press Q</span></span></code></pre></div>
+<p>Pressing <code>Q</code> returns the marked paths – a single string
+for one, a <code>c("a", "b")</code> vector for several – with forward
+slashes, so the result drops straight into a script. <code>y</code>
+copies the same R expression to the clipboard, and <code>o</code> opens
+the item under the cursor in the system file explorer (reusing
+<code><a href="../reference/open_in_explorer.html">open_in_explorer()</a></code>). Requires <code>shiny</code>.</p>
 <hr>
 </div>
 </div>
@@ -937,7 +959,7 @@ expression. Empty lines are ignored.</p>
 <span><span class="fl">87654321</span></span>
 <span><span class="fl">11223344</span></span></code></pre>
 <p>produces:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"12345678"</span>,</span>
 <span>  <span class="st">"87654321"</span>,</span>

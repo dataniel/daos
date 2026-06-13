@@ -76,8 +76,9 @@ variable codes *and* their display texts, and values against both value
 codes and value texts, so
 `statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, art = "Antal")` works
 without knowing the internal codes. Matching ignores case and folds
-Danish letters (`foedested` matches `fødested`). Use `"*"` to select all
-values; variables that are not mentioned default to all values.
+Danish letters (`foedested` matches `f\u00f8dested`). Use `"*"` to
+select all values; variables that are not mentioned default to all
+values.
 
 By default, columns are named by the variables' display texts in the
 chosen language, and cells hold the display texts of the values. Set

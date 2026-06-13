@@ -34,6 +34,7 @@ pak::pak("dataniel/daos")
 | [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md) | RStudio addin: convert selected lines to an R character vector |
 | [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md) | Parse manually formatted text files and export to Excel |
 | [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md) | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md) | Yazi-style Shiny file browser: mark files/folders and copy paths to R |
 | [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md) | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md) | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md) | Build an Elasticsearch query for CVR annual reports |
@@ -132,6 +133,8 @@ pak::pak("dataniel/daos")
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
+- [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
+  : Browse the filesystem and copy paths to R
 
 ## Domain-specific
 
