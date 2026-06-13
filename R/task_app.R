@@ -40,40 +40,61 @@ task_app <- function(db = "tasks.sqlite") {
   }
 
   css <- "
-    body { background: #f1f5f9; font-family: -apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color: #1e293b; }
+    body { background: #eef1f6; font-family: -apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color: #1e293b; }
+    .container-fluid { max-width: 1240px; }
     .tk-hero {
-      margin: -15px -15px 20px -15px; padding: 24px 32px 20px;
-      background: linear-gradient(135deg,#0c3a63 0%,#1d62a8 100%); color: #fff;
+      position: relative; margin: -15px -15px 22px -15px; padding: 26px 34px 24px;
+      background: radial-gradient(120% 140% at 0% 0%, #1d62a8 0%, #0c3a63 60%, #0a3157 100%);
+      color: #fff; box-shadow: 0 6px 22px rgba(12,58,99,.25);
     }
-    .tk-hero h2 { font-weight: 700; margin: 0 0 4px; color: #fff; font-size: 22px; letter-spacing: -.3px; }
-    .tk-hero .tk-db { color: #c7dbef; font-size: 13px; word-break: break-all; }
-    .tk-tag-app { float: right; background: rgba(255,255,255,.14); color: #e6eef7; border-radius: 999px; padding: 4px 14px; font-size: 12.5px; }
-    .tk-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
-      box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 4px 16px rgba(15,23,42,.05); padding: 18px; margin-bottom: 16px; }
-    .tk-card h4 { font-weight: 700; font-size: 15px; margin: 0 0 12px; }
-    label { font-weight: 600; font-size: 13px; color: #334155; }
-    .form-control, .selectize-input, .form-select { border-radius: 8px !important; border-color: #d6dee8 !important; }
-    .btn { border-radius: 8px; font-weight: 600; }
-    .btn-primary { background: #1d62a8; border-color: #1d62a8; }
+    .tk-hero-text h2 { font-weight: 800; margin: 0 0 4px; color: #fff; font-size: 23px; letter-spacing: -.4px; }
+    .tk-hero .tk-db { color: #b7d0ea; font-size: 12.5px; word-break: break-all; }
+    .tk-hero-actions { position: absolute; top: 22px; right: 30px; display: flex; gap: 8px; }
+    .tk-ghost {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+      color: #eef5fc; font-weight: 600; font-size: 13px; border-radius: 9px; padding: 6px 14px;
+      transition: background .12s, border-color .12s;
+    }
+    .tk-ghost:hover { background: rgba(255,255,255,.22); color: #fff; border-color: rgba(255,255,255,.4); }
+    .tk-ghost-quit:hover { background: rgba(248,113,113,.28); border-color: rgba(248,113,113,.5); }
+    .tk-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px;
+      box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06); padding: 20px; margin-bottom: 18px; }
+    .tk-card h4 { font-weight: 700; font-size: 14px; margin: 0 0 14px; color: #0f172a;
+      display: flex; align-items: center; gap: 8px; }
+    .tk-card h4::before { content: ''; width: 4px; height: 16px; border-radius: 3px; background: #1d62a8; }
+    label { font-weight: 600; font-size: 12.5px; color: #475569; margin-bottom: 4px; }
+    .form-control, .selectize-input, .form-select {
+      border-radius: 9px !important; border-color: #dbe1ea !important; font-size: 14px;
+    }
+    .form-control:focus, .selectize-input.focus, .form-select:focus {
+      border-color: #1d62a8 !important; box-shadow: 0 0 0 3px rgba(29,98,168,.12) !important;
+    }
+    .btn { border-radius: 9px; font-weight: 600; }
+    .btn-primary { background: #1d62a8; border-color: #1d62a8; box-shadow: 0 2px 8px rgba(29,98,168,.30); }
     .btn-primary:hover { background: #174e86; border-color: #174e86; }
-    .tk-stats { display: flex; gap: 12px; margin-bottom: 16px; }
-    .tk-stat { flex: 1; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; }
-    .tk-stat .tk-n { font-size: 24px; font-weight: 700; color: #0f172a; }
-    .tk-stat .tk-l { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
+    #add { padding: 9px; font-size: 14.5px; }
+    .tk-stats { display: flex; gap: 14px; margin-bottom: 18px; }
+    .tk-stat { flex: 1; background: #fff; border: 1px solid #e6eaf1; border-radius: 14px; padding: 14px 18px;
+      box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 18px rgba(15,23,42,.05); }
+    .tk-stat .tk-n { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+    .tk-stat .tk-l { font-size: 11.5px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; margin-top: 2px; }
+    .tk-stat.tk-over { border-color: #fecaca; background: #fff5f5; }
     .tk-stat.tk-over .tk-n { color: #dc2626; }
-    .tk-rows { display: flex; flex-direction: column; gap: 6px; }
-    .tk-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #e8edf3;
-      border-radius: 10px; cursor: pointer; background: #fff; transition: border-color .12s, box-shadow .12s; }
-    .tk-row:hover { border-color: #1d62a8; box-shadow: 0 0 0 3px rgba(29,98,168,.10); }
-    .tk-row.selected { border-color: #1d62a8; box-shadow: 0 0 0 3px rgba(29,98,168,.18); }
-    .tk-urg { flex: none; width: 42px; text-align: center; font-weight: 700; font-size: 14px; color: #1d62a8; }
+    .tk-rows { display: flex; flex-direction: column; gap: 7px; }
+    .tk-row { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid #e8edf3;
+      border-radius: 12px; cursor: pointer; background: #fff; transition: border-color .12s, box-shadow .12s, transform .08s; }
+    .tk-row:hover { border-color: #b9cde6; box-shadow: 0 2px 10px rgba(15,23,42,.07); }
+    .tk-row.selected { border-color: #1d62a8; box-shadow: 0 0 0 3px rgba(29,98,168,.16); }
+    .tk-urg { flex: none; width: 44px; height: 32px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13.5px; color: #1d62a8; background: #eef4fc; border-radius: 8px; }
     .tk-main { flex: 1; min-width: 0; }
     .tk-desc { font-weight: 600; color: #0f172a; }
     .tk-meta { margin-top: 3px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .tk-chip { font-size: 11.5px; border-radius: 999px; padding: 1px 9px; background: #eef2f7; color: #475569; }
+    .tk-chip { font-size: 11.5px; border-radius: 999px; padding: 2px 10px; background: #eef2f7; color: #475569; font-weight: 500; }
     .tk-chip.tk-proj { background: #e0ecfb; color: #1d62a8; font-weight: 600; }
     .tk-chip.tk-person { background: #ede9fe; color: #6d28d9; font-weight: 600; }
-    .tk-chip.tk-tag::before { content: '#'; opacity: .55; }
+    .tk-chip.tk-tag { background: #f1f5f9; }
+    .tk-chip.tk-tag::before { content: '#'; opacity: .5; }
     .tk-pri { flex: none; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 7px; }
     .tk-pri-H { background: #fee2e2; color: #b91c1c; }
     .tk-pri-M { background: #fef3c7; color: #b45309; }
@@ -91,9 +112,11 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .tk-note { font-size: 12.5px; color: #475569; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
     .tk-note .tk-note-t { color: #94a3b8; font-size: 11px; }
-    .nav-pills { margin-bottom: 4px; }
-    .nav-pills .nav-link { font-weight: 600; color: #334155; }
-    .nav-pills .nav-link.active { background-color: #1d62a8 !important; color: #fff !important; }
+    .nav-pills { margin-bottom: 14px; gap: 8px; }
+    .nav-pills .nav-link { font-weight: 600; color: #334155; background: #fff; border: 1px solid #e6eaf1;
+      border-radius: 10px; padding: 7px 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .nav-pills .nav-link:hover { border-color: #b9cde6; color: #1d62a8; }
+    .nav-pills .nav-link.active { background-color: #1d62a8 !important; color: #fff !important; border-color: #1d62a8 !important; }
     .tk-proj-row { padding: 13px 4px; border-bottom: 1px solid #f1f5f9; }
     .tk-proj-row:last-child { border-bottom: none; }
     .tk-proj-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
@@ -127,9 +150,12 @@ task_app <- function(db = "tasks.sqlite") {
     ),
     shiny::div(
       class = "tk-hero",
-      shiny::span(class = "tk-tag-app", "daos"),
-      shiny::h2("Opgaver"),
-      shiny::div(class = "tk-db", shiny::textOutput("db_label", inline = TRUE))
+      shiny::div(class = "tk-hero-actions",
+        shiny::actionButton("refresh", shiny::HTML("&#x21bb; Opdater"), class = "tk-ghost"),
+        shiny::actionButton("quit", "Luk (Q)", class = "tk-ghost tk-ghost-quit")),
+      shiny::div(class = "tk-hero-text",
+        shiny::h2(shiny::HTML("&#x2713;&#xFE0E; Opgaver")),
+        shiny::div(class = "tk-db", shiny::textOutput("db_label", inline = TRUE)))
     ),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
@@ -169,9 +195,7 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::selectInput("f_sort", "Sort\u00e9r efter",
             choices = c("Vigtighed" = "urgency", "Forfald" = "due",
                         "Oprettet" = "entry", "Projekt" = "project")),
-          shiny::actionButton("refresh", "Opdater", class = "btn-default", width = "100%"),
-          shiny::actionButton("quit", "Luk appen (Q)", class = "btn-default",
-                              width = "100%", style = "margin-top: 8px;")
+          shiny::helpText("Listen opdateres automatisk. Tryk Q for at lukke.")
         )
       ),
       shiny::mainPanel(
