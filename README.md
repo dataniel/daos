@@ -33,6 +33,7 @@ pak::pak("dataniel/daos")
 | `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `accounts_txt_to_xlsx()` | Parse manually formatted text files and export to Excel |
 | `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| `browse_files()` | Yazi-style Shiny file browser: mark files/folders and copy paths to R |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | `cvr_query()` | Build an Elasticsearch query for CVR annual reports |

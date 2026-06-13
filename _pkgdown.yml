@@ -46,6 +46,7 @@ reference:
   - title: Interactive
     contents:
       - screen_timeseries
+      - browse_files
 
   - title: Domain-specific
     contents:

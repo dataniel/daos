@@ -730,6 +730,25 @@ screen_timeseries(df, year, gdp,
                   .title = "GDP by country")
 ```
 
+### `browse_files()`: grab filesystem paths without typing them
+
+Typing or hand-fixing long Windows paths is tedious. `browse_files()`
+launches a small Shiny app that walks the filesystem in the same
+three-column, yazi-style browser as `statbank_app()` -- parent
+directory, current directory, and a live preview -- navigated with
+`h`/`j`/`k`/`l` or the arrow keys. The point is to grab paths: mark one
+or more files or folders with `Space`, then take them into R.
+
+```{r, eval = FALSE}
+p <- browse_files()           # navigate, mark, press Q
+```
+
+Pressing `Q` returns the marked paths -- a single string for one, a
+`c("a", "b")` vector for several -- with forward slashes, so the result
+drops straight into a script. `y` copies the same R expression to the
+clipboard, and `o` opens the item under the cursor in the system file
+explorer (reusing `open_in_explorer()`). Requires `shiny`.
+
 ---
 
 ## RStudio addins
