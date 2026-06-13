@@ -195,22 +195,38 @@ browse_files <- function(path = getwd()) {
     .bf-fileinfo strong { color: #0f3b66; word-break: break-all; }
     .bf-fileinfo p { color: #64748b; font-size: 12.5px; margin: 6px 0 2px; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
-    .bf-bar {
-      display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+    .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
+    .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .bf-btn {
+      border-radius: 9px; font-weight: 600; padding: 8px 16px;
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid #d6dee8; box-shadow: 0 1px 2px rgba(15,23,42,.05);
     }
-    .bf-bar .btn { border-radius: 8px; font-weight: 600; }
-    .bf-bar .btn-primary { background: #1d62a8; border-color: #1d62a8; }
-    .bf-count {
-      color: #475569; font-size: 13px; font-weight: 600; background: #f1f5f9;
-      border-radius: 999px; padding: 4px 12px;
+    .bf-btn.btn-primary { background: #1d62a8; border-color: #1d62a8; color: #fff; }
+    .bf-btn.btn-primary:hover { background: #174e86; border-color: #174e86; }
+    .bf-btn.btn-default { background: #fff; color: #334155; }
+    .bf-btn.btn-default:hover { border-color: #1d62a8; color: #1d62a8; }
+    .bf-kbd {
+      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+      background: rgba(15,23,42,.08); border-radius: 5px; padding: 1px 6px;
     }
-    .bf-selbox {
-      margin-left: auto; flex: 1 1 320px; min-width: 200px;
+    .bf-btn.btn-primary .bf-kbd { background: rgba(255,255,255,.22); color: #eaf2fb; }
+    .bf-chip {
+      margin-left: auto; color: #16a34a; font-size: 13px; font-weight: 600;
+      background: #dcfce7; border-radius: 999px; padding: 5px 14px;
+    }
+    .bf-selhead {
+      font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: #94a3b8; margin-bottom: 5px;
     }
     .bf-selbox pre {
-      background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 10px 12px;
+      background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px 14px;
       font-size: 12.5px; margin: 0; white-space: pre-wrap; word-break: break-all;
+      min-height: 20px;
     }
+    .bf-legend { margin-top: 14px; font-size: 12px; color: #64748b; }
+    .bf-legend .bf-kbd { margin: 0 3px 0 10px; }
+    .bf-legend .bf-kbd:first-child { margin-left: 0; }
   "
 
   app_js <- "
@@ -288,6 +304,15 @@ browse_files <- function(path = getwd()) {
     });
   "
 
+  kbd_html <- function(k) paste0("<span class='bf-kbd'>", k, "</span>")
+  legend_html <- paste0(
+    kbd_html("j"), kbd_html("k"), " flyt ",
+    kbd_html("l"), " \u00e5bn ", kbd_html("h"), " op ",
+    kbd_html("mellemrum"), " mark\u00e9r ",
+    kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
+    kbd_html("o"), " stifinder ", kbd_html("Q"), " luk"
+  )
+
   ui <- shiny::fluidPage(
     theme = theme,
     shiny::tags$head(
@@ -307,16 +332,14 @@ browse_files <- function(path = getwd()) {
       shiny::uiOutput("browser"),
       shiny::div(
         class = "bf-bar",
-        shiny::actionButton("do_insert", "Inds\u00e6t i editor (Enter)", class = "btn-primary"),
-        shiny::actionButton("do_copy", "Kopier (y)", class = "btn-default"),
-        shiny::actionButton("do_open", "\u00c5bn i stifinder (o)", class = "btn-default"),
-        shiny::span(class = "bf-count", shiny::textOutput("count", inline = TRUE)),
-        shiny::div(class = "bf-selbox", shiny::tags$pre(shiny::textOutput("rstring")))
-      ),
-      shiny::helpText(
-        "Tastatur: j/k flytter, l eller \u2192 \u00e5bner mappe, h g\u00e5r op, mellemrum",
-        " mark\u00e9rer, Enter inds\u00e6tter i editoren, y kopierer, o \u00e5bner i stifinder,",
-        " Q lukker.")
+        shiny::uiOutput("actions"),
+        shiny::div(
+          class = "bf-selbox",
+          shiny::div(class = "bf-selhead", "Bliver indsat / kopieret"),
+          shiny::tags$pre(shiny::textOutput("rstring"))
+        ),
+        shiny::div(class = "bf-legend", shiny::HTML(legend_html))
+      )
     )
   )
 
@@ -540,9 +563,28 @@ browse_files <- function(path = getwd()) {
       }
     })
 
-    output$count <- shiny::renderText({
-      n <- length(marked())
-      if (n == 0) "ingen markeret" else paste(n, if (n == 1) "markeret" else "markerede")
+    # The action buttons name exactly what they will act on: the number
+    # of paths in the target set (marked, or the cursor when none are).
+    kbd <- function(k) shiny::tags$span(class = "bf-kbd", k)
+    output$actions <- shiny::renderUI({
+      n  <- length(target())
+      nm <- length(marked())
+      word <- if (n <= 1) "sti" else paste(n, "stier")
+      shiny::div(
+        class = "bf-actions",
+        shiny::actionButton(
+          "do_insert", shiny::tagList(paste("Inds\u00e6t", word), kbd("Enter")),
+          icon = shiny::icon("file-import"), class = "btn-primary bf-btn"),
+        shiny::actionButton(
+          "do_copy", shiny::tagList(paste("Kopier", word), kbd("y")),
+          icon = shiny::icon("copy"), class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
+          icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
+        if (nm > 0)
+          shiny::span(class = "bf-chip",
+                      paste(nm, if (nm == 1) "markeret" else "markerede"))
+      )
     })
 
     output$rstring <- shiny::renderText({
