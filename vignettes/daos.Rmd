@@ -730,6 +730,41 @@ screen_timeseries(df, year, gdp,
                   .title = "GDP by country")
 ```
 
+### `task_*`: a shared task manager
+
+The `task_*` family is a small taskwarrior-style task manager backed by a
+shared SQLite file. SQLite is free (public domain, bundled by `RSQLite`),
+runs in WAL mode, and needs no server -- so a `.sqlite` file on a network
+drive is enough for a team to work from, several people at once.
+
+```{r, eval = FALSE}
+task_db("tasks.sqlite")                       # create/open the database
+
+task_add("tasks.sqlite", "Write the report",
+         project = "Q3", assignee = "Anna", tags = c("writing", "urgent"),
+         priority = "H", due = "2026-07-01")
+
+task_list("tasks.sqlite")                     # tibble sorted by urgency
+task_list("tasks.sqlite", assignee = "Anna")  # filter by person
+task_done("tasks.sqlite", id = 1)             # complete a task
+```
+
+Tasks carry a project, an assignee (person), tags, priority, due date,
+recurrence, dependencies and annotations; `task_list()` adds a `blocked`
+flag and a simplified urgency score. Every function opens a short-lived
+connection, works in one transaction, and closes, so concurrent users are
+handled safely. The database is just a shared file -- point at a path that
+does not exist yet and a fresh one is created.
+
+`task_app()` is a Shiny front-end over the same database: add and edit
+tasks, filter by person/project/tag/status, see project and people
+overviews, and watch the list update as others change it (it re-reads on
+a timer). Requires `shiny`, `DBI`, and `RSQLite`.
+
+```{r, eval = FALSE}
+task_app("tasks.sqlite")
+```
+
 ### `browse_files()`: grab filesystem paths without typing them
 
 Typing or hand-fixing long Windows paths is tedious. `browse_files()`

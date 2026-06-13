@@ -71,6 +71,20 @@ reference:
       - cvr_hits
       - cvr_download
 
+  - title: Task manager
+    contents:
+      - task_app
+      - task_db
+      - task_add
+      - task_list
+      - task_done
+      - task_delete
+      - task_modify
+      - task_annotate
+      - task_annotations
+      - task_projects
+      - task_people
+
   - title: Greenland Statbank
     contents:
       - statbank_app

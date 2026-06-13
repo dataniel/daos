@@ -63,6 +63,14 @@ pak::pak("dataniel/daos")
 | `statbank_search()` | Search statbank tables by title |
 | `statbank_tables()` | List every table in the statbank (cached per session) |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
+| `task_db()` | Create/open a shared SQLite task database (WAL, multi-user) |
+| `task_add()` | Add a task (project, assignee, tags, priority, due, recurrence, dependencies) |
+| `task_list()` | List tasks with tags, blocked flag, and urgency |
+| `task_people()` | Per-person pending task counts |
+| `task_done()` / `task_delete()` / `task_modify()` | Complete, delete, or edit a task |
+| `task_annotate()` | Add a timestamped note to a task |
+| `task_projects()` | Per-project pending/completed counts |
+| `task_app()` | Shiny task manager over a shared task database |
 | `view_types()` | Compare column types across multiple data frames |
 | `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |
 | `append_excel()` | Append formatted sheets to an existing xlsx file |
