@@ -17,8 +17,13 @@
   )
   if (length(entries) == 0) return(empty)
 
-  info  <- file.info(entries)
-  is_dir <- !is.na(info$isdir) & info$isdir
+  # extra_cols = FALSE skips owner/group resolution (which warns "cannot
+  # resolve owner" on protected entries), and dir.exists() classifies
+  # directories without needing read access -- so listing a drive root
+  # with locked folders (Config.Msi, System Volume Information, ...)
+  # stays quiet and correct.
+  info  <- suppressWarnings(file.info(entries, extra_cols = FALSE))
+  is_dir <- dir.exists(entries)
   full  <- normalizePath(entries, winslash = "/", mustWork = FALSE)
   out <- tibble::tibble(
     name  = basename(entries),
@@ -183,6 +188,9 @@ browse_files <- function(path = getwd()) {
     .bf-faux:hover { background: #eef4fb; }
     .bf-preview-ro { cursor: default; color: #475569; }
     .bf-preview-ro:hover { background: transparent; }
+    .bf-empty { text-align: center; padding: 28px 12px; color: #64748b; }
+    .bf-empty-ico { font-size: 30px; margin-bottom: 6px; }
+    .bf-empty p { margin: 2px 0; }
     .bf-fileinfo { padding: 10px 8px; }
     .bf-fileinfo strong { color: #0f3b66; word-break: break-all; }
     .bf-fileinfo p { color: #64748b; font-size: 12.5px; margin: 6px 0 2px; }
@@ -218,9 +226,6 @@ browse_files <- function(path = getwd()) {
       if (key === 'y') { e.preventDefault(); Shiny.setInputValue('do_copy', Date.now()); return; }
       if (key === 'o') { e.preventDefault(); Shiny.setInputValue('do_open', Date.now()); return; }
 
-      var items = document.querySelectorAll('.bf-col-current .bf-item');
-      if (items.length === 0) return;
-
       var down = (key === 'j' || key === 'ArrowDown');
       var up   = (key === 'k' || key === 'ArrowUp');
       var open = (key === 'l' || key === 'ArrowRight');
@@ -228,6 +233,15 @@ browse_files <- function(path = getwd()) {
       var mark = (key === ' ' || e.code === 'Space');
       if (!(down || up || open || back || mark)) return;
       e.preventDefault();
+
+      function goUp() {
+        var crumbs = document.querySelectorAll('.bf-crumbs a');
+        if (crumbs.length >= 2) crumbs[crumbs.length - 2].click();
+      }
+
+      // An empty folder has no rows; h/left must still get you back out.
+      var items = document.querySelectorAll('.bf-col-current .bf-item');
+      if (items.length === 0) { if (back) goUp(); return; }
 
       var cur = -1;
       for (var i = 0; i < items.length; i++) {
@@ -257,8 +271,7 @@ browse_files <- function(path = getwd()) {
       } else if (open) {
         if (cur >= 0) items[cur].click();
       } else if (back) {
-        var crumbs = document.querySelectorAll('.bf-crumbs a');
-        if (crumbs.length >= 2) crumbs[crumbs.length - 2].click();
+        goUp();
       }
     });
     function bfFallbackCopy(txt) {
@@ -447,7 +460,13 @@ browse_files <- function(path = getwd()) {
       cur_col <- shiny::div(
         class = "bf-col bf-col-current",
         shiny::div(class = "bf-colhead", basename(path)),
-        if (nrow(nodes) == 0) shiny::p(class = "bf-hint", style = "padding:8px;", "Tom mappe.")
+        if (nrow(nodes) == 0)
+          shiny::div(
+            class = "bf-empty",
+            shiny::div(class = "bf-empty-ico", "\U0001F4ED"),
+            shiny::p(shiny::strong("Tom mappe")),
+            shiny::p(class = "bf-hint", "Tryk h eller \u2190 for at g\u00e5 tilbage.")
+          )
         else lapply(seq_len(nrow(nodes)), function(i) {
           item_row(nodes[i, ], cursor_on = !is.null(init) && nodes$full[i] == init$full)
         })
