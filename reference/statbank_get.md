@@ -1,4 +1,4 @@
-# Download a table from the Greenland Statbank
+# Download a table from a statbank
 
 Fetches data for a table and returns it as a tibble in long format: one
 column per variable and a `value` column with the numbers.
@@ -9,7 +9,8 @@ column per variable and a `value` column with the numbers.
 statbank_get(
   table,
   ...,
-  lang = "da",
+  lang = NULL,
+  bank = "gl",
   .col_names = c("text", "code"),
   .values = c("text", "code"),
   .type_convert = TRUE
@@ -31,11 +32,19 @@ statbank_get(
 - ...:
 
   Named selections, one per variable. Values can be value codes, value
-  texts, or `"*"` for all.
+  texts, or `"*"` for all. Because the option arguments are
+  dot-prefixed, a variable can never be shadowed by one of them.
 
 - lang:
 
-  Language of titles and labels: `"da"` (default), `"en"`, or `"kl"`.
+  Language of titles and labels, or `NULL` (default) for the bank's own
+  default. Greenland offers `"da"`, `"kl"`, `"en"`; the Faroe Islands
+  offer `"fo"`, `"en"`.
+
+- bank:
+
+  Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
+  Islands).
 
 - .col_names:
 

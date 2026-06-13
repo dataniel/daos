@@ -106,15 +106,15 @@
 - [`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
   : Interactive explorer for the Greenland Statbank
 - [`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
-  : Download a table from the Greenland Statbank
+  : Download a table from a statbank
 - [`statbank_meta()`](https://dataniel.github.io/daos/reference/statbank_meta.md)
-  : Get the metadata for a Greenland Statbank table
+  : Get the metadata for a statbank table
 - [`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
-  : Search Greenland Statbank tables by title
+  : Search statbank tables by title
 - [`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md)
-  : List every table in the Greenland Statbank
+  : List every table in a statbank
 - [`statbank_nodes()`](https://dataniel.github.io/daos/reference/statbank_nodes.md)
-  : List one level of the Greenland Statbank table tree
+  : List one level of a statbank table tree
 
 ## RStudio addins
 

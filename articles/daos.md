@@ -35,9 +35,9 @@ so you can timestamp an export inline without stopping to look up the
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260612"
+#> [1] "20260613"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-12 23:36"
+#> [1] "2026-06-13 11:13"
 ```
 
 A typical use is timestamping an export file:
@@ -874,12 +874,26 @@ or
 walks the statbank’s table tree (one small request per folder) and
 caches the list for the rest of the session.
 
+The same functions also reach the Faroese statbank (Hagstova Føroya) via
+`bank = "fo"`. Each bank has its own languages, so `lang` defaults to
+the bank’s own default (Danish for Greenland, Faroese for the Faroe
+Islands) rather than a fixed value:
+
+``` r
+
+statbank_search("wages", bank = "fo")
+df <- statbank_get("IP/IP02/pris_alt.px", bank = "fo")
+```
+
 [`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
-wraps the family in a Shiny app: find a table by browsing the subjects
-or searching, pick values in popup checklists, preview the data and a
-plot, and copy the
+wraps the family in a Shiny app: find a table by browsing the subject
+tree (a three-column, yazi-style browser with keyboard navigation) or
+searching, pick values in popup checklists, preview the data and a plot,
+and copy the
 [`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
-call that reproduces the selection. The app is meant as the bridge from
+call that reproduces the selection. The bank switcher sits one level
+above the subject root, so the same app covers both Greenland (the
+default) and the Faroe Islands. The app is meant as the bridge from
 clicking to scripting; the code tab always shows the query you built.
 Data can be downloaded as formatted Excel, and pressing Q closes the app
 and returns the last fetched dataset to R. Requires `shiny` and

@@ -1,4 +1,4 @@
-# List one level of the Greenland Statbank table tree
+# List one level of a statbank table tree
 
 Fetches the nodes directly under a path in the statbank's table tree.
 The root holds the subject areas (population, labour market, prices, and
@@ -7,7 +7,7 @@ so on); each subject holds sub-folders and tables.
 ## Usage
 
 ``` r
-statbank_nodes(path = "", lang = "da")
+statbank_nodes(path = "", lang = NULL, bank = "gl")
 ```
 
 ## Arguments
@@ -19,7 +19,14 @@ statbank_nodes(path = "", lang = "da")
 
 - lang:
 
-  Language of titles and labels: `"da"` (default), `"en"`, or `"kl"`.
+  Language of titles and labels, or `NULL` (default) for the bank's own
+  default. Greenland offers `"da"`, `"kl"`, `"en"`; the Faroe Islands
+  offer `"fo"`, `"en"`.
+
+- bank:
+
+  Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
+  Islands).
 
 ## Value
 
@@ -28,7 +35,8 @@ A tibble with columns `id`, `type` (`"l"` for folder, `"t"` for table),
 
 ## References
 
-Greenland Statbank, <https://bank.stat.gl>.
+Greenland Statbank, <https://bank.stat.gl>; Statistics Faroe Islands,
+<https://statbank.hagstova.fo>.
 
 ## See also
 
@@ -40,8 +48,8 @@ Greenland Statbank, <https://bank.stat.gl>.
 
 ``` r
 if (FALSE) { # \dontrun{
-statbank_nodes()          # subject areas
-statbank_nodes("BE")      # folders under population
-statbank_nodes("BE/BE01") # tables and folders under BE01
+statbank_nodes()              # Greenland subject areas
+statbank_nodes("BE")          # folders under population
+statbank_nodes(bank = "fo")   # Faroese subject areas
 } # }
 ```

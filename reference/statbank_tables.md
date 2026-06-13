@@ -1,4 +1,4 @@
-# List every table in the Greenland Statbank
+# List every table in a statbank
 
 Walks the whole table tree once and returns all tables with their paths
 and titles. The walk takes a number of small requests (one per folder),
@@ -8,14 +8,21 @@ so the result is cached for the rest of the session; pass
 ## Usage
 
 ``` r
-statbank_tables(lang = "da", refresh = FALSE)
+statbank_tables(lang = NULL, bank = "gl", refresh = FALSE)
 ```
 
 ## Arguments
 
 - lang:
 
-  Language of titles and labels: `"da"` (default), `"en"`, or `"kl"`.
+  Language of titles and labels, or `NULL` (default) for the bank's own
+  default. Greenland offers `"da"`, `"kl"`, `"en"`; the Faroe Islands
+  offer `"fo"`, `"en"`.
+
+- bank:
+
+  Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
+  Islands).
 
 - refresh:
 

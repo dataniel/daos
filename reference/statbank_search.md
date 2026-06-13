@@ -1,4 +1,4 @@
-# Search Greenland Statbank tables by title
+# Search statbank tables by title
 
 Filters the full table list (see
 [`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md))
@@ -9,7 +9,7 @@ cache.
 ## Usage
 
 ``` r
-statbank_search(text, lang = "da", refresh = FALSE)
+statbank_search(text, lang = NULL, bank = "gl", refresh = FALSE)
 ```
 
 ## Arguments
@@ -20,7 +20,14 @@ statbank_search(text, lang = "da", refresh = FALSE)
 
 - lang:
 
-  Language of titles and labels: `"da"` (default), `"en"`, or `"kl"`.
+  Language of titles and labels, or `NULL` (default) for the bank's own
+  default. Greenland offers `"da"`, `"kl"`, `"en"`; the Faroe Islands
+  offer `"fo"`, `"en"`.
+
+- bank:
+
+  Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
+  Islands).
 
 - refresh:
 
@@ -42,6 +49,6 @@ A tibble with the matching rows from
 ``` r
 if (FALSE) { # \dontrun{
 statbank_search("befolkning")
-statbank_search("ledighed")
+statbank_search(" wages", bank = "fo")
 } # }
 ```

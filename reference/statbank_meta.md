@@ -1,4 +1,4 @@
-# Get the metadata for a Greenland Statbank table
+# Get the metadata for a statbank table
 
 Fetches a table's title and variables: codes, display texts, and the
 values each variable can take.
@@ -6,7 +6,7 @@ values each variable can take.
 ## Usage
 
 ``` r
-statbank_meta(table, lang = "da")
+statbank_meta(table, lang = NULL, bank = "gl")
 ```
 
 ## Arguments
@@ -23,7 +23,14 @@ statbank_meta(table, lang = "da")
 
 - lang:
 
-  Language of titles and labels: `"da"` (default), `"en"`, or `"kl"`.
+  Language of titles and labels, or `NULL` (default) for the bank's own
+  default. Greenland offers `"da"`, `"kl"`, `"en"`; the Faroe Islands
+  offer `"fo"`, `"en"`.
+
+- bank:
+
+  Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
+  Islands).
 
 ## Value
 
