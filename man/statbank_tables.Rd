@@ -2,13 +2,17 @@
 % Please edit documentation in R/statbank.R
 \name{statbank_tables}
 \alias{statbank_tables}
-\title{List every table in the Greenland Statbank}
+\title{List every table in a statbank}
 \usage{
-statbank_tables(lang = "da", refresh = FALSE)
+statbank_tables(lang = NULL, bank = "gl", refresh = FALSE)
 }
 \arguments{
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for the
+bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
+Faroe Islands offer \code{"fo"}, \code{"en"}.}
+
+\item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
+(the Faroe Islands).}
 
 \item{refresh}{If \code{TRUE}, ignore the session cache and walk the tree
 again. Default \code{FALSE}.}

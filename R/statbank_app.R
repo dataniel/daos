@@ -2,8 +2,9 @@
 #'
 #' Launches a Shiny app for working with the Greenland Statbank
 #' (bank.stat.gl). The app guides the user through three steps: find a
-#' table (search the titles, or walk the subject tree in a two-column
-#' browser that also responds to `h`/`j`/`k`/`l` and the arrow keys),
+#' table (search the titles, or walk the subject tree in a three-column
+#' browser -- parent, current, and a live preview of the item under the
+#' cursor -- that also responds to `h`/`j`/`k`/`l` and the arrow keys),
 #' choose values for each variable, and fetch the data. The
 #' result is shown as a table and a plot, and the app always shows the
 #' [daos::statbank_get()] call that reproduces the selection, so a
@@ -23,11 +24,20 @@
 #' app and returns the last fetched dataset, so
 #' `df <- statbank_app()` also works as a data-fetching workflow.
 #'
+#' The app covers both the Greenland statbank (the default) and the
+#' Faroese one. The bank chooser sits one level above the subject root:
+#' press `h` (or click the breadcrumb) at the root to switch bank, which
+#' reloads the tree in that bank's default language.
+#'
 #' The table list is fetched when the app starts (one request per
 #' folder in the tree) and reused for the rest of the R session.
 #'
-#' @param lang Language of titles and labels: `"da"` (default), `"en"`,
-#'   or `"kl"`.
+#' @param bank Statbank to open: `"gl"` (Greenland, the default) or
+#'   `"fo"` (the Faroe Islands). The bank can also be switched inside
+#'   the app.
+#' @param lang Language of titles and labels, or `NULL` (default) for
+#'   the bank's own default (Danish for Greenland, Faroese for the Faroe
+#'   Islands).
 #'
 #' @return The last fetched dataset, invisibly (`NULL` if nothing was
 #'   fetched).
@@ -42,11 +52,13 @@
 #' @importFrom cli cli_abort
 #' @importFrom rlang .data
 #' @export
-statbank_app <- function(lang = "da") {
+statbank_app <- function(bank = "gl", lang = NULL) {
   for (pkg in c("curl", "jsonlite", "shiny", "ggplot2")) {
     if (!requireNamespace(pkg, quietly = TRUE))
       cli::cli_abort("Package {.pkg {pkg}} is required for the app. Install with {.code install.packages('{pkg}')}.")
   }
+  init_bank <- bank
+  init_lang <- .sb_resolve_lang(lang, bank)
 
   theme <- if (requireNamespace("bslib", quietly = TRUE)) {
     tryCatch(bslib::bs_theme(version = 5, bootswatch = "zephyr"),
@@ -167,6 +179,22 @@ statbank_app <- function(lang = "da") {
     .sb-item.sb-tbl { color: #0f3b66; font-weight: 500; }
     .sb-item.sb-tbl:hover { background: #e3eefc; }
     .sb-tblicon { color: #1d62a8; margin-right: 8px; }
+    .sb-col-preview { background: #f8fafc; }
+    .sb-col-preview .sb-colhead { color: #b6c2d1; }
+    .sb-faux {
+      background: #eef4fb; color: #1d62a8; font-weight: 600; cursor: default;
+    }
+    .sb-faux:hover { background: #eef4fb; }
+    .sb-preview-tbl { padding: 10px 6px; }
+    .sb-preview-tbl .sb-tblicon { font-size: 16px; }
+    .sb-preview-tbl strong { color: #0f3b66; }
+    .sb-item.sb-bank { font-weight: 600; }
+    .sb-item.sb-bank .sb-itemmark {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .sb-item.sb-preview-ro { cursor: default; color: #64748b; }
+    .sb-item.sb-preview-ro:hover { background: transparent; }
     .sb-guide summary {
       cursor: pointer; color: #475569; font-size: 13.5px; font-weight: 600;
       margin-top: 16px;
@@ -247,7 +275,8 @@ statbank_app <- function(lang = "da") {
       var back = (key === 'h' || key === 'ArrowLeft');
       if (!(down || up || open || back)) return;
 
-      var items = document.querySelectorAll('.sb-browser .sb-col:last-child .sb-item');
+      // The middle column is the one being navigated.
+      var items = document.querySelectorAll('.sb-col-current .sb-item');
       if (items.length === 0) {
         // A table is chosen: h/left goes back to the folder it sits in.
         var b = document.getElementById('back_to_browse');
@@ -264,6 +293,17 @@ statbank_app <- function(lang = "da") {
         if (items[i].classList.contains('cursor')) { cur = i; break; }
       }
 
+      // Tell the server which item is under the cursor, so the preview
+      // column (right) can show its contents.
+      function sendCursor(el) {
+        if (!el) return;
+        Shiny.setInputValue('sb_cursor', {
+          full: el.getAttribute('data-full'),
+          type: el.getAttribute('data-type'),
+          n: Date.now()
+        });
+      }
+
       if (down || up) {
         var nxt;
         if (cur === -1) {
@@ -274,6 +314,7 @@ statbank_app <- function(lang = "da") {
         }
         items[nxt].classList.add('cursor');
         items[nxt].scrollIntoView({block: 'nearest'});
+        sendCursor(items[nxt]);
       } else if (open) {
         if (cur >= 0) items[cur].click();
       } else if (back) {
@@ -319,7 +360,7 @@ statbank_app <- function(lang = "da") {
     shiny::div(
       class = "sb-hero",
       shiny::span(class = "sb-tag", "daos"),
-      shiny::h2("Gr\u00f8nlands Statistikbank"),
+      shiny::h2(shiny::textOutput("hero_title", inline = TRUE)),
       shiny::p(class = "sb-sub",
                "Find en tabel, v\u00e6lg dine data, og tag R-koden med hjem.")
     ),
@@ -352,26 +393,56 @@ statbank_app <- function(lang = "da") {
   server <- function(input, output, session) {
     tables <- shiny::reactiveVal(NULL)
 
+    # The active statbank and its language. Switching bank resets the
+    # browser to the new bank's root and its default language.
+    active_bank <- shiny::reactiveVal(init_bank)
+    active_lang <- shiny::reactiveVal(init_lang)
+
+    output$hero_title <- shiny::renderText({
+      paste0(.sb_banks[[active_bank()]]$label, "s statistikbank")
+    })
+
     shiny::observeEvent(input$quit, {
       shiny::stopApp(invisible(fetched()))
     })
 
-    # Fetch the table list once at startup (cached for the session).
-    shiny::observe({
-      shiny::withProgress(message = "Henter tabelliste fra bank.stat.gl ...", {
-        tables(statbank_tables(lang = lang))
-      })
-    })
+    # Load the table list whenever the bank changes (also at startup).
+    # Reads the language by isolation, since the two are set together.
+    shiny::observeEvent(active_bank(), {
+      bk <- active_bank()
+      lg <- shiny::isolate(active_lang())
+      shiny::withProgress(
+        message = paste0("Henter tabelliste fra ", .sb_banks[[bk]]$label, " ..."), {
+          tables(statbank_tables(lang = lg, bank = bk))
+        })
+    }, ignoreNULL = FALSE)
 
-    # Node listings for the tree browser, cached per folder.
+    # Node listings for the tree browser, cached per bank, language, and
+    # folder.
     node_cache <- new.env(parent = emptyenv())
-    get_nodes <- function(path) {
-      key <- if (nzchar(path)) path else "."
+    nodes_cached <- function(path, b, lg) {
+      key <- paste0(b, "|", lg, "|", if (nzchar(path)) path else ".")
       if (is.null(node_cache[[key]])) {
-        node_cache[[key]] <- statbank_nodes(path, lang = lang)
+        node_cache[[key]] <- statbank_nodes(path, lang = lg, bank = b)
       }
       node_cache[[key]]
     }
+    get_nodes <- function(path) nodes_cached(path, active_bank(), active_lang())
+
+    # Bank switching. Picking the active bank just leaves the chooser;
+    # picking another resets path, table, and language.
+    at_banks <- shiny::reactiveVal(FALSE)
+    shiny::observeEvent(input$go_banks, at_banks(TRUE))
+    shiny::observeEvent(input$pick_bank, {
+      at_banks(FALSE)
+      if (input$pick_bank != active_bank()) {
+        current_table(NULL)
+        cur_path("")
+        active_lang(.sb_banks[[input$pick_bank]]$default_lang)
+        active_bank(input$pick_bank)
+        shiny::updateTextInput(session, "search", value = "")
+      }
+    })
 
     # The search narrows the table picker.
     filtered_tables <- shiny::reactive({
@@ -421,9 +492,37 @@ statbank_app <- function(lang = "da") {
       shiny::updateSelectizeInput(session, "table", selected = character(0))
     })
 
+    # The item under the cursor in the middle column. The preview (right)
+    # column shows its contents. JS moves the cursor and reports here;
+    # changing folder resets it to the first node so the preview matches
+    # the initial render.
+    cursor <- shiny::reactiveVal(NULL)
+
+    # Reset the cursor to the first row whenever the level changes: a new
+    # folder, a new bank, or entering the bank chooser. JS then moves it
+    # on j/k and reports back via input$sb_cursor.
+    shiny::observe({
+      if (at_banks()) {
+        cursor(list(full = names(.sb_banks)[1], type = "bank"))
+      } else {
+        path  <- cur_path()
+        nodes <- get_nodes(path)
+        if (nrow(nodes) > 0) {
+          full <- if (nzchar(path)) paste(path, nodes$id[1], sep = "/") else nodes$id[1]
+          cursor(list(full = full, type = nodes$type[1]))
+        } else {
+          cursor(NULL)
+        }
+      }
+    })
+
+    shiny::observeEvent(input$sb_cursor, {
+      cursor(list(full = input$sb_cursor$full, type = input$sb_cursor$type))
+    })
+
     meta <- shiny::reactive({
       shiny::req(current_table())
-      statbank_meta(current_table(), lang = lang)
+      statbank_meta(current_table(), lang = active_lang(), bank = active_bank())
     })
 
     # Notes, source, and contact come with the data response, not the
@@ -435,7 +534,8 @@ statbank_app <- function(lang = "da") {
       names(sels) <- m$variables$code
       tryCatch(
         do.call(statbank_get,
-                c(list(m$path), sels, list(lang = lang, .type_convert = FALSE))),
+                c(list(m$path), sels,
+                  list(lang = active_lang(), bank = active_bank(), .type_convert = FALSE))),
         error = function(e) NULL
       )
     })
@@ -668,7 +768,7 @@ statbank_app <- function(lang = "da") {
         fetched(do.call(statbank_get, c(
           list(meta()$path),
           selections(),
-          list(lang = lang,
+          list(lang = active_lang(), bank = active_bank(),
                .col_names = opt_col_names(),
                .values = opt_values(),
                .type_convert = opt_typeconv())
@@ -695,6 +795,7 @@ statbank_app <- function(lang = "da") {
         shiny::div(
           class = paste(c("sb-item", if (active) "active", if (cursor) "cursor"),
                         collapse = " "),
+          `data-full` = full, `data-type` = "l",
           onclick = sprintf(
             "Shiny.setInputValue('browse_to', '%s', {priority: 'event'})", full),
           row$text,
@@ -703,6 +804,7 @@ statbank_app <- function(lang = "da") {
       } else {
         shiny::div(
           class = paste(c("sb-item sb-tbl", if (cursor) "cursor"), collapse = " "),
+          `data-full` = full, `data-type` = "t",
           onclick = sprintf(
             "Shiny.setInputValue('pick_table', '%s', {priority: 'event'})", full),
           shiny::span(class = "sb-tblicon", "\u25a6"),
@@ -711,17 +813,108 @@ statbank_app <- function(lang = "da") {
       }
     }
 
+    # A row in the bank chooser (the level above the subject root).
+    bank_item <- function(id, active = FALSE, cursor = FALSE) {
+      shiny::div(
+        class = paste(c("sb-item sb-bank", if (active) "active", if (cursor) "cursor"),
+                      collapse = " "),
+        `data-full` = id, `data-type` = "bank",
+        onclick = sprintf(
+          "Shiny.setInputValue('pick_bank', '%s', {priority: 'event'})", id),
+        .sb_banks[[id]]$label,
+        if (active) shiny::span(class = "sb-itemmark", "aktiv")
+      )
+    }
+
+    # The preview column: contents of the folder under the cursor, the
+    # subjects of the bank under the cursor, or a card for the table.
+    output$preview_col <- shiny::renderUI({
+      cur <- cursor()
+      if (is.null(cur)) return(NULL)
+      tbl <- tables()
+      if (identical(cur$type, "bank")) {
+        subs <- nodes_cached("", cur$full, .sb_banks[[cur$full]]$default_lang)
+        shiny::tagList(
+          shiny::p(class = "sb-hint", style = "padding: 4px 8px;",
+                   paste0("Emner i ", .sb_banks[[cur$full]]$label, ":")),
+          lapply(seq_len(nrow(subs)), function(i) {
+            shiny::div(class = "sb-item sb-preview-ro", subs$text[i])
+          })
+        )
+      } else if (identical(cur$type, "l")) {
+        kids <- get_nodes(cur$full)
+        if (nrow(kids) == 0) {
+          return(shiny::p(class = "sb-hint", style = "padding: 8px;", "Tom mappe."))
+        }
+        lapply(seq_len(nrow(kids)), function(i) browse_item(kids[i, ], cur$full, tbl = tbl))
+      } else {
+        row <- if (!is.null(tbl)) tbl[paste(tbl$path, tbl$id, sep = "/") == cur$full, ] else tbl[0, ]
+        if (is.null(row) || nrow(row) == 0) return(NULL)
+        shiny::div(
+          class = "sb-preview-tbl",
+          shiny::p(shiny::span(class = "sb-tblicon", "\u25a6"),
+                   shiny::strong(row$title[1])),
+          shiny::p(class = "sb-hint",
+                   paste0("Tabel ", row$id[1],
+                          if (!is.na(row$updated[1]))
+                            paste0(" \u00b7 senest opdateret ", substr(row$updated[1], 1, 10)))),
+          shiny::p(class = "sb-hint", "Tryk l/Enter eller klik for at v\u00e6lge tabellen.")
+        )
+      }
+    })
+
     # The main panel walks through three states: the tree browser, a
     # prompt to pick values, and the results.
     output$main_area <- shiny::renderUI({
       if (is.null(current_table())) {
+        banks_ids <- names(.sb_banks)
+
+        # Right column is always the live preview.
+        preview_col <- shiny::div(
+          class = "sb-col sb-col-preview",
+          shiny::div(class = "sb-colhead", "Forh\u00e5ndsvisning"),
+          shiny::uiOutput("preview_col")
+        )
+
+        # The bank chooser: the level above every subject root.
+        if (at_banks()) {
+          bank_col <- shiny::div(
+            class = "sb-col sb-col-current",
+            shiny::div(class = "sb-colhead", "Statistikbank"),
+            lapply(seq_along(banks_ids), function(i) {
+              bank_item(banks_ids[i], active = banks_ids[i] == active_bank(),
+                        cursor = i == 1)
+            })
+          )
+          faux_col <- shiny::div(
+            class = "sb-col sb-col-parent",
+            shiny::div(class = "sb-colhead", "Niveau op"),
+            shiny::div(class = "sb-item sb-faux", "Nordatlanten")
+          )
+          return(shiny::div(
+            class = "sb-card",
+            shiny::h4("V\u00e6lg statistikbank"),
+            shiny::p(class = "sb-hint",
+                     "V\u00e6lg hvilken statistikbank du vil arbejde med. Gr\u00f8nland er",
+                     " standard, og du kan altid skifte igen ved at g\u00e5 et niveau op (h)."),
+            shiny::div(class = "sb-crumbs",
+                       shiny::tags$a(
+                         onclick = "Shiny.setInputValue('go_banks', Date.now())",
+                         "Statistikbank")),
+            shiny::div(class = "sb-browser", faux_col, bank_col, preview_col)
+          ))
+        }
+
         path <- cur_path()
         segs <- if (nzchar(path)) strsplit(path, "/", fixed = TRUE)[[1]] else character()
 
-        # Breadcrumb with clickable ancestors.
-        crumbs <- list(shiny::tags$a(
-          onclick = "Shiny.setInputValue('browse_to', '', {priority: 'event'})",
-          "Statistikbanken"))
+        # Breadcrumb: bank chooser, then the bank, then the folders.
+        crumbs <- list(
+          shiny::tags$a(onclick = "Shiny.setInputValue('go_banks', Date.now())",
+                        "Statistikbank"),
+          shiny::span(class = "sb-sep", "/"),
+          shiny::tags$a(onclick = "Shiny.setInputValue('browse_to', '', {priority: 'event'})",
+                        .sb_banks[[active_bank()]]$label))
         for (i in seq_along(segs)) {
           parent <- paste(segs[seq_len(i - 1)], collapse = "/")
           nodes  <- get_nodes(parent)
@@ -737,19 +930,25 @@ statbank_app <- function(lang = "da") {
 
         tbl <- tables()
         cur_nodes <- get_nodes(path)
+
+        # Middle column: the current folder, cursor on the first row.
+        # JS owns the cursor after that and reports moves to the server.
         cur_col <- shiny::div(
-          class = "sb-col",
+          class = "sb-col sb-col-current",
           shiny::div(class = "sb-colhead", "Indhold"),
           lapply(seq_len(nrow(cur_nodes)), function(i) {
             browse_item(cur_nodes[i, ], path, cursor = i == 1, tbl = tbl)
           })
         )
 
-        columns <- if (nzchar(path)) {
+        # Left column: one level up. At the subject root that is the bank
+        # list, with the active bank highlighted (click to switch);
+        # deeper, it is the parent folder.
+        parent_col <- if (nzchar(path)) {
           parent_path  <- if (grepl("/", path, fixed = TRUE)) sub("/[^/]+$", "", path) else ""
           parent_nodes <- get_nodes(parent_path)
-          parent_col <- shiny::div(
-            class = "sb-col",
+          shiny::div(
+            class = "sb-col sb-col-parent",
             shiny::div(class = "sb-colhead", "Niveau op"),
             lapply(seq_len(nrow(parent_nodes)), function(i) {
               browse_item(parent_nodes[i, ], parent_path,
@@ -757,19 +956,27 @@ statbank_app <- function(lang = "da") {
                           tbl = tbl)
             })
           )
-          shiny::div(class = "sb-browser", parent_col, cur_col)
         } else {
-          shiny::div(class = "sb-browser", cur_col)
+          shiny::div(
+            class = "sb-col sb-col-parent",
+            shiny::div(class = "sb-colhead", "Statistikbank"),
+            lapply(seq_along(banks_ids), function(i) {
+              bank_item(banks_ids[i], active = banks_ids[i] == active_bank())
+            })
+          )
         }
+
+        columns <- shiny::div(class = "sb-browser", parent_col, cur_col, preview_col)
 
         return(shiny::div(
           class = "sb-card",
-          shiny::h4("Gennemse statistikbanken"),
+          shiny::h4(paste0("Gennemse ", .sb_banks[[active_bank()]]$label, "s statistikbank")),
           shiny::p(class = "sb-hint",
-                   "Klik dig ned gennem emnerne, og klik p\u00e5 en tabel for at v\u00e6lge den.",
-                   " Du kan ogs\u00e5 bruge s\u00f8gefeltet til venstre.",
+                   "Tre kolonner: et niveau op, hvor du st\u00e5r, og en forh\u00e5ndsvisning",
+                   " af det, mark\u00f8ren peger p\u00e5. Klik dig ned gennem emnerne, og klik",
+                   " p\u00e5 en tabel for at v\u00e6lge den. Du kan ogs\u00e5 bruge s\u00f8gefeltet til venstre.",
                    " Tastatur: j/k eller pil op/ned flytter mark\u00f8ren, l/Enter \u00e5bner,",
-                   " h eller pil venstre g\u00e5r et niveau op, ogs\u00e5 fra en valgt tabel."),
+                   " h eller pil venstre g\u00e5r et niveau op -- helt op til valg af statistikbank."),
           shiny::div(class = "sb-crumbs", crumbs),
           columns,
           shiny::tags$details(
@@ -789,7 +996,8 @@ statbank_app <- function(lang = "da") {
                              " i et R-script.")
             ),
             shiny::p(class = "sb-hint",
-                     "Data hentes direkte fra Gr\u00f8nlands Statistiks statistikbank (bank.stat.gl).",
+                     "Data hentes direkte fra statistikbanken (Gr\u00f8nland: bank.stat.gl,",
+                     " F\u00e6r\u00f8erne: statbank.hagstova.fo).",
                      " Tryk Q for at lukke appen og f\u00e5 det seneste udtr\u00e6k med tilbage til R.")
           )
         ))
@@ -982,7 +1190,9 @@ statbank_app <- function(lang = "da") {
       }, character(1))
       args <- args[!is.na(args)]
       opts <- c(
-        if (lang != "da") paste0('  lang = "', lang, '"'),
+        if (active_bank() != "gl") paste0('  bank = "', active_bank(), '"'),
+        if (active_lang() != .sb_banks[[active_bank()]]$default_lang)
+          paste0('  lang = "', active_lang(), '"'),
         if (isTRUE(input$opt_codecols)) '  .col_names = "code"',
         if (isTRUE(input$opt_codevals)) '  .values = "code"',
         if (isFALSE(input$opt_typeconvert)) '  .type_convert = FALSE'

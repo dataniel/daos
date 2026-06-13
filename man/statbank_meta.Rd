@@ -2,9 +2,9 @@
 % Please edit documentation in R/statbank.R
 \name{statbank_meta}
 \alias{statbank_meta}
-\title{Get the metadata for a Greenland Statbank table}
+\title{Get the metadata for a statbank table}
 \usage{
-statbank_meta(table, lang = "da")
+statbank_meta(table, lang = NULL, bank = "gl")
 }
 \arguments{
 \item{table}{The table's path in the tree, e.g.
@@ -12,8 +12,12 @@ statbank_meta(table, lang = "da")
 works once the table list has been fetched with \code{\link[=statbank_tables]{statbank_tables()}}
 or \code{\link[=statbank_search]{statbank_search()}} in the same session.}
 
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for the
+bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
+Faroe Islands offer \code{"fo"}, \code{"en"}.}
+
+\item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
+(the Faroe Islands).}
 }
 \value{
 A list with \code{title}, \code{path}, and \code{variables}, where

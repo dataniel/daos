@@ -4,11 +4,16 @@
 \alias{statbank_app}
 \title{Interactive explorer for the Greenland Statbank}
 \usage{
-statbank_app(lang = "da")
+statbank_app(bank = "gl", lang = NULL)
 }
 \arguments{
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{bank}{Statbank to open: \code{"gl"} (Greenland, the default) or
+\code{"fo"} (the Faroe Islands). The bank can also be switched inside
+the app.}
+
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for
+the bank's own default (Danish for Greenland, Faroese for the Faroe
+Islands).}
 }
 \value{
 The last fetched dataset, invisibly (\code{NULL} if nothing was
@@ -17,8 +22,9 @@ fetched).
 \description{
 Launches a Shiny app for working with the Greenland Statbank
 (bank.stat.gl). The app guides the user through three steps: find a
-table (search the titles, or walk the subject tree in a two-column
-browser that also responds to \code{h}/\code{j}/\code{k}/\code{l} and the arrow keys),
+table (search the titles, or walk the subject tree in a three-column
+browser -- parent, current, and a live preview of the item under the
+cursor -- that also responds to \code{h}/\code{j}/\code{k}/\code{l} and the arrow keys),
 choose values for each variable, and fetch the data. The
 result is shown as a table and a plot, and the app always shows the
 \code{\link[=statbank_get]{statbank_get()}} call that reproduces the selection, so a
@@ -38,6 +44,11 @@ Fetched data can be downloaded as a formatted Excel file (via
 and the R code can be copied with one click. Pressing \code{Q} closes the
 app and returns the last fetched dataset, so
 \code{df <- statbank_app()} also works as a data-fetching workflow.
+
+The app covers both the Greenland statbank (the default) and the
+Faroese one. The bank chooser sits one level above the subject root:
+press \code{h} (or click the breadcrumb) at the root to switch bank, which
+reloads the tree in that bank's default language.
 
 The table list is fetched when the app starts (one request per
 folder in the tree) and reused for the rest of the R session.

@@ -2,17 +2,21 @@
 % Please edit documentation in R/statbank.R
 \name{statbank_nodes}
 \alias{statbank_nodes}
-\title{List one level of the Greenland Statbank table tree}
+\title{List one level of a statbank table tree}
 \usage{
-statbank_nodes(path = "", lang = "da")
+statbank_nodes(path = "", lang = NULL, bank = "gl")
 }
 \arguments{
 \item{path}{Path within the tree, e.g. \code{""} (the root), \code{"BE"}, or
 \code{"BE/BE01"}. Use the \code{id} values from the previous level to drill
 down.}
 
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for the
+bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
+Faroe Islands offer \code{"fo"}, \code{"en"}.}
+
+\item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
+(the Faroe Islands).}
 }
 \value{
 A tibble with columns \code{id}, \code{type} (\code{"l"} for folder, \code{"t"}
@@ -25,14 +29,15 @@ and so on); each subject holds sub-folders and tables.
 }
 \examples{
 \dontrun{
-statbank_nodes()          # subject areas
-statbank_nodes("BE")      # folders under population
-statbank_nodes("BE/BE01") # tables and folders under BE01
+statbank_nodes()              # Greenland subject areas
+statbank_nodes("BE")          # folders under population
+statbank_nodes(bank = "fo")   # Faroese subject areas
 }
 
 }
 \references{
-Greenland Statbank, \url{https://bank.stat.gl}.
+Greenland Statbank, \url{https://bank.stat.gl}; Statistics
+Faroe Islands, \url{https://statbank.hagstova.fo}.
 }
 \seealso{
 \code{\link[=statbank_tables]{statbank_tables()}}, \code{\link[=statbank_meta]{statbank_meta()}}, \code{\link[=statbank_get]{statbank_get()}}

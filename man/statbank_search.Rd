@@ -2,15 +2,19 @@
 % Please edit documentation in R/statbank.R
 \name{statbank_search}
 \alias{statbank_search}
-\title{Search Greenland Statbank tables by title}
+\title{Search statbank tables by title}
 \usage{
-statbank_search(text, lang = "da", refresh = FALSE)
+statbank_search(text, lang = NULL, bank = "gl", refresh = FALSE)
 }
 \arguments{
 \item{text}{Search string, interpreted as a regular expression.}
 
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for the
+bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
+Faroe Islands offer \code{"fo"}, \code{"en"}.}
+
+\item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
+(the Faroe Islands).}
 
 \item{refresh}{If \code{TRUE}, ignore the session cache and walk the tree
 again. Default \code{FALSE}.}
@@ -26,7 +30,7 @@ first call walks the table tree; later calls use the session cache.
 \examples{
 \dontrun{
 statbank_search("befolkning")
-statbank_search("ledighed")
+statbank_search(" wages", bank = "fo")
 }
 
 }

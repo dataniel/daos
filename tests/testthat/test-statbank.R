@@ -151,9 +151,23 @@ test_that(".sb_resolve_table() needs the table list for bare ids", {
                "has not been fetched")
 })
 
-test_that(".sb_url() builds and encodes the endpoint", {
-  expect_equal(daos:::.sb_url("", "da"),
+test_that(".sb_url() builds and encodes the endpoint per bank", {
+  expect_equal(daos:::.sb_url("", "da", "gl"),
                "https://bank.stat.gl/api/v1/da/Greenland")
-  expect_equal(daos:::.sb_url("BE/BE01", "en"),
+  expect_equal(daos:::.sb_url("BE/BE01", "en", "gl"),
                "https://bank.stat.gl/api/v1/en/Greenland/BE/BE01")
+  expect_equal(daos:::.sb_url("IP/IP02", "fo", "fo"),
+               "https://statbank.hagstova.fo/api/v1/fo/H2/IP/IP02")
+})
+
+test_that(".sb_bank() rejects unknown banks", {
+  expect_error(daos:::.sb_bank("xx"), "Unknown statbank")
+  expect_equal(daos:::.sb_bank("fo")$db, "H2")
+})
+
+test_that(".sb_resolve_lang() defaults per bank and validates", {
+  expect_equal(daos:::.sb_resolve_lang(NULL, "gl"), "da")
+  expect_equal(daos:::.sb_resolve_lang(NULL, "fo"), "fo")
+  expect_equal(daos:::.sb_resolve_lang("en", "fo"), "en")
+  expect_error(daos:::.sb_resolve_lang("da", "fo"), "not available")
 })

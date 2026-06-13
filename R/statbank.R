@@ -1,11 +1,55 @@
-# Client for the Greenland Statbank (bank.stat.gl), a PXWeb instance.
-# GET requests browse the table tree and fetch metadata; data is fetched
-# with a POST carrying a JSON query and parsed from json-stat2.
+# Client for North Atlantic PXWeb statbanks (Greenland and the Faroe
+# Islands). GET requests browse the table tree and fetch metadata; data
+# is fetched with a POST carrying a JSON query and parsed from
+# json-stat2. The two instances differ only by base URL, database node,
+# and available languages -- collected in the registry below.
 
-.sb_base  <- "https://bank.stat.gl/api/v1"
+.sb_banks <- list(
+  gl = list(
+    label = "Gr\u00f8nland",
+    base  = "https://bank.stat.gl/api/v1",
+    db    = "Greenland",
+    langs = c("da", "kl", "en"),
+    default_lang = "da"
+  ),
+  fo = list(
+    label = "F\u00e6r\u00f8erne",
+    base  = "https://statbank.hagstova.fo/api/v1",
+    db    = "H2",
+    langs = c("fo", "en"),
+    default_lang = "fo"
+  )
+)
+
 .sb_cache <- new.env(parent = emptyenv())
 
-#' List one level of the Greenland Statbank table tree
+.sb_bank <- function(bank) {
+  b <- .sb_banks[[bank]]
+  if (is.null(b)) {
+    cli::cli_abort(c(
+      "Unknown statbank {.val {bank}}.",
+      "i" = "Available: {.val {names(.sb_banks)}}."
+    ))
+  }
+  b
+}
+
+# Resolve a language: NULL falls back to the bank's default; an explicit
+# language is validated against the bank's offering (the Faroe instance
+# has no Danish or Greenlandic).
+.sb_resolve_lang <- function(lang, bank) {
+  b <- .sb_bank(bank)
+  if (is.null(lang)) return(b$default_lang)
+  if (!lang %in% b$langs) {
+    cli::cli_abort(c(
+      "Language {.val {lang}} is not available for {.val {b$label}}.",
+      "i" = "Available: {.val {b$langs}}."
+    ))
+  }
+  lang
+}
+
+#' List one level of a statbank table tree
 #'
 #' Fetches the nodes directly under a path in the statbank's table tree.
 #' The root holds the subject areas (population, labour market, prices,
@@ -14,35 +58,40 @@
 #' @param path Path within the tree, e.g. `""` (the root), `"BE"`, or
 #'   `"BE/BE01"`. Use the `id` values from the previous level to drill
 #'   down.
-#' @param lang Language of titles and labels: `"da"` (default), `"en"`,
-#'   or `"kl"`.
+#' @param lang Language of titles and labels, or `NULL` (default) for the
+#'   bank's own default. Greenland offers `"da"`, `"kl"`, `"en"`; the
+#'   Faroe Islands offer `"fo"`, `"en"`.
+#' @param bank Which statbank: `"gl"` (Greenland, the default) or `"fo"`
+#'   (the Faroe Islands).
 #'
 #' @return A tibble with columns `id`, `type` (`"l"` for folder, `"t"`
 #'   for table), `text`, and `updated` (tables only, `NA` for folders).
 #'
 #' @examples
 #' \dontrun{
-#' statbank_nodes()          # subject areas
-#' statbank_nodes("BE")      # folders under population
-#' statbank_nodes("BE/BE01") # tables and folders under BE01
+#' statbank_nodes()              # Greenland subject areas
+#' statbank_nodes("BE")          # folders under population
+#' statbank_nodes(bank = "fo")   # Faroese subject areas
 #' }
 #'
 #' @seealso [daos::statbank_tables()], [daos::statbank_meta()], [daos::statbank_get()]
 #'
-#' @references Greenland Statbank, <https://bank.stat.gl>.
+#' @references Greenland Statbank, <https://bank.stat.gl>; Statistics
+#'   Faroe Islands, <https://statbank.hagstova.fo>.
 #'
 #' @importFrom cli cli_abort
 #' @importFrom tibble as_tibble
 #' @export
-statbank_nodes <- function(path = "", lang = "da") {
+statbank_nodes <- function(path = "", lang = NULL, bank = "gl") {
   .sb_check_available()
-  x <- .sb_fetch(path, lang)
+  lang <- .sb_resolve_lang(lang, bank)
+  x <- .sb_fetch(path, lang, bank)
   x$text <- .sb_strip_html(x$text)
   if (is.null(x$updated)) x$updated <- NA_character_
   tibble::as_tibble(x[, c("id", "type", "text", "updated")])
 }
 
-#' List every table in the Greenland Statbank
+#' List every table in a statbank
 #'
 #' Walks the whole table tree once and returns all tables with their
 #' paths and titles. The walk takes a number of small requests (one per
@@ -66,10 +115,11 @@ statbank_nodes <- function(path = "", lang = "da") {
 #' @importFrom cli cli_abort cli_progress_bar cli_progress_update cli_progress_done cli_alert_success
 #' @importFrom dplyr bind_rows
 #' @export
-statbank_tables <- function(lang = "da", refresh = FALSE) {
+statbank_tables <- function(lang = NULL, bank = "gl", refresh = FALSE) {
   .sb_check_available()
+  lang <- .sb_resolve_lang(lang, bank)
 
-  cache_key <- paste0("tables_", lang)
+  cache_key <- paste0("tables_", bank, "_", lang)
   if (!refresh && !is.null(.sb_cache[[cache_key]])) {
     return(.sb_cache[[cache_key]])
   }
@@ -81,7 +131,7 @@ statbank_tables <- function(lang = "da", refresh = FALSE) {
     path  <- queue[[1]]
     queue <- queue[-1]
     cli::cli_progress_update(status = if (nzchar(path)) path else "root")
-    nodes <- statbank_nodes(path, lang)
+    nodes <- statbank_nodes(path, lang = lang, bank = bank)
     children <- nodes$id[nodes$type == "l"]
     if (length(children) > 0) {
       queue <- c(queue, if (nzchar(path)) paste(path, children, sep = "/") else children)
@@ -104,7 +154,7 @@ statbank_tables <- function(lang = "da", refresh = FALSE) {
   out
 }
 
-#' Search Greenland Statbank tables by title
+#' Search statbank tables by title
 #'
 #' Filters the full table list (see [daos::statbank_tables()]) on a search
 #' string, matched case-insensitively against titles and table ids. The
@@ -118,19 +168,19 @@ statbank_tables <- function(lang = "da", refresh = FALSE) {
 #' @examples
 #' \dontrun{
 #' statbank_search("befolkning")
-#' statbank_search("ledighed")
+#' statbank_search(" wages", bank = "fo")
 #' }
 #'
 #' @seealso [daos::statbank_tables()], [daos::statbank_meta()]
 #'
 #' @export
-statbank_search <- function(text, lang = "da", refresh = FALSE) {
-  tbl <- statbank_tables(lang = lang, refresh = refresh)
+statbank_search <- function(text, lang = NULL, bank = "gl", refresh = FALSE) {
+  tbl <- statbank_tables(lang = lang, bank = bank, refresh = refresh)
   hit <- grepl(text, paste(tbl$title, tbl$id), ignore.case = TRUE)
   tbl[hit, ]
 }
 
-#' Get the metadata for a Greenland Statbank table
+#' Get the metadata for a statbank table
 #'
 #' Fetches a table's title and variables: codes, display texts, and the
 #' values each variable can take.
@@ -155,10 +205,11 @@ statbank_search <- function(text, lang = "da", refresh = FALSE) {
 #'
 #' @importFrom cli cli_abort
 #' @export
-statbank_meta <- function(table, lang = "da") {
+statbank_meta <- function(table, lang = NULL, bank = "gl") {
   .sb_check_available()
-  path <- .sb_resolve_table(table, lang)
-  x <- .sb_fetch(path, lang)
+  lang <- .sb_resolve_lang(lang, bank)
+  path <- .sb_resolve_table(table, lang, bank)
+  x <- .sb_fetch(path, lang, bank)
   vars <- tibble::as_tibble(x$variables)
   if (!"elimination" %in% names(vars)) vars$elimination <- FALSE
   if (!"time" %in% names(vars))        vars$time        <- FALSE
@@ -167,7 +218,7 @@ statbank_meta <- function(table, lang = "da") {
   list(title = x$title, path = path, variables = vars)
 }
 
-#' Download a table from the Greenland Statbank
+#' Download a table from a statbank
 #'
 #' Fetches data for a table and returns it as a tibble in long format:
 #' one column per variable and a `value` column with the numbers.
@@ -177,7 +228,7 @@ statbank_meta <- function(table, lang = "da") {
 #' value codes and value texts, so
 #' `statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, art = "Antal")` works
 #' without knowing the internal codes. Matching ignores case and folds
-#' Danish letters (`foedested` matches `fødested`). Use `"*"` to select
+#' Danish letters (`foedested` matches `f\u00f8dested`). Use `"*"` to select
 #' all values; variables that are not mentioned default to all values.
 #'
 #' By default, columns are named by the variables' display texts in the
@@ -189,7 +240,8 @@ statbank_meta <- function(table, lang = "da") {
 #'
 #' @inheritParams statbank_meta
 #' @param ... Named selections, one per variable. Values can be value
-#'   codes, value texts, or `"*"` for all.
+#'   codes, value texts, or `"*"` for all. Because the option arguments
+#'   are dot-prefixed, a variable can never be shadowed by one of them.
 #' @param .col_names `"text"` (default) names the columns by the
 #'   variables' display texts; `"code"` uses the variable codes.
 #' @param .values `"text"` (default) fills the cells with value display
@@ -228,15 +280,16 @@ statbank_meta <- function(table, lang = "da") {
 #' @importFrom rlang list2
 #' @importFrom readr type_convert
 #' @export
-statbank_get <- function(table, ..., lang = "da",
+statbank_get <- function(table, ..., lang = NULL, bank = "gl",
                          .col_names = c("text", "code"),
                          .values = c("text", "code"),
                          .type_convert = TRUE) {
   .sb_check_available()
   .col_names <- match.arg(.col_names)
   .values    <- match.arg(.values)
+  lang <- .sb_resolve_lang(lang, bank)
 
-  meta  <- statbank_meta(table, lang)
+  meta  <- statbank_meta(table, lang = lang, bank = bank)
   sels  <- .sb_match_selection(meta$variables, rlang::list2(...))
   query <- list(
     query = lapply(names(sels), function(code) {
@@ -248,7 +301,7 @@ statbank_get <- function(table, ..., lang = "da",
     }),
     response = list(format = "json-stat2")
   )
-  x   <- .sb_post(meta$path, query, lang)
+  x   <- .sb_post(meta$path, query, lang, bank)
   out <- .sb_parse_jsonstat(x, col_names = .col_names, values = .values)
 
   if (.type_convert && nrow(out) > 0 &&
@@ -273,8 +326,9 @@ statbank_get <- function(table, ..., lang = "da",
   }
 }
 
-.sb_url <- function(path, lang) {
-  url <- paste0(.sb_base, "/", lang, "/Greenland")
+.sb_url <- function(path, lang, bank = "gl") {
+  b <- .sb_bank(bank)
+  url <- paste0(b$base, "/", lang, "/", b$db)
   if (nzchar(path)) url <- paste0(url, "/", path)
   utils::URLencode(url)
 }
@@ -285,8 +339,8 @@ statbank_get <- function(table, ..., lang = "da",
   h
 }
 
-.sb_fetch <- function(path, lang) {
-  res <- curl::curl_fetch_memory(.sb_url(path, lang), .sb_handle())
+.sb_fetch <- function(path, lang, bank = "gl") {
+  res <- curl::curl_fetch_memory(.sb_url(path, lang, bank), .sb_handle())
   if (res$status_code != 200) {
     cli::cli_abort(c(
       "The statbank returned status {res$status_code} for {.path {path}}.",
@@ -296,12 +350,12 @@ statbank_get <- function(table, ..., lang = "da",
   jsonlite::fromJSON(rawToChar(res$content))
 }
 
-.sb_post <- function(path, query, lang) {
+.sb_post <- function(path, query, lang, bank = "gl") {
   body <- jsonlite::toJSON(query, auto_unbox = TRUE)
   h <- .sb_handle()
   curl::handle_setopt(h, postfields = body)
   curl::handle_setheaders(h, "Content-Type" = "application/json")
-  res <- curl::curl_fetch_memory(.sb_url(path, lang), h)
+  res <- curl::curl_fetch_memory(.sb_url(path, lang, bank), h)
   if (res$status_code != 200) {
     cli::cli_abort(c(
       "The statbank returned status {res$status_code} for the data query.",
@@ -318,9 +372,9 @@ statbank_get <- function(table, ..., lang = "da",
   trimws(x)
 }
 
-.sb_resolve_table <- function(table, lang) {
+.sb_resolve_table <- function(table, lang, bank = "gl") {
   if (grepl("/", table, fixed = TRUE)) return(table)
-  cached <- .sb_cache[[paste0("tables_", lang)]]
+  cached <- .sb_cache[[paste0("tables_", bank, "_", lang)]]
   if (is.null(cached)) {
     cli::cli_abort(c(
       "{.val {table}} is not a path, and the table list has not been fetched yet.",
@@ -335,7 +389,7 @@ statbank_get <- function(table, ..., lang = "da",
 }
 
 # Case-insensitive comparison key that also folds Danish letters to
-# their ASCII spellings, so `foedested` matches `fødested`.
+# their ASCII spellings, so `foedested` matches `f\u00f8dested`.
 .sb_fold <- function(x) {
   x <- tolower(x)
   x <- gsub("\u00e6", "ae", x, fixed = TRUE)

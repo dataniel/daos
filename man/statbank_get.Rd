@@ -2,12 +2,13 @@
 % Please edit documentation in R/statbank.R
 \name{statbank_get}
 \alias{statbank_get}
-\title{Download a table from the Greenland Statbank}
+\title{Download a table from a statbank}
 \usage{
 statbank_get(
   table,
   ...,
-  lang = "da",
+  lang = NULL,
+  bank = "gl",
   .col_names = c("text", "code"),
   .values = c("text", "code"),
   .type_convert = TRUE
@@ -20,10 +21,15 @@ works once the table list has been fetched with \code{\link[=statbank_tables]{st
 or \code{\link[=statbank_search]{statbank_search()}} in the same session.}
 
 \item{...}{Named selections, one per variable. Values can be value
-codes, value texts, or \code{"*"} for all.}
+codes, value texts, or \code{"*"} for all. Because the option arguments
+are dot-prefixed, a variable can never be shadowed by one of them.}
 
-\item{lang}{Language of titles and labels: \code{"da"} (default), \code{"en"},
-or \code{"kl"}.}
+\item{lang}{Language of titles and labels, or \code{NULL} (default) for the
+bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
+Faroe Islands offer \code{"fo"}, \code{"en"}.}
+
+\item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
+(the Faroe Islands).}
 
 \item{.col_names}{\code{"text"} (default) names the columns by the
 variables' display texts; \code{"code"} uses the variable codes.}
