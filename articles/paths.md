@@ -4,8 +4,11 @@ Working with files in R means dealing with paths, and on Windows that is
 a small but constant annoyance. Nothing here is hard – it is just
 friction: backslashes that R will not accept, a file explorer you keep
 switching to and from, and the same little chores repeated every time
-you point at a new file. This article collects a few functions in
-**daos** that take that friction out. That is all they are for.
+you point at a new file.
+
+This is not a style guide. It is just a few small attempts to make
+working with Windows paths a bit less tedious, collected as functions in
+**daos**. Take whatever you find useful and ignore the rest.
 
 ## The annoyances
 
@@ -29,6 +32,7 @@ keyboard-driven browser – parent folder, current folder, and a preview –
 that you move through with `h`/`j`/`k`/`l` or the arrow keys.
 
 ``` r
+
 p <- browse_files()    # navigate, mark with Space, press Q
 ```
 
@@ -48,6 +52,7 @@ does it from the console, and the **Open in file explorer** addin does
 it from wherever the cursor is.
 
 ``` r
+
 open_in_explorer("C:/data/2026")
 open_in_explorer(my_dir)   # a variable holding a path works too
 ```
@@ -75,8 +80,10 @@ valid R, depending on how it came in:
   is the blunt version: every `\` in the selection becomes `/`, for when
   that is all you want.
 
-Bind whichever you use most to a keyboard shortcut under *Tools -\>
-Modify Keyboard Shortcuts* and the backslash problem mostly disappears.
+These are RStudio addins, like the explorer one above. I prefer to call
+them from the command palette (`Ctrl+Shift+P`, then type the addin
+name), but you can also bind whichever you use most to a keyboard
+shortcut under *Tools -\> Modify Keyboard Shortcuts*.
 
 ## Turn a list of filenames into a vector
 
@@ -92,6 +99,7 @@ wraps a selection of lines into a `c(...)` expression, so
 becomes
 
 ``` r
+
 c(
   "jan.csv",
   "feb.csv",
@@ -110,6 +118,7 @@ files exist, detects the format, and names the results, with a progress
 bar for a batch.
 
 ``` r
+
 read_files("C:/data/2026_q{1:4}.parquet", names = 1:4)
 ```
 

@@ -113,6 +113,12 @@
   : Add a task
 - [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
   : List tasks
+- [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md)
+  : Get one or more tasks by id
+- [`task_require()`](https://dataniel.github.io/daos/reference/task_require.md)
+  : Require tasks to have a given status
+- [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md)
+  : Why a task is blocked
 - [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md)
   : Complete a task
 - [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md)

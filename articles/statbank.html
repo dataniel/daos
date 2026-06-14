@@ -71,138 +71,67 @@
 
     
     
-<p><code><a href="../reference/statbank_app.html">statbank_app()</a></code> is not really meant as a finished
-product. It is a take on a question: what would it feel like to move
-through a statistics bank the way you move through a filesystem in a
-terminal – by keyboard, fast, and with the program telling you what
-exists at each step instead of making you know it in advance? The
-<code>statbank_*</code> client underneath is a plain API wrapper; the
-app is the argument that navigation could be nicer than a tree of
-dropdowns.</p>
-<p>This article is about that argument – what the app does today, and
-where the idea is pointing.</p>
-<div class="section level2">
-<h2 id="the-problem-with-picking-from-a-statbank">The problem with picking from a statbank<a class="anchor" aria-label="anchor" href="#the-problem-with-picking-from-a-statbank"></a>
-</h2>
-<p>A statbank table is a set of variables, each with its own list of
-values, and a table is fetched by choosing some values from each. The
-standard web interface presents this as nested menus: open a folder,
-open a table, then a wall of multi-selects. It works, but it asks you to
-already know what you are looking for. You pick current prices without
-the interface ever hinting that the table also offers chained values, an
-index, or a share – the very options that might be the one you actually
-want. The information you need to choose well is exactly the information
-the menu does not surface while you choose.</p>
-</div>
-<div class="section level2">
-<h2 id="what-the-app-does-now">What the app does now<a class="anchor" aria-label="anchor" href="#what-the-app-does-now"></a>
-</h2>
-<p><code><a href="../reference/statbank_app.html">statbank_app()</a></code> is built around being shown what exists
-as you go.</p>
+<p>A statbank can be hard to navigate. The subjects sit in collapsible
+trees, each table has its own set of variables, and choosing the data
+means ticking values across several of them. It works, but it is easy to
+lose the thread – to forget which values you have selected in and which
+you have left out.</p>
+<p><code><a href="../reference/statbank_app.html">statbank_app()</a></code> is my attempt at a different feel for it.
+It is not a finished product, just a take on what navigating a statbank
+could be like.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/statbank_app.html">statbank_app</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># Greenland (default)</span></span>
 <span><span class="fu"><a href="../reference/statbank_app.html">statbank_app</a></span><span class="op">(</span>bank <span class="op">=</span> <span class="st">"fo"</span><span class="op">)</span> <span class="co"># the Faroe Islands</span></span></code></pre></div>
-<p><strong>Finding a table</strong> happens in a three-column,
-yazi-style browser – parent folder, current folder, and a live preview
-of whatever the cursor is on – the same browser as
-<code><a href="../reference/browse_files.html">browse_files()</a></code>. You walk the subject tree with
+<p>You drift through it by keyboard. Tables are found in a three-column
+browser – parent folder, current folder, and a live preview of whatever
+the cursor is on – moved with
 <code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
-keys, and the preview column tells you what a folder contains or what a
-table is before you commit to opening it. Or you search the titles and
-jump straight there. The bank chooser sits one level <em>above</em> the
-subject root, so pressing <code>h</code> at the top switches between
-Greenland and the Faroe Islands – a bank is just the parent of
-everything else.</p>
-<p><strong>Choosing values</strong> adapts to the variable. Time, and
-numeric variables with many values such as age, get from/to dropdowns.
-Everything else opens a popup with a searchable checkbox list,
-select/deselect-all, and a running count, so a variable with two hundred
-municipalities is browsable instead of overwhelming. An empty selection
-means all values, which keeps the common case to zero clicks.</p>
-<p><strong>Fetching</strong> shows the data as a table and a plot, lets
-you download a formatted Excel file, and – the part that matters most –
-always shows the <code><a href="../reference/statbank_get.html">statbank_get()</a></code> call that reproduces
-exactly what you selected. The app is a bridge from clicking to
-scripting: you explore by hand once, copy the query, and from then on it
-runs headless.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># the kind of call the code tab hands you</span></span>
-<span><span class="fu"><a href="../reference/statbank_get.html">statbank_get</a></span><span class="op">(</span></span>
-<span>  <span class="st">"NR/NR01/NRXxxx.PX"</span>,</span>
-<span>  tid   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2023</span>, <span class="fl">2024</span>, <span class="fl">2025</span><span class="op">)</span>,</span>
-<span>  enhed <span class="op">=</span> <span class="st">"Kædede værdier"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Pressing <code>Q</code> closes the app and returns the last fetched
-dataset, so <code>df &lt;- statbank_app()</code> is itself a way to get
-data into R.</p>
-</div>
+keys, so you can see what a folder holds before you open it. Values are
+picked in popups with a search box, select/deselect-all, and a running
+count, so you always have an overview of what you are choosing and what
+you are leaving out. And the code tab always shows the
+<code><a href="../reference/statbank_get.html">statbank_get()</a></code> call that reproduces your selection, so an
+exploration by hand turns into a script you can keep.</p>
+<p>It is not perfect. But as a newcomer I would take this over a wall of
+collapsible trees, where it is much harder to keep track of what you
+have actually selected.</p>
 <div class="section level2">
-<h2 id="guidance-is-already-half-the-point">Guidance is already half the point<a class="anchor" aria-label="anchor" href="#guidance-is-already-half-the-point"></a>
+<h2 id="where-it-could-go-guidance-while-you-drift">Where it could go: guidance while you drift<a class="anchor" aria-label="anchor" href="#where-it-could-go-guidance-while-you-drift"></a>
 </h2>
-<p>Notice how much of the above is the program telling you what is
-there. The preview column tells you what a folder holds. The popup’s
-running count tells you how big your selection is. The code tab tells
-you what query you just built, in a form you can keep. None of that is
-data you had to bring; the app surfaces it at the moment you need it.
-That is the thread worth pulling on.</p>
-</div>
-<div class="section level2">
-<h2 id="where-this-is-heading-guidance-on-what-a-choice-means">Where this is heading: guidance on what a choice <em>means</em><a class="anchor" aria-label="anchor" href="#where-this-is-heading-guidance-on-what-a-choice-means"></a>
-</h2>
-<p>Today the app guides you on <em>what values exist</em>. The more
-interesting step is guidance on <em>what those values mean</em> – and
-that part does not exist yet, in this app or in the official
-interface.</p>
-<p>Take a value that can be shown in current prices or as chained
-values. The choice is not cosmetic: if you want the volume development
-over time – real growth, with price changes stripped out – you want
-chained values, and a newcomer has no way to know that from a label
-reading <code>Løbende priser</code> versus <code>Kædede værdier</code>.
-The knowledge exists – it is in the methodology, in colleagues’ heads –
-but never next to the checkbox where the decision is actually made.</p>
-<p>The direction <code><a href="../reference/statbank_app.html">statbank_app()</a></code> is sketching is to put it
-there. Imagine the value popup carrying a line of plain-language help
-per option:</p>
+<p>The piece I would add next is better guidance as you move. Right now
+the app shows you <em>what values exist</em>; the more useful thing is a
+hint about <em>what they mean</em>, right next to the checkbox.</p>
+<p>Take a value shown in current prices or as chained values. If you
+want the volume development over time – real growth, with price changes
+stripped out – you want chained values, but a label reading
+<code>Løbende priser</code> versus <code>Kædede værdier</code> does not
+tell a newcomer that. A small note in the popup could:</p>
 <blockquote>
-<p><strong>Chained values (kædede værdier)</strong> – pick this for
-volume development: real growth over time, with price changes stripped
-out.</p>
-<p><strong>Current prices (løbende priser)</strong> – pick this for the
-nominal size in a given year, price changes included.</p>
+<p><strong>Chained values</strong> – pick this for volume development
+(real growth over time).</p>
+<p><strong>Current prices</strong> – pick this for the nominal size in a
+given year.</p>
 </blockquote>
-<p>So you are met with the relevant guidance while you browse, not after
-you have downloaded the wrong series and noticed it does not behave. The
-same idea generalises: a “what is this and when do I want it” note
-attached to the variables and values where the choice is genuinely
-consequential.</p>
-<p>This is not implemented. It is the reason the app is framed as a
-proof of concept rather than a tool: the navigation, the previews, and
-the code tab are there to show that a statbank <em>could</em> guide you
-through a selection, and the value-level guidance is the next thing that
-idea asks for.</p>
+<p>So you are met with the relevant bit of guidance while you browse,
+instead of downloading the wrong series and only then noticing. This
+does not exist yet, here or in the official interface, but it is the
+direction the app is pointing.</p>
 </div>
 <div class="section level2">
 <h2 id="using-the-client-directly">Using the client directly<a class="anchor" aria-label="anchor" href="#using-the-client-directly"></a>
 </h2>
-<p>If you already know the table and the values, you do not need the app
-at all. The client is small and scriptable, and the app only ever
-produces calls to it:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>If you already know the table and the values, the
+<code>statbank_*</code> client is what the app builds calls to, and you
+can skip the app entirely:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/statbank_search.html">statbank_search</a></span><span class="op">(</span><span class="st">"national accounts"</span><span class="op">)</span></span>
+<span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/statbank_meta.html">statbank_meta</a></span><span class="op">(</span><span class="st">"NR/NR01/NRXxxx.PX"</span><span class="op">)</span>   <span class="co"># the variables and values</span></span>
 <span></span>
-<span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/statbank_meta.html">statbank_meta</a></span><span class="op">(</span><span class="st">"NR/NR01/NRXxxx.PX"</span><span class="op">)</span></span>
-<span><span class="va">meta</span><span class="op">$</span><span class="va">variables</span>          <span class="co"># what the app would show you in the popups</span></span>
-<span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/statbank_get.html">statbank_get</a></span><span class="op">(</span></span>
-<span>  <span class="st">"NR/NR01/NRXxxx.PX"</span>,</span>
-<span>  tid   <span class="op">=</span> <span class="fl">2015</span><span class="op">:</span><span class="fl">2024</span>,</span>
-<span>  enhed <span class="op">=</span> <span class="st">"Kædede værdier"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Selections are matched against both codes and their display texts,
-and Danish letters fold (<code>foedested</code> matches
-<code>fødested</code>), so you can write what you see. The full client
-walkthrough is in <code><a href="../articles/daos.html">vignette("daos")</a></code> under
-<code>statbank_*</code>.</p>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/statbank_get.html">statbank_get</a></span><span class="op">(</span><span class="st">"NR/NR01/NRXxxx.PX"</span>, tid <span class="op">=</span> <span class="fl">2015</span><span class="op">:</span><span class="fl">2024</span>,</span>
+<span>                   enhed <span class="op">=</span> <span class="st">"Kædede værdier"</span><span class="op">)</span></span></code></pre></div>
+<p>Selections are matched against both codes and their display texts, so
+you can write what you see. The full client walkthrough is in
+<code><a href="../articles/daos.html">vignette("daos")</a></code> under <code>statbank_*</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

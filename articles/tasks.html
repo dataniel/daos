@@ -154,13 +154,40 @@ accumulate into a log: every run of a recurring step adds its own line,
 and the history is there in the app’s detail view.</p>
 </div>
 <div class="section level2">
+<h2 id="keep-the-tracking-beside-the-work-not-inside-it">Keep the tracking beside the work, not inside it<a class="anchor" aria-label="anchor" href="#keep-the-tracking-beside-the-work-not-inside-it"></a>
+</h2>
+<p>One habit is worth keeping: let the task calls run <em>alongside</em>
+your analysis, never inside the pipeline that produces the numbers. It
+is tempting to weave a note into a <code>dplyr</code> chain, but the
+moment task code sits in the data path, a reader has to wonder whether
+it touches the result. Keep it out, and there is nothing to wonder about
+– the statistics stay a plain pipeline, and the tracking is ordinary
+statements next to it that read from what the analysis already
+produced:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># the statistics -- untouched, no task code in here</span></span>
+<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, mean_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># the tracking -- beside it, reading from the result</span></span>
+<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="fl">2</span>, note <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"computed: {nrow(stats)} groups, {sum(stats$n)} obs"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The note reads <code>nrow(stats)</code> and <code>sum(stats$n)</code>
+from the result the analysis already produced, so it records what
+happened without ever entering the analysis itself.
+<code><a href="../reference/task_done.html">task_done()</a></code> takes an optional <code>note</code>, so closing
+a step and recording what it produced is a single line next to the work.
+That is the whole idea: the statistics are exactly the pipeline you
+would have written anyway, and the task tracking sits next to it.</p>
+</div>
+<div class="section level2">
 <h2 id="recurrence-fits-scheduled-work">Recurrence fits scheduled work<a class="anchor" aria-label="anchor" href="#recurrence-fits-scheduled-work"></a>
 </h2>
 <p>A production that repeats does not need a fresh task each cycle. Give
 the task a <code>recur</code> and <code><a href="../reference/task_done.html">task_done()</a></code> spawns the
 next occurrence with the due date rolled forward, so a scheduled job can
 close this month’s task and next month’s appears automatically:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Monthly source refresh"</span>,</span>
 <span>         project <span class="op">=</span> <span class="st">"RS"</span>, recur <span class="op">=</span> <span class="st">"monthly"</span>, due <span class="op">=</span> <span class="st">"2026-07-01"</span><span class="op">)</span></span></code></pre></div>
 <p>The recurrence handling is deliberately simple (documented on
@@ -174,7 +201,7 @@ for a full calendar engine.</p>
 another is reported as <code>blocked</code> until its dependency is
 done, so a script – or a person in the app – can see what is
 <em>ready</em> to run rather than just what is pending:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Validate sources"</span>,  project <span class="op">=</span> <span class="st">"RS-2026"</span><span class="op">)</span>        <span class="co"># id 10</span></span>
 <span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Compile accounts"</span>,  project <span class="op">=</span> <span class="st">"RS-2026"</span>,</span>
 <span>         depends <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>                                          <span class="co"># waits for 10</span></span>
@@ -185,6 +212,23 @@ done, so a script – or a person in the app – can see what is
 simplified urgency score (priority, due-date nearness, age, tags, a
 blocked penalty) and sorts by it, so the top of the list is the thing to
 do next.</p>
+<p>In a single script, the same idea becomes a gate: run
+<code><a href="../reference/task_require.html">task_require()</a></code> before a step that depends on an earlier
+one, and it stops with a clear error unless the upstream task is done.
+Like everything else here it only reads the task database – it never
+touches your data – so it sits beside the analysis:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_require.html">task_require</a></span><span class="op">(</span><span class="va">db</span>, <span class="fl">10</span><span class="op">)</span>      <span class="co"># abort unless "Validate sources" is done</span></span>
+<span></span>
+<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">compile</span><span class="op">(</span><span class="va">sources</span><span class="op">)</span> <span class="co"># only runs once the dependency is satisfied</span></span>
+<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="fl">11</span>, note <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"compiled: {nrow(stats)} rows"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code>task_get(db, id)</code> is the matching read accessor: the
+single row <code><a href="../reference/task_list.html">task_list()</a></code> would show for one task, when you
+want to branch on its <code>status</code> or <code>blocked</code> flag
+instead of aborting. And when a task <em>is</em> blocked,
+<code>task_blockers(db, id)</code> says why – it returns the unfinished
+prerequisites holding it up, which is also what the app shows in a
+blocked task’s detail panel.</p>
 </div>
 <div class="section level2">
 <h2 id="reading-the-state-back">Reading the state back<a class="anchor" aria-label="anchor" href="#reading-the-state-back"></a>
@@ -196,7 +240,7 @@ completed, overdue, progress, creation and last-activity dates);
 <code><a href="../reference/task_people.html">task_people()</a></code> does the same per assignee. A production
 dashboard, an email summary, or a check that nothing is overdue is then
 a few lines of R against the same shared file the app reads:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">overview</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_projects.html">task_projects</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="va">db</span>, status <span class="op">=</span> <span class="st">"pending"</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="va">overdue</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">overdue</span><span class="op">$</span><span class="va">due</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">overdue</span><span class="op">$</span><span class="va">due</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
@@ -210,7 +254,7 @@ projects, people, due dates, and overviews, run
 <code>task_*</code> code. The point of the article is that the same
 database supports both: the team clicks, the pipeline writes, and the
 two views agree because there is only ever one file.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_app.html">task_app</a></span><span class="op">(</span><span class="st">"//server/share/production/tasks.sqlite"</span><span class="op">)</span></span></code></pre></div>
 <p>The app is keyboard-driven – <code>j</code>/<code>k</code> to move,
 <code>f</code> done, <code>e</code> edit, <code>n</code> note,

@@ -34,6 +34,7 @@ Reads all PDF files in a directory, extracts their text, and writes one
 `.txt` file per PDF. Requires `pdftools`.
 
 ``` r
+
 accounts_pdf_to_txt(
   pdf_dir = "data/pdf",
   txt_dir = "data/txt"
@@ -103,6 +104,7 @@ Parses every text file in the directory, validates them, and writes one
 combined Excel file. Requires `writexl`.
 
 ``` r
+
 df <- accounts_txt_to_xlsx(
   txt_dir  = "data/txt",
   out_file = "data/output.xlsx",

@@ -23,6 +23,7 @@ so concurrent callers – a colleague in the app and a scheduled script –
 do not step on each other.
 
 ``` r
+
 task_db("//server/share/production/tasks.sqlite")  # create or open
 ```
 
@@ -49,6 +50,7 @@ a task at the start, annotate it with what actually happened, and mark
 it done when the step succeeds:
 
 ``` r
+
 db <- "//server/share/production/tasks.sqlite"
 
 task_add(db, "Compile the accounts statistics",
@@ -71,6 +73,7 @@ stays pending and the error is recorded, so the next person sees exactly
 where production stopped and why:
 
 ``` r
+
 run_step <- function(db, id, expr) {
   out <- tryCatch(force(expr), error = function(e) e)
   if (inherits(out, "error")) {
@@ -91,6 +94,36 @@ only appends, the annotations accumulate into a log: every run of a
 recurring step adds its own line, and the history is there in the app’s
 detail view.
 
+## Keep the tracking beside the work, not inside it
+
+One habit is worth keeping: let the task calls run *alongside* your
+analysis, never inside the pipeline that produces the numbers. It is
+tempting to weave a note into a `dplyr` chain, but the moment task code
+sits in the data path, a reader has to wonder whether it touches the
+result. Keep it out, and there is nothing to wonder about – the
+statistics stay a plain pipeline, and the tracking is ordinary
+statements next to it that read from what the analysis already produced:
+
+``` r
+
+# the statistics -- untouched, no task code in here
+stats <- df |>
+  dplyr::group_by(group) |>
+  dplyr::summarise(n = dplyr::n(), mean_x = mean(x), .groups = "drop")
+
+# the tracking -- beside it, reading from the result
+task_done(db, 2, note = f("computed: {nrow(stats)} groups, {sum(stats$n)} obs"))
+```
+
+The note reads `nrow(stats)` and `sum(stats$n)` from the result the
+analysis already produced, so it records what happened without ever
+entering the analysis itself.
+[`task_done()`](https://dataniel.github.io/daos/reference/task_done.md)
+takes an optional `note`, so closing a step and recording what it
+produced is a single line next to the work. That is the whole idea: the
+statistics are exactly the pipeline you would have written anyway, and
+the task tracking sits next to it.
+
 ## Recurrence fits scheduled work
 
 A production that repeats does not need a fresh task each cycle. Give
@@ -101,6 +134,7 @@ scheduled job can close this month’s task and next month’s appears
 automatically:
 
 ``` r
+
 task_add(db, "Monthly source refresh",
          project = "RS", recur = "monthly", due = "2026-07-01")
 ```
@@ -118,6 +152,7 @@ script – or a person in the app – can see what is *ready* to run rather
 than just what is pending:
 
 ``` r
+
 task_add(db, "Validate sources",  project = "RS-2026")        # id 10
 task_add(db, "Compile accounts",  project = "RS-2026",
          depends = 10)                                          # waits for 10
@@ -130,6 +165,29 @@ ready[!ready$blocked, ]   # what can be started now
 adds the `blocked` flag and a simplified urgency score (priority,
 due-date nearness, age, tags, a blocked penalty) and sorts by it, so the
 top of the list is the thing to do next.
+
+In a single script, the same idea becomes a gate: run
+[`task_require()`](https://dataniel.github.io/daos/reference/task_require.md)
+before a step that depends on an earlier one, and it stops with a clear
+error unless the upstream task is done. Like everything else here it
+only reads the task database – it never touches your data – so it sits
+beside the analysis:
+
+``` r
+
+task_require(db, 10)      # abort unless "Validate sources" is done
+
+stats <- compile(sources) # only runs once the dependency is satisfied
+task_done(db, 11, note = f("compiled: {nrow(stats)} rows"))
+```
+
+`task_get(db, id)` is the matching read accessor: the single row
+[`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
+would show for one task, when you want to branch on its `status` or
+`blocked` flag instead of aborting. And when a task *is* blocked,
+`task_blockers(db, id)` says why – it returns the unfinished
+prerequisites holding it up, which is also what the app shows in a
+blocked task’s detail panel.
 
 ## Reading the state back
 
@@ -145,6 +203,7 @@ a check that nothing is overdue is then a few lines of R against the
 same shared file the app reads:
 
 ``` r
+
 overview <- task_projects(db)
 overdue  <- task_list(db, status = "pending")
 overdue  <- overdue[!is.na(overdue$due) & overdue$due < Sys.Date(), ]
@@ -160,6 +219,7 @@ clicks, the pipeline writes, and the two views agree because there is
 only ever one file.
 
 ``` r
+
 task_app("//server/share/production/tasks.sqlite")
 ```
 
