@@ -64,6 +64,29 @@
   paste0("c(\n  ", paste(quoted, collapse = ",\n  "), "\n)")
 }
 
+# Reader-mode expression. A single file reads inline -- read_files("x") --
+# since an intermediate object would just be noise. Several paths are bound
+# to `my_paths` first (a blank line, then the read), so the vector is named
+# and left around to reuse. read_files() detects the format either way.
+.bf_reader_expr <- function(paths) {
+  s <- .bf_rstring(paths)
+  if (length(paths) <= 1) {
+    paste0("read_files(", s, ")")
+  } else {
+    paste0("my_paths <- ", s, "\n\nread_files(my_paths)")
+  }
+}
+
+# The text that gets inserted/copied. Plain paths by default; in reader mode
+# the *files* are read with read_files() while directories fall back to bare
+# paths -- read_files() can't read a folder. A target of only folders is thus
+# unchanged by reader mode.
+.bf_expr <- function(paths, reader) {
+  if (!reader || length(paths) == 0) return(.bf_rstring(paths))
+  files <- paths[!dir.exists(paths)]
+  if (length(files) == 0) .bf_rstring(paths) else .bf_reader_expr(files)
+}
+
 # Human-readable file size.
 .bf_size <- function(bytes) {
   if (is.na(bytes)) return("")
@@ -89,6 +112,13 @@
 #'   string for one path, a multi-line `c(...)` (one path per line) for
 #'   several, with forward slashes. Outside RStudio it falls back to the
 #'   clipboard.
+#' - `r` toggles *reader mode*: when on, `Enter` and `y` read the target with
+#'   [daos::read_files()] instead of inserting the bare path. A single file is
+#'   read inline (`read_files("data/x.tsv")`); several paths are bound to a
+#'   `my_paths` object first, then read after a blank line
+#'   (`my_paths <- c(...)` then `read_files(my_paths)`). Only files are read;
+#'   folders in the target are left out, since [daos::read_files()] cannot
+#'   read a directory. Toggle it off to go back to plain paths.
 #' - `y` copies that same expression to the clipboard without closing.
 #' - `o` opens the item under the cursor in the system file explorer via
 #'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
@@ -128,6 +158,7 @@ browse_files <- function(path = getwd()) {
   result <- new.env(parent = emptyenv())
   result$paths  <- character()
   result$insert <- FALSE
+  result$reader <- FALSE
 
   theme <- if (requireNamespace("bslib", quietly = TRUE)) {
     tryCatch(bslib::bs_theme(version = 5, bootswatch = "zephyr"),
@@ -202,15 +233,25 @@ browse_files <- function(path = getwd()) {
       display: inline-flex; align-items: center; gap: 8px;
       border: 1px solid #d6dee8; box-shadow: 0 1px 2px rgba(15,23,42,.05);
     }
-    .bf-btn.btn-primary { background: #1d62a8; border-color: #1d62a8; color: #fff; }
-    .bf-btn.btn-primary:hover { background: #174e86; border-color: #174e86; }
+    .bf-btn.btn-primary { background: #174e86; border-color: #174e86; color: #fff; }
+    .bf-btn.btn-primary:hover { background: #123e6c; border-color: #123e6c; }
     .bf-btn.btn-default { background: #fff; color: #334155; }
     .bf-btn.btn-default:hover { border-color: #1d62a8; color: #1d62a8; }
     .bf-kbd {
       font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
       background: rgba(15,23,42,.08); border-radius: 5px; padding: 1px 6px;
     }
-    .bf-btn.btn-primary .bf-kbd { background: rgba(255,255,255,.22); color: #eaf2fb; }
+    .bf-btn.btn-primary .bf-kbd { background: rgba(255,255,255,.3); color: #fff; }
+    .bf-info {
+      display: inline-flex; align-items: center; gap: 8px;
+      border-radius: 9px; font-weight: 600; font-size: 13px;
+      padding: 8px 16px; color: #1d62a8; background: #e8f0fa;
+      border: 1px solid #cfe0f2;
+    }
+    .bf-info code {
+      background: rgba(29,98,168,.12); color: #174e86;
+      border-radius: 5px; padding: 1px 6px; font-size: 12px;
+    }
     .bf-chip {
       margin-left: auto; color: #16a34a; font-size: 13px; font-weight: 600;
       background: #dcfce7; border-radius: 999px; padding: 5px 14px;
@@ -241,6 +282,7 @@ browse_files <- function(path = getwd()) {
       if (key === 'Enter') { e.preventDefault(); Shiny.setInputValue('do_insert', Date.now()); return; }
       if (key === 'y') { e.preventDefault(); Shiny.setInputValue('do_copy', Date.now()); return; }
       if (key === 'o') { e.preventDefault(); Shiny.setInputValue('do_open', Date.now()); return; }
+      if (key === 'r') { e.preventDefault(); Shiny.setInputValue('toggle_reader', Date.now()); return; }
 
       var down = (key === 'j' || key === 'ArrowDown');
       var up   = (key === 'k' || key === 'ArrowUp');
@@ -310,6 +352,7 @@ browse_files <- function(path = getwd()) {
     kbd_html("l"), " \u00e5bn ", kbd_html("h"), " op ",
     kbd_html("mellemrum"), " mark\u00e9r ",
     kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
+    kbd_html("r"), " reader ",
     kbd_html("o"), " stifinder ", kbd_html("Q"), " luk"
   )
 
@@ -347,6 +390,7 @@ browse_files <- function(path = getwd()) {
     cur_path <- shiny::reactiveVal(start_path)
     cursor   <- shiny::reactiveVal(NULL)
     marked   <- shiny::reactiveVal(character())
+    reader   <- shiny::reactiveVal(FALSE)
 
     cache <- new.env(parent = emptyenv())
     listing <- function(dir) {
@@ -389,10 +433,12 @@ browse_files <- function(path = getwd()) {
     finish <- function(insert) {
       result$paths  <- target()
       result$insert <- insert
+      result$reader <- reader()
       shiny::stopApp()
     }
     shiny::observeEvent(input$quit, finish(FALSE))
     shiny::observeEvent(input$do_insert, finish(TRUE))
+    shiny::observeEvent(input$toggle_reader, reader(!reader()))
 
     # Place the cursor when the directory changes, honouring the memory.
     shiny::observe({
@@ -558,7 +604,7 @@ browse_files <- function(path = getwd()) {
           shiny::p(paste0("St\u00f8rrelse: ", .bf_size(info$size))),
           if (!is.na(info$mtime)) shiny::p(paste0("\u00c6ndret: ", format(info$mtime, "%Y-%m-%d %H:%M"))),
           if (nzchar(ext)) shiny::p(paste0("Type: .", ext)),
-          shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 o \u00e5bner i stifinder.")
+          shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 r reader \u00b7 o \u00e5bner i stifinder.")
         )
       }
     })
@@ -567,20 +613,43 @@ browse_files <- function(path = getwd()) {
     # of paths in the target set (marked, or the cursor when none are).
     kbd <- function(k) shiny::tags$span(class = "bf-kbd", k)
     output$actions <- shiny::renderUI({
-      n  <- length(target())
+      tg <- target()
+      n  <- length(tg)
       nm <- length(marked())
-      word <- if (n <= 1) "sti" else paste(n, "stier")
+      on <- reader()
+      # Reader only reads files; folders in the target stay bare paths. So
+      # the read_files() shape is driven by the file count, and reader is
+      # "active" only when there is at least one file to read.
+      n_dirs   <- if (on && n > 0) sum(dir.exists(tg)) else 0L
+      n_files  <- n - n_dirs
+      active   <- on && n_files > 0
+
+      label <- if (active) "Inds\u00e6t read_files()" else {
+        paste("Inds\u00e6t", if (n <= 1) "sti" else paste(n, "stier"))
+      }
+      info <- if (!on) NULL else if (!active) {
+        "Reader til \u2014 mapper kan ikke l\u00e6ses, inds\u00e6tter sti"
+      } else {
+        paste0(
+          "Reader til \u2014 inds\u00e6tter <code>",
+          if (n_files <= 1) "read_files(...)" else "read_files(my_paths)",
+          "</code>",
+          if (n_dirs > 0) " \u00b7 mapper udelades" else "")
+      }
       shiny::div(
         class = "bf-actions",
         shiny::actionButton(
-          "do_insert", shiny::tagList(paste("Inds\u00e6t", word), kbd("Enter")),
+          "do_insert", shiny::tagList(label, kbd("Enter")),
           icon = shiny::icon("file-import"), class = "btn-primary bf-btn"),
         shiny::actionButton(
-          "do_copy", shiny::tagList(paste("Kopier", word), kbd("y")),
+          "do_copy", shiny::tagList("Kopier", kbd("y")),
           icon = shiny::icon("copy"), class = "btn-default bf-btn"),
         shiny::actionButton(
           "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
           icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
+        if (!is.null(info))
+          shiny::span(class = "bf-info", shiny::icon("info-circle"),
+                      shiny::HTML(info)),
         if (nm > 0)
           shiny::span(class = "bf-chip",
                       paste(nm, if (nm == 1) "markeret" else "markerede"))
@@ -589,13 +658,13 @@ browse_files <- function(path = getwd()) {
 
     output$rstring <- shiny::renderText({
       tg <- target()
-      if (length(tg) == 0) "(intet valgt)" else .bf_rstring(tg)
+      if (length(tg) == 0) "(intet valgt)" else .bf_expr(tg, reader())
     })
 
     shiny::observeEvent(input$do_copy, {
       tg <- target()
       if (length(tg) > 0) {
-        session$sendCustomMessage("bf_clip", .bf_rstring(tg))
+        session$sendCustomMessage("bf_clip", .bf_expr(tg, reader()))
         shiny::showNotification("Kopieret til udklipsholderen.", duration = 2, type = "message")
       }
     })
@@ -615,7 +684,7 @@ browse_files <- function(path = getwd()) {
   # Deliver the result after the app has closed, so the active document
   # is the user's script/console again, not the app viewer.
   if (result$insert && length(result$paths) > 0) {
-    expr <- .bf_rstring(result$paths)
+    expr <- .bf_expr(result$paths, result$reader)
     if (requireNamespace("rstudioapi", quietly = TRUE) &&
         rstudioapi::isAvailable()) {
       rstudioapi::insertText(expr)
