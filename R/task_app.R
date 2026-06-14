@@ -299,7 +299,7 @@ task_app <- function(db = "tasks.sqlite") {
             shiny::column(6, shiny::selectInput("f_limit", "Vis",
               choices = c("5" = "5", "10" = "10", "15" = "15", "20" = "20",
                           "25" = "25", "50" = "50", "100" = "100", "Alle" = "all"),
-              selected = "50"))
+              selected = "10"))
           ),
           shiny::actionButton("reset_filters", "Nulstil filtre (R)",
                               class = "btn-default", width = "100%")
@@ -391,7 +391,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::updateSelectInput(session, "f_tag",      selected = "")
       shiny::updateSelectInput(session, "f_sort",     selected = "urgency")
       shiny::updateSelectInput(session, "f_dir",      selected = "asc")
-      shiny::updateSelectInput(session, "f_limit",    selected = "50")
+      shiny::updateSelectInput(session, "f_limit",    selected = "10")
     })
 
     # j/k (or arrows) move the selection through the current list.
@@ -435,7 +435,7 @@ task_app <- function(db = "tasks.sqlite") {
     })
     tasks <- shiny::reactive({
       df <- tasks_all()
-      lim <- input$f_limit %||% "50"
+      lim <- input$f_limit %||% "10"
       if (identical(lim, "all")) df else utils::head(df, as.integer(lim))
     })
 
