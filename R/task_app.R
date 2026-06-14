@@ -213,18 +213,30 @@ task_app <- function(db = "tasks.sqlite") {
       }
     });
     // Highlight today in the date pickers (Shiny's dateInput has no option
-    // for it). Set it on each picker once Shiny has bound it, so the empty
-    // Forfald field still opens with today marked -- and so does the edit
-    // dialog's picker, which is created later.
-    $(document).on('shiny:bound', function(e) {
-      if ($.fn.datepicker && $.fn.datepicker.defaults)
-        $.fn.datepicker.defaults.todayHighlight = true;   // for pickers built later
-      var el = e.target;
-      if (el && el.classList && el.classList.contains('shiny-date-input')) {
-        var dp = $(el).find('.input-group.date').data('datepicker');
-        if (dp && dp.o) dp.o.todayHighlight = true;        // for this one, already built
-      }
+    // for it). The datepicker instance may sit on the input, on the
+    // .input-group.date wrapper, or on the field div depending on the
+    // Bootstrap version, so probe all of them and flip todayHighlight on the
+    // live instance. fill() re-reads it on the next open, so it lights up.
+    if ($.fn.datepicker && $.fn.datepicker.defaults)
+      $.fn.datepicker.defaults.todayHighlight = true;      // for pickers built later
+    function tkHighlightToday(scope) {
+      $(scope).find('.shiny-date-input').addBack('.shiny-date-input').each(function() {
+        var nodes = [this].concat($(this).find('input, .input-group.date, .date').get());
+        for (var i = 0; i < nodes.length; i++) {
+          var dp = $(nodes[i]).data('datepicker');
+          if (dp) {
+            if (dp.o)  dp.o.todayHighlight = true;
+            if (dp._o) dp._o.todayHighlight = true;
+            break;
+          }
+        }
+      });
+    }
+    $(document).on('shiny:connected', function() {
+      setTimeout(function() { tkHighlightToday(document); }, 300);
     });
+    $(document).on('shiny:bound', function(e) { tkHighlightToday(e.target); });
+    $(document).on('shown.bs.modal', function(e) { tkHighlightToday(e.target); });
   "
 
   ui <- shiny::fluidPage(
