@@ -602,7 +602,9 @@ task_purge <- function(db, id = NULL) {
 #' @param id Task identifier: the integer id, the uuid, or the key.
 #'
 #' @details Pass `key` to set or rename the task's key; pass `key = ""` to
-#'   remove it. A new key must still be unique.
+#'   remove it. A new key must still be unique. Pass `tags` or `depends` to
+#'   *replace* the task's tags or its dependencies (use `character(0)` to
+#'   clear them); pass `recur = ""` to stop a task recurring.
 #'
 #' @return `TRUE`, invisibly.
 #'
@@ -610,7 +612,7 @@ task_purge <- function(db, id = NULL) {
 #' @export
 task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
                         assignee = NULL, tags = NULL, priority = NULL, due = NULL,
-                        recur = NULL) {
+                        recur = NULL, depends = NULL) {
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   row <- .task_row(con, id); now <- .task_now()
@@ -631,7 +633,7 @@ task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
   if (!is.null(assignee))    { sets <- c(sets, "assignee=?");    params <- c(params, list(.or_na(assignee))) }
   if (!is.null(priority))    { sets <- c(sets, "priority=?");    params <- c(params, list(.task_check_priority(priority))) }
   if (!is.null(due))         { sets <- c(sets, "due=?");         params <- c(params, list(.task_norm_date(due))) }
-  if (!is.null(recur))       { sets <- c(sets, "recur=?");       params <- c(params, list(recur)) }
+  if (!is.null(recur))       { sets <- c(sets, "recur=?");       params <- c(params, list(if (nzchar(recur)) recur else NA)) }
 
   DBI::dbWithTransaction(con, {
     if (length(sets) > 0) {
@@ -644,6 +646,14 @@ task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
       for (tg in unique(tags))
         DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
                        params = list(row$uuid, tg))
+    }
+    # Replace the task's dependencies. character(0) just clears them. A task
+    # may not depend on itself.
+    if (!is.null(depends)) {
+      DBI::dbExecute(con, "DELETE FROM dependencies WHERE task_uuid=?", params = list(row$uuid))
+      for (du in setdiff(.task_ids_to_uuids(con, depends), row$uuid))
+        DBI::dbExecute(con, "INSERT OR IGNORE INTO dependencies (task_uuid, depends_on_uuid) VALUES (?, ?)",
+                       params = list(row$uuid, du))
     }
   })
   invisible(TRUE)

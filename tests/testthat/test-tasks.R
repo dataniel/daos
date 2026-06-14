@@ -209,6 +209,28 @@ test_that("sorting by creation date can be reversed", {
   expect_equal(task_list(db, sort = "entry", desc = TRUE)$description, c("second", "first"))
 })
 
+test_that("task_modify sets and clears recurrence and dependencies", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "up", key = "up")
+  task_add(db, "main", key = "main", due = format(Sys.Date(), "%Y-%m-%d"))
+
+  task_modify(db, "main", depends = "up")                 # add a dependency
+  expect_true(task_list(db)$blocked[task_list(db)$key == "main"])
+  task_modify(db, "main", recur = "weekly")               # make it recurring
+  expect_equal(task_get(db, "main")$recur, "weekly")
+
+  task_modify(db, "main", depends = character(0), recur = "")   # clear both
+  expect_false(task_list(db)$blocked[task_list(db)$key == "main"])
+  expect_true(is.na(task_get(db, "main")$recur))
+})
+
+test_that("task_modify will not let a task depend on itself", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "solo", key = "solo")
+  task_modify(db, "solo", depends = "solo")
+  expect_equal(nrow(task_blockers(db, "solo")), 0)
+})
+
 test_that("urgency ranks priority and due, blocked sinks", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "low")

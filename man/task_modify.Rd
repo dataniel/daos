@@ -14,7 +14,8 @@ task_modify(
   tags = NULL,
   priority = NULL,
   due = NULL,
-  recur = NULL
+  recur = NULL,
+  depends = NULL
 )
 }
 \arguments{
@@ -44,6 +45,8 @@ by a stable, readable name instead of a brittle integer. The numeric
 \item{recur}{Optional recurrence applied when the task is completed: an
 integer number of days, or one of \code{"daily"}, \code{"weekly"},
 \code{"biweekly"}, \code{"monthly"}, \code{"quarterly"}, \code{"yearly"}. Needs a \code{due}.}
+
+\item{depends}{Optional ids (integer, uuid, or key) this task depends on.}
 }
 \value{
 \code{TRUE}, invisibly.
@@ -53,5 +56,7 @@ Updates the supplied fields. Pass \code{tags} to replace the task's tags.
 }
 \details{
 Pass \code{key} to set or rename the task's key; pass \code{key = ""} to
-remove it. A new key must still be unique.
+remove it. A new key must still be unique. Pass \code{tags} or \code{depends} to
+\emph{replace} the task's tags or its dependencies (use \code{character(0)} to
+clear them); pass \code{recur = ""} to stop a task recurring.
 }

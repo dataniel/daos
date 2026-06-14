@@ -698,6 +698,18 @@ task_app <- function(db = "tasks.sqlite") {
     })
     shiny::observeEvent(input$act_edit, {
       t <- sel_task(); shiny::req(t)
+      # Other tasks this one can depend on (not itself, not the trash), and
+      # the dependencies it already has, so the picker opens pre-filled.
+      others <- task_list(db_path(), status = "active")
+      others <- others[others$id != t$id, ]
+      dep_choices <- stats::setNames(others$uuid,
+        ifelse(is.na(others$key), others$description,
+               paste0(others$description, "  [", others$key, "]")))
+      con <- DBI::dbConnect(RSQLite::SQLite(), db_path())
+      cur_deps <- DBI::dbGetQuery(con,
+        "SELECT depends_on_uuid FROM dependencies WHERE task_uuid=?",
+        params = list(t$uuid))$depends_on_uuid
+      DBI::dbDisconnect(con)
       shiny::showModal(shiny::modalDialog(
         title = "Rediger opgave",
         shiny::textInput("e_desc", "Beskrivelse", value = t$description),
@@ -705,12 +717,22 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::textInput("e_project", "Projekt", value = if (is.na(t$project)) "" else t$project),
         shiny::textInput("e_assignee", "Person", value = if (is.na(t$assignee)) "" else t$assignee),
         shiny::textInput("e_tags", "Tags", value = t$tags),
-        shiny::selectInput("e_priority", "Prioritet",
-          choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"),
-          selected = if (is.na(t$priority)) "" else t$priority),
+        shiny::fluidRow(
+          shiny::column(6, shiny::selectInput("e_priority", "Prioritet",
+            choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"),
+            selected = if (is.na(t$priority)) "" else t$priority)),
+          shiny::column(6, shiny::selectInput("e_recur", "Gentag",
+            choices = c("Nej" = "", "Dagligt" = "daily", "Ugentligt" = "weekly",
+                        "Hver 14. dag" = "biweekly", "M\u00e5nedligt" = "monthly",
+                        "Kvartalsvis" = "quarterly", "\u00c5rligt" = "yearly"),
+            selected = if (is.na(t$recur)) "" else t$recur))
+        ),
         suppressWarnings(shiny::dateInput("e_due", "Forfald",
           value = if (is.na(t$due)) NA else as.Date(t$due),
           format = "dd-mm-yyyy", language = "da", weekstart = 1, autoclose = TRUE)),
+        shiny::selectizeInput("e_depends", "Afh\u00e6nger af (blokeret indtil de er f\u00e6rdige)",
+          choices = dep_choices, selected = cur_deps, multiple = TRUE, width = "100%",
+          options = list(placeholder = "v\u00e6lg opgaver")),
         footer = shiny::tagList(shiny::modalButton("Annuller"),
                                 shiny::actionButton("edit_ok", "Gem", class = "btn-primary")),
         easyClose = TRUE))
@@ -726,7 +748,9 @@ task_app <- function(db = "tasks.sqlite") {
           assignee = if (shiny::isTruthy(input$e_assignee)) input$e_assignee else "",
           tags     = tags[nzchar(tags)],
           priority = if (shiny::isTruthy(input$e_priority)) input$e_priority else NULL,
-          due      = if (shiny::isTruthy(input$e_due)) input$e_due else NULL)
+          due      = if (shiny::isTruthy(input$e_due)) input$e_due else NULL,
+          recur    = if (shiny::isTruthy(input$e_recur)) input$e_recur else "",
+          depends  = input$e_depends %||% character(0))
         TRUE
       }, error = function(e) { shiny::showNotification(conditionMessage(e), type = "error"); FALSE })
       if (ok) { shiny::removeModal(); bump(); fbump() }
