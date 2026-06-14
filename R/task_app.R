@@ -237,15 +237,13 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::h4("Ny opgave"),
           shiny::textInput("n_desc", NULL, placeholder = "Hvad skal der g\u00f8res?"),
           shiny::textInput("n_key", "N\u00f8gle (valgfri)",
-                           placeholder = "fx kompil-regnskab"),
-          shiny::fluidRow(
-            shiny::column(6, shiny::selectizeInput("n_project", "Projekt", choices = NULL,
-                                options = list(create = TRUE, createOnBlur = TRUE,
-                                               persist = FALSE, placeholder = "skriv eller v\u00e6lg"))),
-            shiny::column(6, shiny::selectizeInput("n_assignee", "Person", choices = NULL,
-                                options = list(create = TRUE, createOnBlur = TRUE,
-                                               persist = FALSE, placeholder = "skriv eller v\u00e6lg")))
-          ),
+                           placeholder = "fx ugentlig-rapport"),
+          shiny::selectizeInput("n_project", "Projekt", choices = NULL, width = "100%",
+            options = list(create = TRUE, createOnBlur = TRUE,
+                           persist = FALSE, placeholder = "skriv eller v\u00e6lg")),
+          shiny::selectizeInput("n_assignee", "Person", choices = NULL, width = "100%",
+            options = list(create = TRUE, createOnBlur = TRUE,
+                           persist = FALSE, placeholder = "skriv eller v\u00e6lg")),
           shiny::textInput("n_tags", "Tags", placeholder = "fx skrivning, vigtig"),
           shiny::fluidRow(
             shiny::column(6, shiny::selectInput("n_priority", "Prioritet",
