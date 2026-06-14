@@ -79,6 +79,7 @@ reference:
       - task_list
       - task_get
       - task_require
+      - task_blockers
       - task_done
       - task_reopen
       - task_delete

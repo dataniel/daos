@@ -182,7 +182,10 @@ task_done(db, 11, note = f("compiled: {nrow(stats)} rows"))
 
 `task_get(db, id)` is the matching read accessor: the single row
 `task_list()` would show for one task, when you want to branch on its
-`status` or `blocked` flag instead of aborting.
+`status` or `blocked` flag instead of aborting. And when a task *is*
+blocked, `task_blockers(db, id)` says why -- it returns the unfinished
+prerequisites holding it up, which is also what the app shows in a blocked
+task's detail panel.
 
 ## Reading the state back
 

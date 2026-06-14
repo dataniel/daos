@@ -121,6 +121,18 @@ test_that("task_require gates on status", {
   expect_error(task_require(db, c(1, 2)), "Downstream")  # one still pending
 })
 
+test_that("task_blockers lists the unfinished prerequisites", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A"); task_add(db, "B")
+  task_add(db, "C", depends = c(1, 2))   # id 3 waits on 1 and 2
+  expect_equal(sort(task_blockers(db, 3)$description), c("A", "B"))
+  task_done(db, 1)
+  expect_equal(task_blockers(db, 3)$description, "B")   # A no longer blocks
+  task_done(db, 2)
+  expect_equal(nrow(task_blockers(db, 3)), 0)           # nothing left
+  expect_false(task_list(db)$blocked[task_list(db)$id == 3])
+})
+
 test_that("task_done attaches an optional note", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "With closing note")

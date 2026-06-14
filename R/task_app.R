@@ -120,6 +120,7 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-detail .tk-d-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
     .tk-detail .tk-d-row:last-child { border-bottom: none; }
     .tk-detail .tk-d-k { color: #64748b; }
+    .tk-detail .tk-d-block span:last-child { color: #b91c1c; font-weight: 600; text-align: right; }
     .tk-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .tk-note { font-size: 12.5px; color: #475569; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
     .tk-note .tk-note-t { color: #94a3b8; font-size: 11px; }
@@ -470,10 +471,15 @@ task_app <- function(db = "tasks.sqlite") {
       drow <- function(k, v) shiny::div(class = "tk-d-row",
         shiny::span(class = "tk-d-k", k), shiny::span(v))
       ann <- task_annotations(db_path(), t$id)
+      blockers <- if (isTRUE(t$blocked)) task_blockers(db_path(), t$id) else NULL
       shiny::div(
         class = "tk-card tk-detail",
         shiny::h4(t$description),
         drow("Status", t$status),
+        if (!is.null(blockers) && nrow(blockers) > 0)
+          shiny::div(class = "tk-d-row tk-d-block",
+            shiny::span(class = "tk-d-k", "Blokeret af"),
+            shiny::span(paste(blockers$description, collapse = ", "))),
         if (!is.na(t$project)) drow("Projekt", t$project),
         if (!is.na(t$assignee) && nzchar(t$assignee)) drow("Person", t$assignee),
         if (!is.na(t$priority)) drow("Prioritet", t$priority),

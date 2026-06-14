@@ -35,6 +35,22 @@ test_that("completing a selected task removes it from pending", {
   })
 })
 
+test_that("detail panel says why a task is blocked", {
+  db <- tempfile(fileext = ".sqlite"); on.exit(unlink(db))
+  task_db(db)
+  task_add(db, "Upstream")
+  task_add(db, "Downstream", depends = 1)
+  id2 <- task_list(db)$id[task_list(db)$description == "Downstream"]
+  shiny::testServer(daos:::.task_app_server(normalizePath(db, winslash = "/", mustWork = FALSE)), {
+    session$setInputs(f_status = "pending", f_sort = "urgency",
+                      f_project = "", f_assignee = "", f_tag = "")
+    session$setInputs(pick_task = id2)
+    html <- output$detail$html
+    expect_match(html, "Blokeret af", fixed = TRUE)
+    expect_match(html, "Upstream", fixed = TRUE)
+  })
+})
+
 test_that("list shows status markers and projects show per-project people", {
   db <- tempfile(fileext = ".sqlite"); on.exit(unlink(db))
   task_db(db)

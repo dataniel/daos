@@ -359,6 +359,34 @@ task_require <- function(db, id, status = "completed") {
   invisible(id)
 }
 
+#' Why a task is blocked
+#'
+#' Returns the prerequisites a task depends on that are not yet completed --
+#' the unfinished tasks that make [task_list()] report it as `blocked`. An
+#' empty result means nothing is holding it up.
+#'
+#' @inheritParams task_get
+#' @param id A single task id (integer or uuid).
+#'
+#' @return A tibble with `id`, `uuid`, `description`, and `status` of each
+#'   unfinished prerequisite.
+#'
+#' @seealso [task_list()], [task_require()]
+#'
+#' @importFrom tibble as_tibble
+#' @importFrom cli cli_abort
+#' @export
+task_blockers <- function(db, id) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  row <- .task_row(con, id)
+  tibble::as_tibble(DBI::dbGetQuery(con,
+    "SELECT t.id, t.uuid, t.description, t.status
+       FROM dependencies d JOIN tasks t ON t.uuid = d.depends_on_uuid
+      WHERE d.task_uuid = ? AND t.status = 'pending'
+      ORDER BY t.id", params = list(row$uuid)))
+}
+
 #' Complete a task
 #'
 #' Marks the task completed. If it has a recurrence and a due date, the next
