@@ -212,6 +212,19 @@ task_app <- function(db = "tasks.sqlite") {
         Shiny.setInputValue('move_sel', 'up', {priority: 'event'}); return;
       }
     });
+    // Highlight today in the date pickers (Shiny's dateInput has no option
+    // for it). Set it on each picker once Shiny has bound it, so the empty
+    // Forfald field still opens with today marked -- and so does the edit
+    // dialog's picker, which is created later.
+    $(document).on('shiny:bound', function(e) {
+      if ($.fn.datepicker && $.fn.datepicker.defaults)
+        $.fn.datepicker.defaults.todayHighlight = true;   // for pickers built later
+      var el = e.target;
+      if (el && el.classList && el.classList.contains('shiny-date-input')) {
+        var dp = $(el).find('.input-group.date').data('datepicker');
+        if (dp && dp.o) dp.o.todayHighlight = true;        // for this one, already built
+      }
+    });
   "
 
   ui <- shiny::fluidPage(
@@ -249,7 +262,7 @@ task_app <- function(db = "tasks.sqlite") {
             shiny::column(6, shiny::selectInput("n_priority", "Prioritet",
               choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"))),
             shiny::column(6, suppressWarnings(shiny::dateInput("n_due", "Forfald",
-              value = Sys.Date(), format = "dd-mm-yyyy", language = "da", weekstart = 1,
+              value = NA, format = "dd-mm-yyyy", language = "da", weekstart = 1,
               autoclose = TRUE)))
           ),
           shiny::selectInput("n_recur", "Gentag",
