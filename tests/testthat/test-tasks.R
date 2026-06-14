@@ -154,6 +154,25 @@ test_that("task_modify updates fields and replaces tags", {
   expect_true(grepl("y", out$tags) && grepl("z", out$tags))
 })
 
+test_that("sorting by due date works in both directions, empties last", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "mid",  due = format(Sys.Date() + 5, "%Y-%m-%d"))
+  task_add(db, "soon", due = format(Sys.Date() + 1, "%Y-%m-%d"))
+  task_add(db, "late", due = format(Sys.Date() + 9, "%Y-%m-%d"))
+  task_add(db, "none")                                  # no due date
+  asc  <- task_list(db, sort = "due")
+  desc <- task_list(db, sort = "due", desc = TRUE)
+  expect_equal(asc$description,  c("soon", "mid", "late", "none"))
+  expect_equal(desc$description, c("late", "mid", "soon", "none"))  # empty still last
+})
+
+test_that("sorting by creation date can be reversed", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "first"); Sys.sleep(1); task_add(db, "second")
+  expect_equal(task_list(db, sort = "entry")$description, c("first", "second"))
+  expect_equal(task_list(db, sort = "entry", desc = TRUE)$description, c("second", "first"))
+})
+
 test_that("urgency ranks priority and due, blocked sinks", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "low")

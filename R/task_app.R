@@ -115,6 +115,11 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-due { flex: none; font-size: 12.5px; color: #64748b; font-weight: 600; white-space: nowrap; }
     .tk-due.tk-soon { color: #b45309; }
     .tk-due.tk-over { color: #dc2626; }
+    .tk-due.tk-none { color: #b6c0cc; font-weight: 500; font-style: italic; }
+    .tk-flag { flex: none; font-size: 11px; font-weight: 700; border-radius: 6px;
+      padding: 2px 8px; letter-spacing: .2px; white-space: nowrap; }
+    .tk-flag-soon { color: #b45309; background: #fef3c7; border: 1px solid #fbdca0; }
+    .tk-flag-over { color: #b91c1c; background: #fee2e2; border: 1px solid #f6bcbc; }
     .tk-blocked { flex: none; font-size: 11.5px; color: #b91c1c; background: #fee2e2; border-radius: 6px; padding: 2px 8px; font-weight: 600; }
     .tk-ann { flex: none; font-size: 12px; color: #94a3b8; }
     .tk-empty { text-align: center; padding: 36px 12px; color: #64748b; }
@@ -239,8 +244,10 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::selectInput("f_project", "Projekt", choices = c("Alle" = "")),
           shiny::selectInput("f_tag", "Tag", choices = c("Alle" = "")),
           shiny::selectInput("f_sort", "Sort\u00e9r efter",
-            choices = c("Vigtighed" = "urgency", "Forfald" = "due",
-                        "Oprettet" = "entry", "Projekt" = "project")),
+            choices = c("Vigtighed" = "urgency", "Forfald (dato)" = "due",
+                        "Oprettet (dato)" = "entry", "Projekt" = "project")),
+          shiny::selectInput("f_dir", "R\u00e6kkef\u00f8lge",
+            choices = c("Stigende" = "asc", "Faldende" = "desc")),
           shiny::actionButton("reset_filters", "Nulstil filtre (R)",
                               class = "btn-default", width = "100%"),
           shiny::div(class = "tk-legend",
@@ -314,6 +321,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::updateSelectInput(session, "f_project",  selected = "")
       shiny::updateSelectInput(session, "f_tag",      selected = "")
       shiny::updateSelectInput(session, "f_sort",     selected = "urgency")
+      shiny::updateSelectInput(session, "f_dir",      selected = "asc")
     })
 
     # j/k (or arrows) move the selection through the current list.
@@ -345,7 +353,8 @@ task_app <- function(db = "tasks.sqlite") {
         project  = if (shiny::isTruthy(input$f_project)) input$f_project else NULL,
         assignee = if (shiny::isTruthy(input$f_assignee)) input$f_assignee else NULL,
         tag      = if (shiny::isTruthy(input$f_tag)) input$f_tag else NULL,
-        sort     = input$f_sort %||% "urgency"
+        sort     = input$f_sort %||% "urgency",
+        desc     = identical(input$f_dir, "desc")
       )
     })
 
@@ -429,12 +438,19 @@ task_app <- function(db = "tasks.sqlite") {
       sel <- selected()
       rows <- lapply(seq_len(nrow(df)), function(i) {
         t <- df[i, ]
-        due_cls <- ""; due_txt <- NULL
-        if (!is.na(t$due) && nzchar(t$due)) {
-          dd <- as.Date(t$due); dleft <- as.numeric(dd - Sys.Date())
-          due_cls <- if (dleft < 0) "tk-over" else if (dleft <= 3) "tk-soon" else ""
-          due_txt <- ddmm(t$due)
-        }
+        # Show a due field on every task. With a date: "Forfald: dd-mm-yyyy",
+        # tinted amber when within 3 days and red when overdue. Without one:
+        # a muted "ingen frist", so the column reads the same on every row.
+        has_due <- !is.na(t$due) && nzchar(t$due)
+        dleft   <- if (has_due) as.numeric(as.Date(t$due) - Sys.Date()) else NA_real_
+        due_cls <- if (!has_due) "tk-none"
+                   else if (dleft < 0) "tk-over"
+                   else if (dleft <= 3) "tk-soon" else ""
+        due_txt <- if (has_due) paste0("Forfald: ", ddmm(t$due)) else "ingen frist"
+        # A standalone flag for the rows that need attention now.
+        deadline_flag <- if (!has_due || done) NULL
+                         else if (dleft < 0) shiny::span(class = "tk-flag tk-flag-over", "forfaldt")
+                         else if (dleft <= 3) shiny::span(class = "tk-flag tk-flag-soon", "tæt på")
         tagchips <- if (nzchar(t$tags))
           lapply(strsplit(t$tags, ",", fixed = TRUE)[[1]],
                  function(x) shiny::span(class = "tk-chip tk-tag", x))
@@ -457,7 +473,8 @@ task_app <- function(db = "tasks.sqlite") {
               tagchips,
               if (t$annotations > 0) shiny::span(class = "tk-ann", paste0("\U0001F4DD ", t$annotations)))),
           if (isTRUE(t$blocked)) shiny::span(class = "tk-blocked", "blokeret"),
-          if (!is.null(due_txt)) shiny::span(class = paste("tk-due", due_cls), due_txt)
+          deadline_flag,
+          shiny::span(class = paste("tk-due", due_cls), due_txt)
         )
       })
       shiny::div(class = "tk-rows", rows)

@@ -304,8 +304,11 @@ task_add <- function(db, description, key = NULL, project = NULL, assignee = NUL
 #' @param project Optional project filter.
 #' @param assignee Optional person filter.
 #' @param tag Optional tag filter (kept if the task carries the tag).
-#' @param sort One of `"urgency"` (default), `"due"`, `"entry"`,
-#'   `"project"`.
+#' @param sort One of `"urgency"` (default), `"due"` (forfaldsdato),
+#'   `"entry"` (oprettelsesdato), or `"project"`.
+#' @param desc If `TRUE`, reverse the sort order (e.g. latest due date or
+#'   newest task first). Tasks with no due date or project stay last either
+#'   way.
 #' @param .only_uuid Internal: restrict to a single uuid.
 #'
 #' @return A tibble of tasks.
@@ -323,7 +326,7 @@ task_add <- function(db, description, key = NULL, project = NULL, assignee = NUL
 #' @export
 task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
                       tag = NULL, sort = c("urgency", "due", "entry", "project"),
-                      .only_uuid = NULL) {
+                      desc = FALSE, .only_uuid = NULL) {
   sort <- match.arg(sort)
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
@@ -360,11 +363,17 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
     df <- df[keep, ]
   }
 
+  # `desc` flips the chosen key (dir applied via xtfrm so it works for the
+  # date/text columns too). The is.na() lead term is left ascending, so empty
+  # due dates / projects stay grouped at the bottom in both directions rather
+  # than jumping to the top when reversed.
+  dir <- if (desc) -1 else 1
+  due_num <- suppressWarnings(as.numeric(as.Date(df$due)))
   ord <- switch(sort,
-    urgency = order(-df$urgency, df$due),
-    due     = order(is.na(df$due), df$due, -df$urgency),
-    entry   = order(df$entry),
-    project = order(is.na(df$project), df$project, -df$urgency))
+    urgency = order(dir * -df$urgency, due_num),
+    due     = order(is.na(due_num), dir * due_num, -df$urgency),
+    entry   = order(dir * xtfrm(df$entry)),
+    project = order(is.na(df$project), dir * xtfrm(df$project), -df$urgency))
   tibble::as_tibble(df[ord, ])
 }
 

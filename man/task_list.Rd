@@ -11,6 +11,7 @@ task_list(
   assignee = NULL,
   tag = NULL,
   sort = c("urgency", "due", "entry", "project"),
+  desc = FALSE,
   .only_uuid = NULL
 )
 }
@@ -26,8 +27,12 @@ task_list(
 
 \item{tag}{Optional tag filter (kept if the task carries the tag).}
 
-\item{sort}{One of \code{"urgency"} (default), \code{"due"}, \code{"entry"},
-\code{"project"}.}
+\item{sort}{One of \code{"urgency"} (default), \code{"due"} (forfaldsdato),
+\code{"entry"} (oprettelsesdato), or \code{"project"}.}
+
+\item{desc}{If \code{TRUE}, reverse the sort order (e.g. latest due date or
+newest task first). Tasks with no due date or project stay last either
+way.}
 
 \item{.only_uuid}{Internal: restrict to a single uuid.}
 }
