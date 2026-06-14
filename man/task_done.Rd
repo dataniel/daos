@@ -4,12 +4,16 @@
 \alias{task_done}
 \title{Complete a task}
 \usage{
-task_done(db, id)
+task_done(db, id, note = NULL)
 }
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
 \item{id}{Task id (the small integer) or uuid.}
+
+\item{note}{Optional note to attach as the task is completed, so a step
+can be closed with a one-line annotation instead of a separate
+\code{\link[=task_annotate]{task_annotate()}} call.}
 }
 \value{
 \code{TRUE}, invisibly.

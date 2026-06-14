@@ -104,6 +104,31 @@ test_that("annotations round-trip", {
   expect_equal(task_list(db)$annotations[1], 2)
 })
 
+test_that("task_get returns rows by id in order", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "One"); task_add(db, "Two"); task_add(db, "Three")
+  got <- task_get(db, c(3, 1))
+  expect_equal(got$description, c("Three", "One"))
+  expect_error(task_get(db, 99), "No task with id")
+})
+
+test_that("task_require gates on status", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Upstream"); task_add(db, "Downstream")
+  expect_error(task_require(db, 1), "dependency not met")
+  task_done(db, 1)
+  expect_equal(task_require(db, 1), 1)             # passes, returns id
+  expect_error(task_require(db, c(1, 2)), "Downstream")  # one still pending
+})
+
+test_that("task_done attaches an optional note", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "With closing note")
+  task_done(db, 1, note = "done and noted")
+  expect_equal(task_annotations(db, 1)$text, "done and noted")
+  expect_equal(task_get(db, 1)$status, "completed")
+})
+
 test_that("task_modify updates fields and replaces tags", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "Old", project = "A", tags = "x")

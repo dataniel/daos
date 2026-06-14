@@ -104,6 +104,33 @@ Because `task_annotate()` only appends, the annotations accumulate into a
 log: every run of a recurring step adds its own line, and the history is
 there in the app's detail view.
 
+## Keep the tracking beside the work, not inside it
+
+One habit is worth keeping: let the task calls run *alongside* your
+analysis, never inside the pipeline that produces the numbers. It is
+tempting to weave a note into a `dplyr` chain, but the moment task code sits
+in the data path, a reader has to wonder whether it touches the result. Keep
+it out, and there is nothing to wonder about -- the statistics stay a plain
+pipeline, and the tracking is ordinary statements next to it that read from
+what the analysis already produced:
+
+```{r}
+# the statistics -- untouched, no task code in here
+stats <- df |>
+  dplyr::group_by(group) |>
+  dplyr::summarise(n = dplyr::n(), mean_x = mean(x), .groups = "drop")
+
+# the tracking -- beside it, reading from the result
+task_done(db, 2, note = f("computed: {nrow(stats)} groups, {sum(stats$n)} obs"))
+```
+
+The note reads `nrow(stats)` and `sum(stats$n)` from the result the analysis
+already produced, so it records what happened without ever entering the
+analysis itself. `task_done()` takes an optional `note`, so closing a step
+and recording what it produced is a single line next to the work. That is
+the whole idea: the statistics are exactly the pipeline you would have
+written anyway, and the task tracking sits next to it.
+
 ## Recurrence fits scheduled work
 
 A production that repeats does not need a fresh task each cycle. Give the
@@ -139,6 +166,23 @@ ready[!ready$blocked, ]   # what can be started now
 `task_list()` adds the `blocked` flag and a simplified urgency score
 (priority, due-date nearness, age, tags, a blocked penalty) and sorts by
 it, so the top of the list is the thing to do next.
+
+In a single script, the same idea becomes a gate: run `task_require()`
+before a step that depends on an earlier one, and it stops with a clear
+error unless the upstream task is done. Like everything else here it only
+reads the task database -- it never touches your data -- so it sits beside
+the analysis:
+
+```{r}
+task_require(db, 10)      # abort unless "Validate sources" is done
+
+stats <- compile(sources) # only runs once the dependency is satisfied
+task_done(db, 11, note = f("compiled: {nrow(stats)} rows"))
+```
+
+`task_get(db, id)` is the matching read accessor: the single row
+`task_list()` would show for one task, when you want to branch on its
+`status` or `blocked` flag instead of aborting.
 
 ## Reading the state back
 

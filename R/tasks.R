@@ -301,6 +301,64 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
   tibble::as_tibble(df[ord, ])
 }
 
+#' Get one or more tasks by id
+#'
+#' Returns the same row [task_list()] would show -- with the `blocked` flag,
+#' `urgency`, and annotation count -- for the given id(s). A convenience over
+#' filtering [task_list()] by hand when you only want a specific task.
+#'
+#' @inheritParams task_done
+#' @param id One or more task ids (the small integers).
+#'
+#' @return A tibble with one row per id, in the order given.
+#'
+#' @seealso [task_list()], [task_require()]
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_get <- function(db, id) {
+  all <- task_list(db, status = "all")
+  missing <- setdiff(id, all$id)
+  if (length(missing))
+    cli::cli_abort("No task with id {.val {missing}}.")
+  all[match(id, all$id), , drop = FALSE]
+}
+
+#' Require tasks to have a given status
+#'
+#' Aborts unless every task in `id` has one of the statuses in `status`
+#' (`"completed"` by default). This is a lightweight gate for coordinating a
+#' production script: call it before a step that depends on earlier ones
+#' being done. It only reads the task database and never touches your data,
+#' so it belongs beside the analysis rather than inside it.
+#'
+#' @inheritParams task_get
+#' @param status Allowed status values; each task must be in one of them.
+#'
+#' @return `id`, invisibly.
+#'
+#' @seealso [task_get()], [task_done()]
+#'
+#' @examples
+#' \dontrun{
+#' task_require(db, 1)            # stop unless task 1 is done
+#' task_require(db, c(1, 2))      # ... or several upstream steps
+#' }
+#'
+#' @importFrom cli cli_abort
+#' @importFrom glue glue
+#' @export
+task_require <- function(db, id, status = "completed") {
+  row <- task_get(db, id)
+  bad <- row[!row$status %in% status, , drop = FALSE]
+  if (nrow(bad)) {
+    bullets <- as.character(glue::glue("task {bad$id} ({bad$description}) is {bad$status}"))
+    names(bullets) <- rep("x", length(bullets))
+    cli::cli_abort(c("Task dependency not met -- required status {.val {status}}:", bullets))
+  }
+  invisible(id)
+}
+
 #' Complete a task
 #'
 #' Marks the task completed. If it has a recurrence and a due date, the next
@@ -310,6 +368,9 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
 #'
 #' @inheritParams task_add
 #' @param id Task id (the small integer) or uuid.
+#' @param note Optional note to attach as the task is completed, so a step
+#'   can be closed with a one-line annotation instead of a separate
+#'   [task_annotate()] call.
 #'
 #' @return `TRUE`, invisibly.
 #'
@@ -317,13 +378,18 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
 #'
 #' @importFrom cli cli_abort
 #' @export
-task_done <- function(db, id) {
+task_done <- function(db, id, note = NULL) {
+  if (!is.null(note) && (!is.character(note) || length(note) != 1 || !nzchar(note)))
+    cli::cli_abort("{.arg note} must be a single non-empty string.")
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   row <- .task_row(con, id); now <- .task_now()
   DBI::dbWithTransaction(con, {
     DBI::dbExecute(con, "UPDATE tasks SET status='completed', end=?, modified=? WHERE id=?",
                    params = list(now, now, row$id))
+    if (!is.null(note))
+      DBI::dbExecute(con, "INSERT INTO annotations (task_uuid, entry, text) VALUES (?, ?, ?)",
+                     params = list(row$uuid, now, note))
     if (!is.na(row$recur) && nzchar(row$recur) && !is.na(row$due)) {
       nuuid <- .task_uuid()
       DBI::dbExecute(con,
