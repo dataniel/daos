@@ -53,6 +53,7 @@
 <span>  <span class="va">db</span>,</span>
 <span>  <span class="va">id</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  key <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  project <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  assignee <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tags <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -71,11 +72,20 @@
 
 
 <dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
-<dd><p>Task id (integer) or uuid.</p></dd>
+<dd><p>Task identifier: the integer id, the uuid, or the key.</p></dd>
 
 
 <dt id="arg-description">description<a class="anchor" aria-label="anchor" href="#arg-description"></a></dt>
 <dd><p>The task text (required).</p></dd>
+
+
+<dt id="arg-key">key<a class="anchor" aria-label="anchor" href="#arg-key"></a></dt>
+<dd><p>Optional user-chosen handle to reference the task by – a
+slug of lowercase letters/digits joined by single <code>-</code> or <code>_</code> (e.g.
+<code>"compile-accounts"</code>). Must be unique across the database, and is
+accepted anywhere an <code>id</code> is. Lets a production script refer to a task
+by a stable, readable name instead of a brittle integer. The numeric
+<code>id</code> and <code>uuid</code> keep working regardless.</p></dd>
 
 
 <dt id="arg-project">project<a class="anchor" aria-label="anchor" href="#arg-project"></a></dt>
@@ -107,6 +117,11 @@ integer number of days, or one of <code>"daily"</code>, <code>"weekly"</code>,
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>TRUE</code>, invisibly.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Pass <code>key</code> to set or rename the task's key; pass <code>key = ""</code> to
+remove it. A new key must still be unique.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

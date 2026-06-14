@@ -21,7 +21,7 @@ task_get(db, id)
 
 - id:
 
-  One or more task ids (the small integers).
+  One or more task ids – each an integer id, a uuid, or a key.
 
 ## Value
 

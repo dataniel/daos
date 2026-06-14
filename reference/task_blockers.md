@@ -19,7 +19,7 @@ task_blockers(db, id)
 
 - id:
 
-  A single task id (integer or uuid).
+  A single task identifier: integer id, uuid, or key.
 
 ## Value
 

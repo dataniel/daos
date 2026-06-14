@@ -121,22 +121,49 @@ happened, and mark it done when the step succeeds:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db</span> <span class="op">&lt;-</span> <span class="st">"//server/share/production/tasks.sqlite"</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Compile the accounts statistics"</span>,</span>
+<span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Compile the accounts statistics"</span>, key <span class="op">=</span> <span class="st">"compile-accounts"</span>,</span>
 <span>         project <span class="op">=</span> <span class="st">"RS-2026"</span>, assignee <span class="op">=</span> <span class="st">"pipeline"</span>,</span>
 <span>         priority <span class="op">=</span> <span class="st">"H"</span>, due <span class="op">=</span> <span class="st">"2026-07-15"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># ... the step runs ...</span></span>
 <span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/task_annotate.html">task_annotate</a></span><span class="op">(</span><span class="va">db</span>, id <span class="op">=</span> <span class="fl">7</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Compiled"</span>, <span class="va">rows</span>, <span class="st">"rows at"</span>, <span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%H:%M"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, id <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/task_annotate.html">task_annotate</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"compile-accounts"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Compiled"</span>, <span class="va">rows</span>, <span class="st">"rows at"</span>, <span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%H:%M"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"compile-accounts"</span><span class="op">)</span></span></code></pre></div>
 <p>Now anyone watching the project in the app sees the step move to
 done, with a timestamped note about what it produced. The production
 process became observable without anyone writing a status report.</p>
+</div>
+<div class="section level2">
+<h2 id="refer-to-a-task-by-a-key-not-a-number">Refer to a task by a key, not a number<a class="anchor" aria-label="anchor" href="#refer-to-a-task-by-a-key-not-a-number"></a>
+</h2>
+<p>Notice that the step above is closed with
+<code>"compile-accounts"</code>, not a number. Every task has an integer
+<code>id</code> and a <code>uuid</code>, and both still work, but
+neither is a good thing to hard-code in a script. An id like
+<code>7</code> says nothing about which task it is, and if the database
+has been reorganised since you wrote the line, <code>7</code> may no
+longer be the task you meant – the call would quietly act on the wrong
+one. A <code>key</code> is a stable, readable name you choose yourself
+when you add the task:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Validate sources"</span>, key <span class="op">=</span> <span class="st">"validate-sources"</span>, project <span class="op">=</span> <span class="st">"RS-2026"</span><span class="op">)</span></span></code></pre></div>
+<p>and then use anywhere an id is accepted – <code><a href="../reference/task_done.html">task_done()</a></code>,
+<code><a href="../reference/task_require.html">task_require()</a></code>, <code><a href="../reference/task_annotate.html">task_annotate()</a></code>,
+<code>depends =</code>, and the rest:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"validate-sources"</span><span class="op">)</span></span></code></pre></div>
+<p>Beyond reading better, this is <em>safer</em>: a key fails loudly. If
+<code>validate-sources</code> has been removed or renamed, the call
+stops with an error instead of silently resolving to whatever task now
+sits at a given number. Keys are slugs (lowercase letters and digits
+joined by <code>-</code> or <code>_</code>) and must be unique; set or
+change one later with <code>task_modify(db, id, key = "...")</code>, or
+clear it with <code>key = ""</code>.</p>
 <p>A natural pattern is to wrap the step so success and failure both
 leave a trace. On success the task is annotated and closed; on failure
 it stays pending and the error is recorded, so the next person sees
 exactly where production stopped and why:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">run_step</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">db</span>, <span class="va">id</span>, <span class="va">expr</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/force.html" class="external-link">force</a></span><span class="op">(</span><span class="va">expr</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"error"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -164,7 +191,7 @@ it touches the result. Keep it out, and there is nothing to wonder about
 – the statistics stay a plain pipeline, and the tracking is ordinary
 statements next to it that read from what the analysis already
 produced:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># the statistics -- untouched, no task code in here</span></span>
 <span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -187,7 +214,7 @@ would have written anyway, and the task tracking sits next to it.</p>
 the task a <code>recur</code> and <code><a href="../reference/task_done.html">task_done()</a></code> spawns the
 next occurrence with the due date rolled forward, so a scheduled job can
 close this month’s task and next month’s appears automatically:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Monthly source refresh"</span>,</span>
 <span>         project <span class="op">=</span> <span class="st">"RS"</span>, recur <span class="op">=</span> <span class="st">"monthly"</span>, due <span class="op">=</span> <span class="st">"2026-07-01"</span><span class="op">)</span></span></code></pre></div>
 <p>The recurrence handling is deliberately simple (documented on
@@ -201,10 +228,9 @@ for a full calendar engine.</p>
 another is reported as <code>blocked</code> until its dependency is
 done, so a script – or a person in the app – can see what is
 <em>ready</em> to run rather than just what is pending:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Validate sources"</span>,  project <span class="op">=</span> <span class="st">"RS-2026"</span><span class="op">)</span>        <span class="co"># id 10</span></span>
-<span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Compile accounts"</span>,  project <span class="op">=</span> <span class="st">"RS-2026"</span>,</span>
-<span>         depends <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>                                          <span class="co"># waits for 10</span></span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"Compile accounts"</span>, project <span class="op">=</span> <span class="st">"RS-2026"</span>,</span>
+<span>         depends <span class="op">=</span> <span class="st">"validate-sources"</span><span class="op">)</span>          <span class="co"># waits for the keyed task above</span></span>
 <span></span>
 <span><span class="va">ready</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="va">db</span>, status <span class="op">=</span> <span class="st">"pending"</span><span class="op">)</span></span>
 <span><span class="va">ready</span><span class="op">[</span><span class="op">!</span><span class="va">ready</span><span class="op">$</span><span class="va">blocked</span>, <span class="op">]</span>   <span class="co"># what can be started now</span></span></code></pre></div>
@@ -217,11 +243,11 @@ do next.</p>
 one, and it stops with a clear error unless the upstream task is done.
 Like everything else here it only reads the task database – it never
 touches your data – so it sits beside the analysis:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_require.html">task_require</a></span><span class="op">(</span><span class="va">db</span>, <span class="fl">10</span><span class="op">)</span>      <span class="co"># abort unless "Validate sources" is done</span></span>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_require.html">task_require</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"validate-sources"</span><span class="op">)</span>   <span class="co"># abort unless that task is done</span></span>
 <span></span>
-<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">compile</span><span class="op">(</span><span class="va">sources</span><span class="op">)</span> <span class="co"># only runs once the dependency is satisfied</span></span>
-<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="fl">11</span>, note <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"compiled: {nrow(stats)} rows"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">compile</span><span class="op">(</span><span class="va">sources</span><span class="op">)</span>              <span class="co"># only runs once the dependency is satisfied</span></span>
+<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"compile-accounts"</span>, note <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"compiled: {nrow(stats)} rows"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code>task_get(db, id)</code> is the matching read accessor: the
 single row <code><a href="../reference/task_list.html">task_list()</a></code> would show for one task, when you
 want to branch on its <code>status</code> or <code>blocked</code> flag
@@ -240,7 +266,7 @@ completed, overdue, progress, creation and last-activity dates);
 <code><a href="../reference/task_people.html">task_people()</a></code> does the same per assignee. A production
 dashboard, an email summary, or a check that nothing is overdue is then
 a few lines of R against the same shared file the app reads:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">overview</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_projects.html">task_projects</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="va">db</span>, status <span class="op">=</span> <span class="st">"pending"</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="va">overdue</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">overdue</span><span class="op">$</span><span class="va">due</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">overdue</span><span class="op">$</span><span class="va">due</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
@@ -254,7 +280,7 @@ projects, people, due dates, and overviews, run
 <code>task_*</code> code. The point of the article is that the same
 database supports both: the team clicks, the pipeline writes, and the
 two views agree because there is only ever one file.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_app.html">task_app</a></span><span class="op">(</span><span class="st">"//server/share/production/tasks.sqlite"</span><span class="op">)</span></span></code></pre></div>
 <p>The app is keyboard-driven – <code>j</code>/<code>k</code> to move,
 <code>f</code> done, <code>e</code> edit, <code>n</code> note,

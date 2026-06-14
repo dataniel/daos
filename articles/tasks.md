@@ -53,19 +53,52 @@ it done when the step succeeds:
 
 db <- "//server/share/production/tasks.sqlite"
 
-task_add(db, "Compile the accounts statistics",
+task_add(db, "Compile the accounts statistics", key = "compile-accounts",
          project = "RS-2026", assignee = "pipeline",
          priority = "H", due = "2026-07-15")
 
 # ... the step runs ...
 rows <- nrow(result)
-task_annotate(db, id = 7, paste("Compiled", rows, "rows at", nowf("%H:%M")))
-task_done(db, id = 7)
+task_annotate(db, "compile-accounts", paste("Compiled", rows, "rows at", nowf("%H:%M")))
+task_done(db, "compile-accounts")
 ```
 
 Now anyone watching the project in the app sees the step move to done,
 with a timestamped note about what it produced. The production process
 became observable without anyone writing a status report.
+
+## Refer to a task by a key, not a number
+
+Notice that the step above is closed with `"compile-accounts"`, not a
+number. Every task has an integer `id` and a `uuid`, and both still
+work, but neither is a good thing to hard-code in a script. An id like
+`7` says nothing about which task it is, and if the database has been
+reorganised since you wrote the line, `7` may no longer be the task you
+meant – the call would quietly act on the wrong one. A `key` is a
+stable, readable name you choose yourself when you add the task:
+
+``` r
+
+task_add(db, "Validate sources", key = "validate-sources", project = "RS-2026")
+```
+
+and then use anywhere an id is accepted –
+[`task_done()`](https://dataniel.github.io/daos/reference/task_done.md),
+[`task_require()`](https://dataniel.github.io/daos/reference/task_require.md),
+[`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md),
+`depends =`, and the rest:
+
+``` r
+
+task_done(db, "validate-sources")
+```
+
+Beyond reading better, this is *safer*: a key fails loudly. If
+`validate-sources` has been removed or renamed, the call stops with an
+error instead of silently resolving to whatever task now sits at a given
+number. Keys are slugs (lowercase letters and digits joined by `-` or
+`_`) and must be unique; set or change one later with
+`task_modify(db, id, key = "...")`, or clear it with `key = ""`.
 
 A natural pattern is to wrap the step so success and failure both leave
 a trace. On success the task is annotated and closed; on failure it
@@ -153,9 +186,8 @@ than just what is pending:
 
 ``` r
 
-task_add(db, "Validate sources",  project = "RS-2026")        # id 10
-task_add(db, "Compile accounts",  project = "RS-2026",
-         depends = 10)                                          # waits for 10
+task_add(db, "Compile accounts", project = "RS-2026",
+         depends = "validate-sources")          # waits for the keyed task above
 
 ready <- task_list(db, status = "pending")
 ready[!ready$blocked, ]   # what can be started now
@@ -175,10 +207,10 @@ beside the analysis:
 
 ``` r
 
-task_require(db, 10)      # abort unless "Validate sources" is done
+task_require(db, "validate-sources")   # abort unless that task is done
 
-stats <- compile(sources) # only runs once the dependency is satisfied
-task_done(db, 11, note = f("compiled: {nrow(stats)} rows"))
+stats <- compile(sources)              # only runs once the dependency is satisfied
+task_done(db, "compile-accounts", note = f("compiled: {nrow(stats)} rows"))
 ```
 
 `task_get(db, id)` is the matching read accessor: the single row

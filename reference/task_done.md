@@ -19,7 +19,7 @@ task_done(db, id, note = NULL)
 
 - id:
 
-  Task id (the small integer) or uuid.
+  Task identifier: the integer id, the uuid, or the key.
 
 - note:
 

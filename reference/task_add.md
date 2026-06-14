@@ -8,6 +8,7 @@ Add a task
 task_add(
   db,
   description,
+  key = NULL,
   project = NULL,
   assignee = NULL,
   tags = NULL,
@@ -27,6 +28,15 @@ task_add(
 - description:
 
   The task text (required).
+
+- key:
+
+  Optional user-chosen handle to reference the task by – a slug of
+  lowercase letters/digits joined by single `-` or `_` (e.g.
+  `"compile-accounts"`). Must be unique across the database, and is
+  accepted anywhere an `id` is. Lets a production script refer to a task
+  by a stable, readable name instead of a brittle integer. The numeric
+  `id` and `uuid` keep working regardless.
 
 - project:
 
@@ -56,7 +66,7 @@ task_add(
 
 - depends:
 
-  Optional ids (integer or uuid) this task depends on.
+  Optional ids (integer, uuid, or key) this task depends on.
 
 ## Value
 
@@ -73,5 +83,9 @@ The new task as a one-row tibble, invisibly.
 if (FALSE) { # \dontrun{
 task_add("tasks.sqlite", "Write the report", project = "Q3",
          tags = c("writing", "urgent"), priority = "H", due = "2026-07-01")
+
+# Give it a key, then refer to it by that key later:
+task_add("tasks.sqlite", "Compile accounts", key = "compile-accounts")
+task_done("tasks.sqlite", "compile-accounts")
 } # }
 ```

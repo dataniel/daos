@@ -43,6 +43,37 @@ the same expression to the clipboard, and `o` opens the item under the
 cursor in the system explorer. No second window, no clipboard
 round-trip.
 
+Press `r` to toggle *reader mode*: instead of the bare path, `Enter` and
+`y` read the target with
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
+A single file is read inline –
+
+``` r
+
+daos::read_files("data/x.tsv")
+```
+
+while several paths are bound to a `my_paths` object first, then read,
+so the vector is named and left around to reuse:
+
+``` r
+
+my_paths <- c(
+  "data/a.tsv",
+  "data/b.csv"
+)
+
+daos::read_files(my_paths)
+```
+
+(The call is namespaced as
+[`daos::read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+so the pasted line runs even when you reached the browser via
+[`daos::browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
+without attaching the package.)
+
+The format is detected for you either way.
+
 ## Jump to a file you already have in code: `open_in_explorer()`
 
 The other direction: you have a path in your script and want to see it

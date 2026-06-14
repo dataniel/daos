@@ -16,7 +16,7 @@ task_annotate(db, id, text)
 
 - id:
 
-  Task id (the small integer) or uuid.
+  Task identifier: the integer id, the uuid, or the key.
 
 - text:
 

@@ -65,9 +65,9 @@ pak::pak("dataniel/daos")
 | [`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md) | List every table in the statbank (cached per session) |
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md) | Retrieve objects matching a regex pattern from an environment |
 | [`task_db()`](https://dataniel.github.io/daos/reference/task_db.md) | Create/open a shared SQLite task database (WAL, multi-user) |
-| [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md) | Add a task (project, assignee, tags, priority, due, recurrence, dependencies) |
+| [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md) | Add a task (key, project, assignee, tags, priority, due, recurrence, dependencies) |
 | [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md) | List tasks with tags, blocked flag, and urgency |
-| [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md) / [`task_require()`](https://dataniel.github.io/daos/reference/task_require.md) / [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md) | Fetch a task by id; gate a script on upstream tasks; see what blocks a task |
+| [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md) / [`task_require()`](https://dataniel.github.io/daos/reference/task_require.md) / [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md) | Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task |
 | [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md) | Per-person pending task counts |
 | [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md) / [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md) / [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md) / [`task_modify()`](https://dataniel.github.io/daos/reference/task_modify.md) | Complete, reopen, delete, or edit a task |
 | [`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md) | Add a timestamped note to a task |

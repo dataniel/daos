@@ -20,7 +20,7 @@ task_reopen(db, id)
 
 - id:
 
-  Task id (the small integer) or uuid.
+  Task identifier: the integer id, the uuid, or the key.
 
 ## Value
 

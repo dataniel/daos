@@ -9,6 +9,7 @@ task_modify(
   db,
   id,
   description = NULL,
+  key = NULL,
   project = NULL,
   assignee = NULL,
   tags = NULL,
@@ -26,11 +27,20 @@ task_modify(
 
 - id:
 
-  Task id (integer) or uuid.
+  Task identifier: the integer id, the uuid, or the key.
 
 - description:
 
   The task text (required).
+
+- key:
+
+  Optional user-chosen handle to reference the task by – a slug of
+  lowercase letters/digits joined by single `-` or `_` (e.g.
+  `"compile-accounts"`). Must be unique across the database, and is
+  accepted anywhere an `id` is. Lets a production script refer to a task
+  by a stable, readable name instead of a brittle integer. The numeric
+  `id` and `uuid` keep working regardless.
 
 - project:
 
@@ -61,3 +71,8 @@ task_modify(
 ## Value
 
 `TRUE`, invisibly.
+
+## Details
+
+Pass `key` to set or rename the task's key; pass `key = ""` to remove
+it. A new key must still be unique.

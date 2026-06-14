@@ -37,6 +37,17 @@ the cursor path is used, a character vector when several are marked.
   several, with forward slashes. Outside RStudio it falls back to the
   clipboard.
 
+- `r` toggles *reader mode*: when on, `Enter` and `y` read the target
+  with
+  [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+  instead of inserting the bare path. A single file is read inline
+  (`daos::read_files("data/x.tsv")`); several paths are bound to a
+  `my_paths` object first, then read after a blank line
+  (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files
+  are read; folders in the target are left out, since
+  [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+  cannot read a directory. Toggle it off to go back to plain paths.
+
 - `y` copies that same expression to the clipboard without closing.
 
 - `o` opens the item under the cursor in the system file explorer via
