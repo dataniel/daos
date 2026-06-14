@@ -297,7 +297,8 @@ task_app <- function(db = "tasks.sqlite") {
             shiny::column(6, shiny::selectInput("f_dir", "R\u00e6kkef\u00f8lge",
               choices = c("Stigende" = "asc", "Faldende" = "desc"))),
             shiny::column(6, shiny::selectInput("f_limit", "Vis",
-              choices = c("25" = "25", "50" = "50", "100" = "100", "Alle" = "all"),
+              choices = c("5" = "5", "10" = "10", "15" = "15", "20" = "20",
+                          "25" = "25", "50" = "50", "100" = "100", "Alle" = "all"),
               selected = "50"))
           ),
           shiny::actionButton("reset_filters", "Nulstil filtre (R)",
