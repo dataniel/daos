@@ -15,5 +15,8 @@
 # devtools check output
 /*.Rcheck/
 
+# pkgdown site (built and deployed to gh-pages by CI)
+/docs/
+
 # Claude Code
 .claude/
