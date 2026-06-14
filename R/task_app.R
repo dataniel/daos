@@ -219,31 +219,21 @@ task_app <- function(db = "tasks.sqlite") {
         Shiny.setInputValue('move_sel', 'up', {priority: 'event'}); return;
       }
     });
-    // Highlight today in the date pickers (Shiny's dateInput has no option
-    // for it). The datepicker instance may sit on the input, on the
-    // .input-group.date wrapper, or on the field div depending on the
-    // Bootstrap version, so probe all of them and flip todayHighlight on the
-    // live instance. fill() re-reads it on the next open, so it lights up.
+    // Highlight today in the date pickers. Shiny's dateInput has no option
+    // for it, and setting it after init misses the first open (the grid is
+    // already filled). So hook the picker's own 'show' event: flip the flag
+    // on the live instance and re-fill, which redraws the grid with today
+    // marked on that very open. The guard makes it a one-shot per picker.
     if ($.fn.datepicker && $.fn.datepicker.defaults)
-      $.fn.datepicker.defaults.todayHighlight = true;      // for pickers built later
-    function tkHighlightToday(scope) {
-      $(scope).find('.shiny-date-input').addBack('.shiny-date-input').each(function() {
-        var nodes = [this].concat($(this).find('input, .input-group.date, .date').get());
-        for (var i = 0; i < nodes.length; i++) {
-          var dp = $(nodes[i]).data('datepicker');
-          if (dp) {
-            if (dp.o)  dp.o.todayHighlight = true;
-            if (dp._o) dp._o.todayHighlight = true;
-            break;
-          }
-        }
-      });
-    }
-    $(document).on('shiny:connected', function() {
-      setTimeout(function() { tkHighlightToday(document); }, 300);
+      $.fn.datepicker.defaults.todayHighlight = true;
+    $(document).on('show', function(e) {
+      var $t = $(e.target);
+      var dp = $t.data('datepicker') || $t.find('input, .input-group.date, .date').data('datepicker');
+      if (dp && dp.o && !dp.o.todayHighlight) {
+        dp.o.todayHighlight = true;
+        if (dp.fill) dp.fill();
+      }
     });
-    $(document).on('shiny:bound', function(e) { tkHighlightToday(e.target); });
-    $(document).on('shown.bs.modal', function(e) { tkHighlightToday(e.target); });
   "
 
   ui <- shiny::fluidPage(
