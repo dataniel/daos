@@ -169,6 +169,19 @@ task_app <- function(db = "tasks.sqlite") {
   app_js <- "
     document.addEventListener('keydown', function(e) {
       var t = (e.target.tagName || '').toLowerCase();
+      // Enter in a new-task text field submits the form. Trigger change first
+      // so Shiny flushes the just-typed value before the add fires (otherwise
+      // a fast type-then-Enter could add with a stale/empty description).
+      if (e.key === 'Enter') {
+        var fid = e.target.id || '';
+        if (fid === 'n_desc' || fid === 'n_key' || fid === 'n_tags') {
+          e.preventDefault();
+          if (window.jQuery) jQuery(e.target).trigger('change');
+          var addBtn = document.getElementById('add');
+          if (addBtn) addBtn.click();
+          return;
+        }
+      }
       if (t === 'input' || t === 'textarea' || t === 'select') return;
       if (document.querySelector('.modal-backdrop')) return;
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -238,7 +251,7 @@ task_app <- function(db = "tasks.sqlite") {
             choices = c("Nej" = "", "Dagligt" = "daily", "Ugentligt" = "weekly",
                         "Hver 14. dag" = "biweekly", "M\u00e5nedligt" = "monthly",
                         "Kvartalsvis" = "quarterly", "\u00c5rligt" = "yearly")),
-          shiny::actionButton("add", "Tilf\u00f8j opgave", class = "btn-primary", width = "100%")
+          shiny::actionButton("add", "Tilf\u00f8j opgave (Enter)", class = "btn-primary", width = "100%")
         ),
         shiny::div(
           class = "tk-card",
