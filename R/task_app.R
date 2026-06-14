@@ -89,6 +89,13 @@ task_app <- function(db = "tasks.sqlite") {
       border-radius: 12px; cursor: pointer; background: #fff; transition: border-color .12s, box-shadow .12s, transform .08s; }
     .tk-row:hover { border-color: #b9cde6; box-shadow: 0 2px 10px rgba(15,23,42,.07); }
     .tk-row.selected { border-color: #1d62a8; box-shadow: 0 0 0 3px rgba(29,98,168,.16); }
+    .tk-row.done { background: #fbfcfb; border-color: #e2ece4; }
+    .tk-row.done .tk-desc { color: #94a3b8; text-decoration: line-through; }
+    .tk-row.done .tk-urg { opacity: .45; }
+    .tk-status { flex: none; width: 78px; text-align: center; font-size: 11px; font-weight: 700;
+      padding: 3px 0; border-radius: 999px; white-space: nowrap; letter-spacing: .2px; }
+    .tk-status-pending   { background: #fff4e0; color: #b45309; border: 1px solid #fbdca0; }
+    .tk-status-completed { background: #e6f6ec; color: #15803d; border: 1px solid #bfe6cd; }
     .tk-urg { flex: none; width: 44px; height: 32px; display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 13.5px; color: #1d62a8; background: #eef4fc; border-radius: 8px; }
     .tk-main { flex: 1; min-width: 0; }
@@ -132,6 +139,8 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-proj-meta { margin-top: 6px; font-size: 11.5px; color: #94a3b8; }
     .tk-proj-meta.tk-has-over { color: #b45309; }
     .tk-done-badge { font-size: 11px; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 999px; padding: 2px 11px; }
+    .tk-proj-people { margin: 2px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .tk-proj-people .tk-none { font-size: 11.5px; color: #94a3b8; font-style: italic; }
     .tk-people { margin-top: 8px; }
     .tk-people .tk-p-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 4px; border-bottom: 1px solid #f6f8fb; }
     .tk-people .tk-p-n { color: #64748b; }
@@ -422,9 +431,12 @@ task_app <- function(db = "tasks.sqlite") {
         tagchips <- if (nzchar(t$tags))
           lapply(strsplit(t$tags, ",", fixed = TRUE)[[1]],
                  function(x) shiny::span(class = "tk-chip tk-tag", x))
+        done <- isTRUE(t$status == "completed")
         shiny::div(
-          class = paste("tk-row", if (!is.null(sel) && sel == t$id) "selected"),
+          class = paste("tk-row", if (done) "done", if (!is.null(sel) && sel == t$id) "selected"),
           onclick = sprintf("Shiny.setInputValue('pick_task','%s',{priority:'event'})", t$id),
+          shiny::span(class = paste0("tk-status tk-status-", t$status),
+                      if (done) "\u2713 F\u00e6rdig" else "Afventer"),
           shiny::div(class = "tk-urg", formatC(t$urgency, format = "f", digits = 1)),
           if (!is.na(t$priority))
             shiny::span(class = paste0("tk-pri tk-pri-", t$priority), t$priority),
@@ -495,9 +507,15 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::div(class = "tk-empty-ico", "\U0001F4CA"),
           shiny::p(shiny::strong("Ingen projekter endnu")),
           shiny::p(class = "tk-l", "Tilf\u00f8j opgaver med et projekt for at se overblikket.")))
+      # who is on each project: unique assignees per project, from all tasks
+      at      <- task_list(db_path(), status = "all")
+      at_key  <- ifelse(is.na(at$project) | !nzchar(at$project), "(intet projekt)", at$project)
+      who_by  <- tapply(at$assignee, at_key,
+                        function(a) unique(a[!is.na(a) & nzchar(a)]), simplify = FALSE)
       rows <- lapply(seq_len(nrow(pr)), function(i) {
         p <- pr[i, ]
         done <- p$pending == 0 && p$total > 0
+        who <- who_by[[p$project]]; if (is.null(who)) who <- character(0)
         meta <- paste(c(
           paste0("Oprettet ", ddmm(p$created)),
           paste0("Sidst aktiv ", ddmm(p$last_activity)),
@@ -510,6 +528,10 @@ task_app <- function(db = "tasks.sqlite") {
             if (done) shiny::span(class = "tk-done-badge", "Klaret")
             else shiny::span(class = "tk-proj-count",
                              paste0(p$completed, " af ", p$total, " klaret \u00b7 ", p$pending, " mangler"))),
+          shiny::div(class = "tk-proj-people",
+            if (length(who))
+              lapply(who, function(a) shiny::span(class = "tk-chip tk-person", paste0("\U0001F464 ", a)))
+            else shiny::span(class = "tk-none", "Ingen tildelt")),
           shiny::div(class = "tk-bar",
             shiny::div(class = paste("tk-bar-fill", if (done) "tk-full"),
                        style = sprintf("width:%d%%;", p$pct_done))),

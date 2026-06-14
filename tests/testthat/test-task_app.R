@@ -34,3 +34,22 @@ test_that("completing a selected task removes it from pending", {
     expect_equal(nrow(tasks()), 0)
   })
 })
+
+test_that("list shows status markers and projects show per-project people", {
+  db <- tempfile(fileext = ".sqlite"); on.exit(unlink(db))
+  task_db(db)
+  task_add(db, "Pending one", project = "P", assignee = "Anna")
+  task_add(db, "Done one",    project = "P", assignee = "Bo")
+  task_done(db, 2)
+  shiny::testServer(daos:::.task_app_server(normalizePath(db, winslash = "/", mustWork = FALSE)), {
+    session$setInputs(f_status = "all", f_sort = "urgency",
+                      f_project = "", f_assignee = "", f_tag = "")
+    html <- output$tasklist$html
+    expect_match(html, "tk-status-pending",   fixed = TRUE)
+    expect_match(html, "tk-status-completed", fixed = TRUE)
+    proj <- output$projects$html
+    expect_match(proj, "tk-proj-people", fixed = TRUE)
+    expect_match(proj, "Anna", fixed = TRUE)
+    expect_match(proj, "Bo",   fixed = TRUE)
+  })
+})
