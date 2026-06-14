@@ -32,7 +32,6 @@ keyboard-driven browser – parent folder, current folder, and a preview –
 that you move through with `h`/`j`/`k`/`l` or the arrow keys.
 
 ``` r
-
 p <- browse_files()    # navigate, mark with Space, press Q
 ```
 
@@ -49,7 +48,6 @@ Press `r` to toggle *reader mode*: instead of the bare path, `Enter` and
 A single file is read inline –
 
 ``` r
-
 daos::read_files("data/x.tsv")
 ```
 
@@ -57,7 +55,6 @@ while several paths are bound to a `my_paths` object first, then read,
 so the vector is named and left around to reuse:
 
 ``` r
-
 my_paths <- c(
   "data/a.tsv",
   "data/b.csv"
@@ -83,7 +80,6 @@ does it from the console, and the **Open in file explorer** addin does
 it from wherever the cursor is.
 
 ``` r
-
 open_in_explorer("C:/data/2026")
 open_in_explorer(my_dir)   # a variable holding a path works too
 ```
@@ -130,7 +126,6 @@ wraps a selection of lines into a `c(...)` expression, so
 becomes
 
 ``` r
-
 c(
   "jan.csv",
   "feb.csv",
@@ -149,7 +144,6 @@ files exist, detects the format, and names the results, with a progress
 bar for a batch.
 
 ``` r
-
 read_files("C:/data/2026_q{1:4}.parquet", names = 1:4)
 ```
 

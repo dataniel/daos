@@ -12,7 +12,6 @@ Four functions, one step each: build the query, send it, extract the
 hits, download the documents. Requires `curl` and `jsonlite`.
 
 ``` r
-
 cvr_query(
   cvr          = c("12345678", "87654321"),
   enddate_from = "2024-01-01",
@@ -60,7 +59,6 @@ and
 [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md):
 
 ``` r
-
 hits <- hits |> dplyr::filter(dokumentmimetype == "application/pdf")
 ```
 
@@ -85,7 +83,6 @@ For large pulls (many companies across many years), use the scroll API
 to fetch every matching hit in batches:
 
 ``` r
-
 response <- cvr_query(many_cvrs, "2015-01-01", "2024-12-31") |>
   cvr_search(contact = "you@example.com", scroll = TRUE)
 ```
@@ -112,7 +109,6 @@ hits to the XML mimetype, download, and bind the parsed files with the
 CVR number as id:
 
 ``` r
-
 hits_xml <- hits |> dplyr::filter(dokumentmimetype == "application/xml")
 cvr_download(hits_xml, "data/xml")
 
@@ -134,7 +130,6 @@ searches for the `+1`/`-1` assignment that makes the line items sum to
 the reported total:
 
 ``` r
-
 resultatopgoerelse <- xbrl |>
   dplyr::filter(elementid %in% c(
     "Revenue", "ExternalExpenses", "EmployeeBenefitsExpense",
