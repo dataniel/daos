@@ -99,18 +99,18 @@ which expects semicolon-separated values and a comma as the decimal mark
 (Danish/European convention). For comma-separated files, pass a custom
 reader: `reader = readr::read_csv`.
 
-|                                        |                                                                                                                                                                                         |
-|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Extension                              | Reader                                                                                                                                                                                  |
-| `csv`                                  | [`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html) (semicolon-separated, European format)                                                                    |
-| `tsv`                                  | [`readr::read_tsv()`](https://readr.tidyverse.org/reference/read_delim.html)                                                                                                            |
-| `parquet`, `feather`                   | [`arrow::read_parquet()`](https://arrow.apache.org/docs/r/reference/read_parquet.html) / [`arrow::read_feather()`](https://arrow.apache.org/docs/r/reference/read_feather.html)         |
-| `xlsx`, `xls`                          | [`readxl::read_xlsx()`](https://readxl.tidyverse.org/reference/read_excel.html) / [`readxl::read_xls()`](https://readxl.tidyverse.org/reference/read_excel.html)                        |
-| `rds`                                  | [`readRDS()`](https://rdrr.io/r/base/readRDS.html)                                                                                                                                      |
-| `sas7bdat`, `sav`, `por`, `xpt`, `dta` | `haven::read_*()`                                                                                                                                                                       |
-| `json`, `ndjson`, `jsonl`              | [`jsonlite::read_json()`](https://jeroen.r-universe.dev/jsonlite/reference/read_json.html) / [`jsonlite::stream_in()`](https://jeroen.r-universe.dev/jsonlite/reference/stream_in.html) |
-| `yaml`, `yml`                          | [`yaml::read_yaml()`](https://yaml.r-lib.org/reference/read_yaml.html)                                                                                                                  |
-| `txt`                                  | [`readr::read_lines()`](https://readr.tidyverse.org/reference/read_lines.html)                                                                                                          |
+|  |  |
+|----|----|
+| Extension | Reader |
+| `csv` | [`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html) (semicolon-separated, European format) |
+| `tsv` | [`readr::read_tsv()`](https://readr.tidyverse.org/reference/read_delim.html) |
+| `parquet`, `feather` | [`arrow::read_parquet()`](https://arrow.apache.org/docs/r/reference/read_parquet.html) / [`arrow::read_feather()`](https://arrow.apache.org/docs/r/reference/read_feather.html) |
+| `xlsx`, `xls` | [`readxl::read_xlsx()`](https://readxl.tidyverse.org/reference/read_excel.html) / [`readxl::read_xls()`](https://readxl.tidyverse.org/reference/read_excel.html) |
+| `rds` | [`readRDS()`](https://rdrr.io/r/base/readRDS.html) |
+| `sas7bdat`, `sav`, `por`, `xpt`, `dta` | `haven::read_*()` |
+| `json`, `ndjson`, `jsonl` | [`jsonlite::read_json()`](https://jeroen.r-universe.dev/jsonlite/reference/read_json.html) / [`jsonlite::stream_in()`](https://jeroen.r-universe.dev/jsonlite/reference/stream_in.html) |
+| `yaml`, `yml` | [`yaml::read_yaml()`](https://yaml.r-lib.org/reference/read_yaml.html) |
+| `txt` | [`readr::read_lines()`](https://readr.tidyverse.org/reference/read_lines.html) |
 
 Packages for non-base formats (`arrow`, `haven`, `readxl`, `jsonlite`,
 `yaml`) must be installed separately.

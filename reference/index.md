@@ -103,6 +103,33 @@
 - [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
   : Download CVR documents
 
+## Task manager
+
+- [`task_app()`](https://dataniel.github.io/daos/reference/task_app.md)
+  : Task manager app
+- [`task_db()`](https://dataniel.github.io/daos/reference/task_db.md) :
+  Create or open a shared task database
+- [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md)
+  : Add a task
+- [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
+  : List tasks
+- [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md)
+  : Complete a task
+- [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md)
+  : Reopen a task
+- [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md)
+  : Delete a task
+- [`task_modify()`](https://dataniel.github.io/daos/reference/task_modify.md)
+  : Modify a task
+- [`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md)
+  : Annotate a task
+- [`task_annotations()`](https://dataniel.github.io/daos/reference/task_annotations.md)
+  : Annotations of a task
+- [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md)
+  : Project overview
+- [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md)
+  : People overview
+
 ## Greenland Statbank
 
 - [`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)

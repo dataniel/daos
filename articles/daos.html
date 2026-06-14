@@ -38,9 +38,12 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
+    <li><a class="dropdown-item" href="../articles/paths.html">Less fiddling with file paths</a></li>
     <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
     <li><a class="dropdown-item" href="../articles/accounts.html">From PDF accounts to a tidy dataset</a></li>
     <li><a class="dropdown-item" href="../articles/cvr.html">Responsible use of the CVR functions</a></li>
+    <li><a class="dropdown-item" href="../articles/statbank.html">Browsing a statbank by keyboard</a></li>
+    <li><a class="dropdown-item" href="../articles/tasks.html">Task management as part of production</a></li>
   </ul>
 </li>
       </ul>
@@ -62,7 +65,7 @@
       <h1>Getting started with daos</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/dataniel/daos/blob/main/vignettes/daos.Rmd" class="external-link"><code>vignettes/daos.Rmd</code></a></small>
       <div class="d-none name"><code>daos.Rmd</code></div>
     </div>
 
@@ -99,9 +102,9 @@ inline without stopping to look up the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20260613"</span></span>
+<span><span class="co">#&gt; [1] "20260614"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-13 12:59"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-14 00:42"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -836,6 +839,9 @@ and returns the last fetched dataset to R. Requires <code>shiny</code>
 and <code>ggplot2</code>.</p>
 <div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/statbank_app.html">statbank_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The thinking behind the app – keyboard-driven, guided navigation of a
+statbank, and where that idea is heading – is its own article,
+<code><a href="../articles/statbank.html">vignette("statbank")</a></code>.</p>
 <hr>
 </div>
 </div>
@@ -905,6 +911,44 @@ figures:</p>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="task_-a-shared-task-manager">
+<code>task_*</code>: a shared task manager<a class="anchor" aria-label="anchor" href="#task_-a-shared-task-manager"></a>
+</h3>
+<p>The <code>task_*</code> family is a small taskwarrior-style task
+manager backed by a shared SQLite file. SQLite is free (public domain,
+bundled by <code>RSQLite</code>), runs in WAL mode, and needs no server
+– so a <code>.sqlite</code> file on a network drive is enough for a team
+to work from, several people at once.</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_db.html">task_db</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span><span class="op">)</span>                       <span class="co"># create/open the database</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/task_add.html">task_add</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span>, <span class="st">"Write the report"</span>,</span>
+<span>         project <span class="op">=</span> <span class="st">"Q3"</span>, assignee <span class="op">=</span> <span class="st">"Anna"</span>, tags <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"writing"</span>, <span class="st">"urgent"</span><span class="op">)</span>,</span>
+<span>         priority <span class="op">=</span> <span class="st">"H"</span>, due <span class="op">=</span> <span class="st">"2026-07-01"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span><span class="op">)</span>                     <span class="co"># tibble sorted by urgency</span></span>
+<span><span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span>, assignee <span class="op">=</span> <span class="st">"Anna"</span><span class="op">)</span>  <span class="co"># filter by person</span></span>
+<span><span class="fu"><a href="../reference/task_done.html">task_done</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span>, id <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>             <span class="co"># complete a task</span></span></code></pre></div>
+<p>Tasks carry a project, an assignee (person), tags, priority, due
+date, recurrence, dependencies and annotations; <code><a href="../reference/task_list.html">task_list()</a></code>
+adds a <code>blocked</code> flag and a simplified urgency score. Every
+function opens a short-lived connection, works in one transaction, and
+closes, so concurrent users are handled safely. The database is just a
+shared file – point at a path that does not exist yet and a fresh one is
+created.</p>
+<p><code><a href="../reference/task_app.html">task_app()</a></code> is a Shiny front-end over the same database:
+add and edit tasks, filter by person/project/tag/status, see project and
+people overviews, and watch the list update as others change it (it
+re-reads on a timer). Requires <code>shiny</code>, <code>DBI</code>, and
+<code>RSQLite</code>.</p>
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_app.html">task_app</a></span><span class="op">(</span><span class="st">"tasks.sqlite"</span><span class="op">)</span></span></code></pre></div>
+<p>Because every <code>task_*</code> function is a plain call against
+the shared file, task updates can be embedded in production scripts – so
+the same database the team browses also records how production is going.
+That way of working is covered in <code><a href="../articles/tasks.html">vignette("tasks")</a></code>.</p>
+</div>
+<div class="section level3">
 <h3 id="browse_files-grab-filesystem-paths-without-typing-them">
 <code>browse_files()</code>: grab filesystem paths without typing
 them<a class="anchor" aria-label="anchor" href="#browse_files-grab-filesystem-paths-without-typing-them"></a>
@@ -917,7 +961,7 @@ live preview – navigated with
 <code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
 keys. The point is to grab paths: mark one or more files or folders with
 <code>Space</code>, then take them into R.</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/browse_files.html">browse_files</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># navigate, mark, press Q</span></span></code></pre></div>
 <p>Pressing <code>Q</code> returns the marked paths – a single string
 for one, a <code>c("a", "b")</code> vector for several – with forward
@@ -925,6 +969,10 @@ slashes, so the result drops straight into a script. <code>y</code>
 copies the same R expression to the clipboard, and <code>o</code> opens
 the item under the cursor in the system file explorer (reusing
 <code><a href="../reference/open_in_explorer.html">open_in_explorer()</a></code>). Requires <code>shiny</code>.</p>
+<p><code><a href="../reference/browse_files.html">browse_files()</a></code>, the explorer addins, and
+<code><a href="../reference/read_files.html">read_files()</a></code> together make up a way of handling many
+sources without a file explorer open alongside RStudio;
+<code><a href="../articles/paths.html">vignette("paths")</a></code> walks through it.</p>
 <hr>
 </div>
 </div>
@@ -959,7 +1007,7 @@ expression. Empty lines are ignored.</p>
 <span><span class="fl">87654321</span></span>
 <span><span class="fl">11223344</span></span></code></pre>
 <p>produces:</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"12345678"</span>,</span>
 <span>  <span class="st">"87654321"</span>,</span>

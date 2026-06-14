@@ -4,6 +4,7 @@ A surprisingly large share of production scripts starts the same way:
 one `read_*()` call per file.
 
 ``` r
+
 dat2020 <- read_parquet("data/dat2020.parquet")
 dat2021 <- read_parquet("data/dat2021.parquet")
 dat2022 <- read_parquet("data/dat2022.parquet")
@@ -32,6 +33,7 @@ reading anything, detects the format from the extension, and returns a
 named list (with a progress bar along the way):
 
 ``` r
+
 lst <- read_files("data/dat{2020:2023}.parquet", names = 2020:2023)
 ```
 
@@ -51,6 +53,7 @@ bind them directly with `out = "bind"`, and use `.id` to keep track of
 where each row came from:
 
 ``` r
+
 df <- read_files(
   "data/dat{2020:2023}.parquet",
   names = 2020:2023,
@@ -93,6 +96,7 @@ multiple data frames at once: one row per column, one column per
 dataset, with abbreviated type strings.
 
 ``` r
+
 dat2023 <- tibble(cvr = "11111111", name = "Firm A", amount = 100,    year = 2023L)
 dat2024 <- tibble(cvr = 11111111,  name = "Firm B", amount = "1.000", turnover = 200)
 
@@ -111,6 +115,7 @@ The full listing already tells the story, but `diff = TRUE` cuts it down
 to the columns that actually disagree:
 
 ``` r
+
 view_types(dat2023, dat2024, diff = TRUE)
 #> # A tibble: 4 × 3
 #>   column   dat2023 dat2024
@@ -143,6 +148,7 @@ the checkpoint pattern from
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md):
 
 ``` r
+
 view_types(dat2023, dat2024, focus = c(amount = "dbl")) |>
   expect_empty(warn_msg = "amount is not numeric everywhere")
 #> Warning: amount is not numeric everywhere
@@ -158,6 +164,7 @@ to the one-call-per-file pattern, but with the validation, naming, and
 progress handled for you:
 
 ``` r
+
 read_files("data/dat{2020:2023}.parquet",
            names = paste0("dat", 2020:2023), out = "unpack")
 ```
