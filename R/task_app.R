@@ -182,6 +182,13 @@ task_app <- function(db = "tasks.sqlite") {
           return;
         }
       }
+      // Escape leaves a text field, so the single-key shortcuts work again.
+      // Inside a dialog we leave it alone, so Esc keeps closing the modal.
+      if (e.key === 'Escape' && !document.querySelector('.modal-backdrop') &&
+          (t === 'input' || t === 'textarea' || t === 'select')) {
+        e.target.blur();
+        return;
+      }
       if (t === 'input' || t === 'textarea' || t === 'select') return;
       if (document.querySelector('.modal-backdrop')) return;
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
