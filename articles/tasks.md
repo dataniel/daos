@@ -23,7 +23,6 @@ so concurrent callers – a colleague in the app and a scheduled script –
 do not step on each other.
 
 ``` r
-
 task_db("//server/share/production/tasks.sqlite")  # create or open
 ```
 
@@ -50,7 +49,6 @@ a task at the start, annotate it with what actually happened, and mark
 it done when the step succeeds:
 
 ``` r
-
 db <- "//server/share/production/tasks.sqlite"
 
 task_add(db, "Compile the accounts statistics",
@@ -73,7 +71,6 @@ stays pending and the error is recorded, so the next person sees exactly
 where production stopped and why:
 
 ``` r
-
 run_step <- function(db, id, expr) {
   out <- tryCatch(force(expr), error = function(e) e)
   if (inherits(out, "error")) {
@@ -104,7 +101,6 @@ scheduled job can close this month’s task and next month’s appears
 automatically:
 
 ``` r
-
 task_add(db, "Monthly source refresh",
          project = "RS", recur = "monthly", due = "2026-07-01")
 ```
@@ -122,7 +118,6 @@ script – or a person in the app – can see what is *ready* to run rather
 than just what is pending:
 
 ``` r
-
 task_add(db, "Validate sources",  project = "RS-2026")        # id 10
 task_add(db, "Compile accounts",  project = "RS-2026",
          depends = 10)                                          # waits for 10
@@ -150,7 +145,6 @@ a check that nothing is overdue is then a few lines of R against the
 same shared file the app reads:
 
 ``` r
-
 overview <- task_projects(db)
 overdue  <- task_list(db, status = "pending")
 overdue  <- overdue[!is.na(overdue$due) & overdue$due < Sys.Date(), ]
@@ -166,7 +160,6 @@ clicks, the pipeline writes, and the two views agree because there is
 only ever one file.
 
 ``` r
-
 task_app("//server/share/production/tasks.sqlite")
 ```
 

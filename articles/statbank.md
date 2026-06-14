@@ -30,7 +30,6 @@ the menu does not surface while you choose.
 is built around being shown what exists as you go.
 
 ``` r
-
 statbank_app()           # Greenland (default)
 statbank_app(bank = "fo") # the Faroe Islands
 ```
@@ -62,7 +61,6 @@ clicking to scripting: you explore by hand once, copy the query, and
 from then on it runs headless.
 
 ``` r
-
 # the kind of call the code tab hands you
 statbank_get(
   "NR/NR01/NRXxxx.PX",
@@ -127,7 +125,6 @@ all. The client is small and scriptable, and the app only ever produces
 calls to it:
 
 ``` r
-
 statbank_search("national accounts")
 
 meta <- statbank_meta("NR/NR01/NRXxxx.PX")
