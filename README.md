@@ -64,9 +64,9 @@ pak::pak("dataniel/daos")
 | `statbank_tables()` | List every table in the statbank (cached per session) |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `task_db()` | Create/open a shared SQLite task database (WAL, multi-user) |
-| `task_add()` | Add a task (project, assignee, tags, priority, due, recurrence, dependencies) |
+| `task_add()` | Add a task (key, project, assignee, tags, priority, due, recurrence, dependencies) |
 | `task_list()` | List tasks with tags, blocked flag, and urgency |
-| `task_get()` / `task_require()` / `task_blockers()` | Fetch a task by id; gate a script on upstream tasks; see what blocks a task |
+| `task_get()` / `task_require()` / `task_blockers()` | Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task |
 | `task_people()` | Per-person pending task counts |
 | `task_done()` / `task_reopen()` / `task_delete()` / `task_modify()` | Complete, reopen, delete, or edit a task |
 | `task_annotate()` | Add a timestamped note to a task |

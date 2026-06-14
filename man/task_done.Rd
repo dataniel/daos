@@ -9,7 +9,7 @@ task_done(db, id, note = NULL)
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{Task id (the small integer) or uuid.}
+\item{id}{Task identifier: the integer id, the uuid, or the key.}
 
 \item{note}{Optional note to attach as the task is completed, so a step
 can be closed with a one-line annotation instead of a separate

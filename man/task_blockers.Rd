@@ -9,7 +9,7 @@ task_blockers(db, id)
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{A single task id (integer or uuid).}
+\item{id}{A single task identifier: integer id, uuid, or key.}
 }
 \value{
 A tibble with \code{id}, \code{uuid}, \code{description}, and \code{status} of each

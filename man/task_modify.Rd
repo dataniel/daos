@@ -8,6 +8,7 @@ task_modify(
   db,
   id,
   description = NULL,
+  key = NULL,
   project = NULL,
   assignee = NULL,
   tags = NULL,
@@ -19,9 +20,16 @@ task_modify(
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{Task id (integer) or uuid.}
+\item{id}{Task identifier: the integer id, the uuid, or the key.}
 
 \item{description}{The task text (required).}
+
+\item{key}{Optional user-chosen handle to reference the task by -- a
+slug of lowercase letters/digits joined by single \code{-} or \verb{_} (e.g.
+\code{"compile-accounts"}). Must be unique across the database, and is
+accepted anywhere an \code{id} is. Lets a production script refer to a task
+by a stable, readable name instead of a brittle integer. The numeric
+\code{id} and \code{uuid} keep working regardless.}
 
 \item{project}{Optional project name.}
 
@@ -42,4 +50,8 @@ integer number of days, or one of \code{"daily"}, \code{"weekly"},
 }
 \description{
 Updates the supplied fields. Pass \code{tags} to replace the task's tags.
+}
+\details{
+Pass \code{key} to set or rename the task's key; pass \code{key = ""} to
+remove it. A new key must still be unique.
 }

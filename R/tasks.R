@@ -29,6 +29,14 @@
   if (length(cols) == 0) { .task_schema(con); return(invisible(TRUE)) }
   if (!"assignee" %in% cols)
     DBI::dbExecute(con, "ALTER TABLE tasks ADD COLUMN assignee TEXT")
+  # The user-chosen key: a slug to reference a task by in scripts instead of
+  # the opaque id/uuid. ALTER cannot add UNIQUE, so uniqueness is a separate
+  # index -- which also lets several keyless tasks coexist (NULLs are
+  # distinct in a SQLite unique index). Both run once, on migration only.
+  if (!"key" %in% cols) {
+    DBI::dbExecute(con, "ALTER TABLE tasks ADD COLUMN key TEXT")
+    DBI::dbExecute(con, "CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_key ON tasks(key)")
+  }
   invisible(TRUE)
 }
 
@@ -36,6 +44,7 @@
   DBI::dbExecute(con, "CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     uuid TEXT UNIQUE NOT NULL,
+    key TEXT,
     description TEXT NOT NULL,
     project TEXT,
     assignee TEXT,
@@ -47,6 +56,7 @@
     end TEXT,
     recur TEXT
   );")
+  DBI::dbExecute(con, "CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_key ON tasks(key)")
   DBI::dbExecute(con, "CREATE TABLE IF NOT EXISTS task_tags (
     task_uuid TEXT NOT NULL, tag TEXT NOT NULL, UNIQUE(task_uuid, tag)
   );")
@@ -71,6 +81,30 @@
 .task_now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%S")
 
 .or_na <- function(x) if (is.null(x) || length(x) == 0) NA else x
+
+# The canonical uuid shape (8-4-4-4-12 lowercase hex), used to tell a uuid
+# apart from a user key when resolving an identifier.
+.task_uuid_re <- "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+
+# Validate a user-chosen key. NULL/"" means "no key". A key must be a slug --
+# lowercase letters/digits joined by single - or _ -- and must not be all
+# digits or shaped like a uuid, so it can never be mistaken for an id or uuid
+# when looked up. Returns the key, or NULL.
+.task_check_key <- function(k) {
+  if (is.null(k) || length(k) == 0 || (is.character(k) && !nzchar(k))) return(NULL)
+  if (!is.character(k) || length(k) != 1)
+    cli::cli_abort("{.arg key} must be a single string.")
+  if (grepl("^[0-9]+$", k))
+    cli::cli_abort(c("{.arg key} cannot be all digits -- it would clash with the numeric id.",
+                     "i" = "Add a letter, e.g. {.val t-{k}}."))
+  if (grepl(.task_uuid_re, k))
+    cli::cli_abort("{.arg key} must not be shaped like a uuid.")
+  if (!grepl("^[a-z0-9]+([-_][a-z0-9]+)*$", k))
+    cli::cli_abort(c(
+      "{.arg key} must be a slug: lowercase letters or digits, joined by single {.val -} or {.val _}.",
+      "i" = "Got {.val {k}}."))
+  k
+}
 
 .task_check_priority <- function(p) {
   if (is.null(p) || length(p) == 0 || (is.character(p) && !nzchar(p))) return(NULL)
@@ -105,14 +139,33 @@
   format(out, "%Y-%m-%d")
 }
 
+# Resolve an identifier to a task row. A pure number is the id, a uuid-shaped
+# string is the uuid, and anything else is treated as a user key -- the three
+# never overlap (see .task_check_key), so the lookup is unambiguous.
 .task_row <- function(con, id) {
-  if (is.numeric(id) || grepl("^[0-9]+$", as.character(id))) {
-    row <- DBI::dbGetQuery(con, "SELECT * FROM tasks WHERE id = ?", list(as.integer(id)))
+  idc <- as.character(id)
+  row <- if (is.numeric(id) || grepl("^[0-9]+$", idc)) {
+    DBI::dbGetQuery(con, "SELECT * FROM tasks WHERE id = ?", list(as.integer(id)))
+  } else if (grepl(.task_uuid_re, idc)) {
+    DBI::dbGetQuery(con, "SELECT * FROM tasks WHERE uuid = ?", list(idc))
   } else {
-    row <- DBI::dbGetQuery(con, "SELECT * FROM tasks WHERE uuid = ?", list(as.character(id)))
+    DBI::dbGetQuery(con, "SELECT * FROM tasks WHERE key = ?", list(idc))
   }
   if (nrow(row) == 0) cli::cli_abort("No task with id {.val {id}}.")
   as.list(row[1, ])
+}
+
+# Same id/uuid/key resolution, but against an already-fetched task_list()
+# data frame: returns the matching row index per identifier (NA if none),
+# so accessors built on task_list() (task_get) accept keys too.
+.task_match <- function(ids, df) {
+  vapply(ids, function(x) {
+    xc <- as.character(x)
+    i <- if (grepl("^[0-9]+$", xc)) match(as.integer(xc), df$id)
+         else if (grepl(.task_uuid_re, xc)) match(xc, df$uuid)
+         else match(xc, df$key)
+    as.integer(i)
+  }, integer(1))
 }
 
 .task_ids_to_uuids <- function(con, ids) {
@@ -174,6 +227,12 @@ task_db <- function(path) {
 #'
 #' @param db Path to the task database, or an open DBI connection.
 #' @param description The task text (required).
+#' @param key Optional user-chosen handle to reference the task by -- a
+#'   slug of lowercase letters/digits joined by single `-` or `_` (e.g.
+#'   `"compile-accounts"`). Must be unique across the database, and is
+#'   accepted anywhere an `id` is. Lets a production script refer to a task
+#'   by a stable, readable name instead of a brittle integer. The numeric
+#'   `id` and `uuid` keep working regardless.
 #' @param project Optional project name.
 #' @param assignee Optional person the task is assigned to.
 #' @param tags Optional character vector of tags.
@@ -182,7 +241,7 @@ task_db <- function(path) {
 #' @param recur Optional recurrence applied when the task is completed: an
 #'   integer number of days, or one of `"daily"`, `"weekly"`,
 #'   `"biweekly"`, `"monthly"`, `"quarterly"`, `"yearly"`. Needs a `due`.
-#' @param depends Optional ids (integer or uuid) this task depends on.
+#' @param depends Optional ids (integer, uuid, or key) this task depends on.
 #'
 #' @return The new task as a one-row tibble, invisibly.
 #'
@@ -190,16 +249,22 @@ task_db <- function(path) {
 #' \dontrun{
 #' task_add("tasks.sqlite", "Write the report", project = "Q3",
 #'          tags = c("writing", "urgent"), priority = "H", due = "2026-07-01")
+#'
+#' # Give it a key, then refer to it by that key later:
+#' task_add("tasks.sqlite", "Compile accounts", key = "compile-accounts")
+#' task_done("tasks.sqlite", "compile-accounts")
 #' }
 #'
 #' @seealso [daos::task_list()], [daos::task_done()]
 #'
 #' @importFrom cli cli_abort
 #' @export
-task_add <- function(db, description, project = NULL, assignee = NULL, tags = NULL,
-                     priority = NULL, due = NULL, recur = NULL, depends = NULL) {
+task_add <- function(db, description, key = NULL, project = NULL, assignee = NULL,
+                     tags = NULL, priority = NULL, due = NULL, recur = NULL,
+                     depends = NULL) {
   if (!is.character(description) || length(description) != 1 || !nzchar(description))
     cli::cli_abort("{.arg description} must be a single non-empty string.")
+  key      <- .task_check_key(key)
   priority <- .task_check_priority(priority)
   due      <- .task_norm_date(due)
 
@@ -208,11 +273,13 @@ task_add <- function(db, description, project = NULL, assignee = NULL, tags = NU
   uuid <- .task_uuid(); now <- .task_now()
 
   DBI::dbWithTransaction(con, {
+    if (!is.null(key) && nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ?", list(key))) > 0)
+      cli::cli_abort("Key {.val {key}} is already in use.")
     DBI::dbExecute(con,
-      "INSERT INTO tasks (uuid, description, project, assignee, priority, status, due, entry, modified, recur)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
-      params = list(uuid, description, .or_na(project), .or_na(assignee), .or_na(priority),
-                    .or_na(due), now, now, .or_na(recur)))
+      "INSERT INTO tasks (uuid, key, description, project, assignee, priority, status, due, entry, modified, recur)
+       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
+      params = list(uuid, .or_na(key), description, .or_na(project), .or_na(assignee),
+                    .or_na(priority), .or_na(due), now, now, .or_na(recur)))
     for (tg in unique(tags))
       DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
                      params = list(uuid, tg))
@@ -268,7 +335,7 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
   if (!is.null(.only_uuid))      { where <- c(where, "t.uuid = ?");     params <- c(params, list(.only_uuid)) }
 
   sql <- paste(
-    "SELECT t.id, t.uuid, t.description, t.project, t.assignee, t.priority, t.status,",
+    "SELECT t.id, t.uuid, t.key, t.description, t.project, t.assignee, t.priority, t.status,",
     "       t.due, t.entry, t.modified, t.end, t.recur,",
     "       (SELECT GROUP_CONCAT(tag, ',') FROM task_tags g WHERE g.task_uuid = t.uuid) AS tags,",
     "       (SELECT COUNT(*) FROM annotations a WHERE a.task_uuid = t.uuid) AS annotations",
@@ -308,7 +375,7 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
 #' filtering [task_list()] by hand when you only want a specific task.
 #'
 #' @inheritParams task_done
-#' @param id One or more task ids (the small integers).
+#' @param id One or more task ids -- each an integer id, a uuid, or a key.
 #'
 #' @return A tibble with one row per id, in the order given.
 #'
@@ -318,10 +385,10 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
 #' @export
 task_get <- function(db, id) {
   all <- task_list(db, status = "all")
-  missing <- setdiff(id, all$id)
-  if (length(missing))
-    cli::cli_abort("No task with id {.val {missing}}.")
-  all[match(id, all$id), , drop = FALSE]
+  idx <- .task_match(id, all)
+  if (anyNA(idx))
+    cli::cli_abort("No task with id {.val {id[is.na(idx)]}}.")
+  all[idx, , drop = FALSE]
 }
 
 #' Require tasks to have a given status
@@ -366,7 +433,7 @@ task_require <- function(db, id, status = "completed") {
 #' empty result means nothing is holding it up.
 #'
 #' @inheritParams task_get
-#' @param id A single task id (integer or uuid).
+#' @param id A single task identifier: integer id, uuid, or key.
 #'
 #' @return A tibble with `id`, `uuid`, `description`, and `status` of each
 #'   unfinished prerequisite.
@@ -395,7 +462,7 @@ task_blockers <- function(db, id) {
 #' spawned per completion.
 #'
 #' @inheritParams task_add
-#' @param id Task id (the small integer) or uuid.
+#' @param id Task identifier: the integer id, the uuid, or the key.
 #' @param note Optional note to attach as the task is completed, so a step
 #'   can be closed with a one-line annotation instead of a separate
 #'   [task_annotate()] call.
@@ -478,20 +545,34 @@ task_delete <- function(db, id) {
 #' Updates the supplied fields. Pass `tags` to replace the task's tags.
 #'
 #' @inheritParams task_add
-#' @param id Task id (integer) or uuid.
+#' @param id Task identifier: the integer id, the uuid, or the key.
+#'
+#' @details Pass `key` to set or rename the task's key; pass `key = ""` to
+#'   remove it. A new key must still be unique.
 #'
 #' @return `TRUE`, invisibly.
 #'
 #' @importFrom cli cli_abort
 #' @export
-task_modify <- function(db, id, description = NULL, project = NULL, assignee = NULL,
-                        tags = NULL, priority = NULL, due = NULL, recur = NULL) {
+task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
+                        assignee = NULL, tags = NULL, priority = NULL, due = NULL,
+                        recur = NULL) {
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   row <- .task_row(con, id); now <- .task_now()
 
   sets <- character(); params <- list()
   if (!is.null(description)) { sets <- c(sets, "description=?"); params <- c(params, list(description)) }
+  if (!is.null(key)) {
+    if (is.character(key) && length(key) == 1 && !nzchar(trimws(key))) {
+      sets <- c(sets, "key=?"); params <- c(params, list(NA))      # "" clears it
+    } else {
+      k <- .task_check_key(key)
+      if (nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ? AND id <> ?", list(k, row$id))) > 0)
+        cli::cli_abort("Key {.val {k}} is already in use.")
+      sets <- c(sets, "key=?"); params <- c(params, list(k))
+    }
+  }
   if (!is.null(project))     { sets <- c(sets, "project=?");     params <- c(params, list(.or_na(project))) }
   if (!is.null(assignee))    { sets <- c(sets, "assignee=?");    params <- c(params, list(.or_na(assignee))) }
   if (!is.null(priority))    { sets <- c(sets, "priority=?");    params <- c(params, list(.task_check_priority(priority))) }

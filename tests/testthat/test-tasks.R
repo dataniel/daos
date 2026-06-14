@@ -205,3 +205,86 @@ test_that("invalid priority and date are rejected", {
   expect_error(task_add(db, "x", priority = "Z"), "priority")
   expect_error(task_add(db, "x", due = "not-a-date"), "date")
 })
+
+test_that("a key can stand in for the id everywhere", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Compile accounts", key = "compile-accounts")
+  expect_equal(task_list(db)$key, "compile-accounts")
+  # get / require / done / annotate / blockers all accept the key
+  expect_equal(task_get(db, "compile-accounts")$description, "Compile accounts")
+  task_annotate(db, "compile-accounts", "started")
+  expect_equal(task_annotations(db, "compile-accounts")$text, "started")
+  task_done(db, "compile-accounts", note = "done")
+  expect_equal(task_get(db, "compile-accounts")$status, "completed")
+  expect_equal(task_require(db, "compile-accounts"), "compile-accounts")
+})
+
+test_that("id and uuid keep working alongside a key", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Has a key", key = "the-key")
+  row <- task_list(db)
+  expect_equal(task_get(db, row$id)$description, "Has a key")     # integer id
+  expect_equal(task_get(db, row$uuid)$description, "Has a key")   # uuid
+  expect_equal(task_get(db, row$key)$description, "Has a key")    # key
+})
+
+test_that("dependencies can be expressed by key", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Upstream", key = "up")
+  task_add(db, "Downstream", depends = "up")
+  lst <- task_list(db)
+  expect_true(lst$blocked[lst$description == "Downstream"])
+  task_done(db, "up")
+  expect_false(task_list(db)$blocked[task_list(db)$description == "Downstream"])
+})
+
+test_that("keys are validated and must be unique", {
+  db <- tmp_db(); on.exit(unlink(db))
+  expect_error(task_add(db, "x", key = "Has Spaces"), "slug")
+  expect_error(task_add(db, "x", key = "UPPER"), "slug")
+  expect_error(task_add(db, "x", key = "123"), "digits")
+  task_add(db, "first", key = "dup")
+  expect_error(task_add(db, "second", key = "dup"), "already in use")
+})
+
+test_that("task_modify sets, renames, and clears a key", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A")
+  id <- task_list(db)$id[1]
+  task_modify(db, id, key = "alpha")
+  expect_equal(task_get(db, "alpha")$description, "A")
+  task_modify(db, "alpha", key = "beta")                 # rename via key
+  expect_equal(task_get(db, "beta")$description, "A")
+  expect_error(task_get(db, "alpha"), "No task")
+  task_modify(db, "beta", key = "")                      # clear
+  expect_true(is.na(task_list(db)$key[1]))
+})
+
+test_that("renaming to an in-use key is rejected", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A", key = "a")
+  task_add(db, "B", key = "b")
+  expect_error(task_modify(db, "b", key = "a"), "already in use")
+})
+
+test_that("a pre-key database is migrated and then accepts keys", {
+  skip_if_not_installed("RSQLite")
+  db <- tmp_db(); on.exit(unlink(db))
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  # An older schema: tasks without the key column, plus the sibling tables.
+  DBI::dbExecute(con, "CREATE TABLE tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL,
+    description TEXT NOT NULL, project TEXT, assignee TEXT, priority TEXT,
+    status TEXT NOT NULL DEFAULT 'pending', due TEXT,
+    entry TEXT NOT NULL, modified TEXT NOT NULL, end TEXT, recur TEXT)")
+  DBI::dbExecute(con, "CREATE TABLE task_tags (task_uuid TEXT, tag TEXT, UNIQUE(task_uuid, tag))")
+  DBI::dbExecute(con, "CREATE TABLE annotations (id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_uuid TEXT, entry TEXT, text TEXT)")
+  DBI::dbExecute(con, "CREATE TABLE dependencies (task_uuid TEXT, depends_on_uuid TEXT,
+    UNIQUE(task_uuid, depends_on_uuid))")
+  DBI::dbDisconnect(con)
+
+  task_add(db, "legacy", key = "leg")            # opening triggers the migration
+  expect_true("key" %in% names(task_list(db)))
+  expect_equal(task_get(db, "leg")$description, "legacy")
+})

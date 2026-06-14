@@ -7,6 +7,7 @@
 task_add(
   db,
   description,
+  key = NULL,
   project = NULL,
   assignee = NULL,
   tags = NULL,
@@ -20,6 +21,13 @@ task_add(
 \item{db}{Path to the task database, or an open DBI connection.}
 
 \item{description}{The task text (required).}
+
+\item{key}{Optional user-chosen handle to reference the task by -- a
+slug of lowercase letters/digits joined by single \code{-} or \verb{_} (e.g.
+\code{"compile-accounts"}). Must be unique across the database, and is
+accepted anywhere an \code{id} is. Lets a production script refer to a task
+by a stable, readable name instead of a brittle integer. The numeric
+\code{id} and \code{uuid} keep working regardless.}
 
 \item{project}{Optional project name.}
 
@@ -35,7 +43,7 @@ task_add(
 integer number of days, or one of \code{"daily"}, \code{"weekly"},
 \code{"biweekly"}, \code{"monthly"}, \code{"quarterly"}, \code{"yearly"}. Needs a \code{due}.}
 
-\item{depends}{Optional ids (integer or uuid) this task depends on.}
+\item{depends}{Optional ids (integer, uuid, or key) this task depends on.}
 }
 \value{
 The new task as a one-row tibble, invisibly.
@@ -47,6 +55,10 @@ Add a task
 \dontrun{
 task_add("tasks.sqlite", "Write the report", project = "Q3",
          tags = c("writing", "urgent"), priority = "H", due = "2026-07-01")
+
+# Give it a key, then refer to it by that key later:
+task_add("tasks.sqlite", "Compile accounts", key = "compile-accounts")
+task_done("tasks.sqlite", "compile-accounts")
 }
 
 }

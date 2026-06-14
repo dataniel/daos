@@ -9,7 +9,7 @@ task_reopen(db, id)
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{Task id (the small integer) or uuid.}
+\item{id}{Task identifier: the integer id, the uuid, or the key.}
 }
 \value{
 \code{TRUE}, invisibly.

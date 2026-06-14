@@ -106,6 +106,8 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-chip.tk-person { background: #ede9fe; color: #6d28d9; font-weight: 600; }
     .tk-chip.tk-tag { background: #f1f5f9; }
     .tk-chip.tk-tag::before { content: '#'; opacity: .5; }
+    .tk-chip.tk-key { background: #e2e8f0; color: #334155; font-weight: 600;
+      font-family: ui-monospace, Consolas, monospace; }
     .tk-pri { flex: none; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 7px; }
     .tk-pri-H { background: #fee2e2; color: #b91c1c; }
     .tk-pri-M { background: #fef3c7; color: #b45309; }
@@ -204,6 +206,8 @@ task_app <- function(db = "tasks.sqlite") {
           class = "tk-card",
           shiny::h4("Ny opgave"),
           shiny::textInput("n_desc", NULL, placeholder = "Hvad skal der g\u00f8res?"),
+          shiny::textInput("n_key", "N\u00f8gle (valgfri)",
+                           placeholder = "fx kompil-regnskab"),
           shiny::fluidRow(
             shiny::column(6, shiny::selectizeInput("n_project", "Projekt", choices = NULL,
                                 options = list(create = TRUE, createOnBlur = TRUE,
@@ -381,6 +385,7 @@ task_app <- function(db = "tasks.sqlite") {
       ok <- tryCatch({
         task_add(
           db_path(), input$n_desc,
+          key      = if (shiny::isTruthy(input$n_key)) trimws(input$n_key) else NULL,
           project  = if (shiny::isTruthy(input$n_project)) input$n_project else NULL,
           assignee = if (shiny::isTruthy(input$n_assignee)) input$n_assignee else NULL,
           tags     = tags,
@@ -392,6 +397,7 @@ task_app <- function(db = "tasks.sqlite") {
       }, error = function(e) { shiny::showNotification(conditionMessage(e), type = "error"); FALSE })
       if (ok) {
         shiny::updateTextInput(session, "n_desc", value = "")
+        shiny::updateTextInput(session, "n_key", value = "")
         shiny::updateTextInput(session, "n_tags", value = "")
         bump(); fbump()
         shiny::showNotification("Opgave tilf\u00f8jet.", duration = 2, type = "message")
@@ -444,6 +450,7 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::div(class = "tk-main",
             shiny::div(class = "tk-desc", t$description),
             shiny::div(class = "tk-meta",
+              if (!is.na(t$key)) shiny::span(class = "tk-chip tk-key", paste0("\U0001F511 ", t$key)),
               if (!is.na(t$project)) shiny::span(class = "tk-chip tk-proj", t$project),
               if (!is.na(t$assignee) && nzchar(t$assignee))
                 shiny::span(class = "tk-chip tk-person", paste0("\U0001F464 ", t$assignee)),
@@ -476,6 +483,7 @@ task_app <- function(db = "tasks.sqlite") {
         class = "tk-card tk-detail",
         shiny::h4(t$description),
         drow("Status", t$status),
+        if (!is.na(t$key)) drow("Nøgle", t$key),
         if (!is.null(blockers) && nrow(blockers) > 0)
           shiny::div(class = "tk-d-row tk-d-block",
             shiny::span(class = "tk-d-k", "Blokeret af"),
@@ -584,6 +592,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::showModal(shiny::modalDialog(
         title = "Rediger opgave",
         shiny::textInput("e_desc", "Beskrivelse", value = t$description),
+        shiny::textInput("e_key", "Nøgle", value = if (is.na(t$key)) "" else t$key),
         shiny::textInput("e_project", "Projekt", value = if (is.na(t$project)) "" else t$project),
         shiny::textInput("e_assignee", "Person", value = if (is.na(t$assignee)) "" else t$assignee),
         shiny::textInput("e_tags", "Tags", value = t$tags),
@@ -603,6 +612,7 @@ task_app <- function(db = "tasks.sqlite") {
       ok <- tryCatch({
         task_modify(db_path(), selected(),
           description = input$e_desc,
+          key      = trimws(input$e_key %||% ""),
           project  = if (shiny::isTruthy(input$e_project)) input$e_project else "",
           assignee = if (shiny::isTruthy(input$e_assignee)) input$e_assignee else "",
           tags     = tags[nzchar(tags)],

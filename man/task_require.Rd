@@ -9,7 +9,7 @@ task_require(db, id, status = "completed")
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{One or more task ids (the small integers).}
+\item{id}{One or more task ids -- each an integer id, a uuid, or a key.}
 
 \item{status}{Allowed status values; each task must be in one of them.}
 }

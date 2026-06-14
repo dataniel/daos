@@ -9,7 +9,7 @@ task_get(db, id)
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
 
-\item{id}{One or more task ids (the small integers).}
+\item{id}{One or more task ids -- each an integer id, a uuid, or a key.}
 }
 \value{
 A tibble with one row per id, in the order given.
