@@ -245,3 +245,9 @@ The app is keyboard-driven -- `j`/`k` to move, `f` done, `e` edit, `n`
 note, `g` reopen, `x` delete, `r` reset filters, `o`/`p` to switch between
 the tasks and projects pages, `q` to quit -- and re-reads the database on
 a timer, so changes a script makes appear without a manual refresh.
+
+Deleting is a soft delete: `task_delete()` (and `x` in the app) only marks
+a task `deleted` so it can be reopened, which is why it disappears from the
+default `task_list()` and from the app's "Alle" view but still lives in the
+database. The app's "Slettede" view is the trash -- reopen from there, or
+empty it for good with `task_purge()`, the irreversible hard delete.

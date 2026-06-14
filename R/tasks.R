@@ -300,7 +300,8 @@ task_add <- function(db, description, key = NULL, project = NULL, assignee = NUL
 #'
 #' @inheritParams task_add
 #' @param status Status filter: `"pending"` (default), `"completed"`,
-#'   `"deleted"`, or `"all"`.
+#'   `"deleted"`, `"active"` (pending plus completed, i.e. everything not
+#'   soft-deleted), or `"all"`.
 #' @param project Optional project filter.
 #' @param assignee Optional person filter.
 #' @param tag Optional tag filter (kept if the task carries the tag).
@@ -332,7 +333,12 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
   on.exit(if (h$close) DBI::dbDisconnect(con))
 
   where <- character(); params <- list()
-  if (!identical(status, "all")) { where <- c(where, "t.status = ?");   params <- c(params, list(status)) }
+  if (identical(status, "active")) {
+    # everything that is not soft-deleted -- pending plus completed
+    where <- c(where, "t.status IN ('pending','completed')")
+  } else if (!identical(status, "all")) {
+    where <- c(where, "t.status = ?"); params <- c(params, list(status))
+  }
   if (!is.null(project))         { where <- c(where, "t.project = ?");  params <- c(params, list(project)) }
   if (!is.null(assignee))        { where <- c(where, "t.assignee = ?"); params <- c(params, list(assignee)) }
   if (!is.null(.only_uuid))      { where <- c(where, "t.uuid = ?");     params <- c(params, list(.only_uuid)) }
@@ -547,6 +553,45 @@ task_delete <- function(db, id) {
   DBI::dbExecute(con, "UPDATE tasks SET status='deleted', end=?, modified=? WHERE id=?",
                  params = list(now, now, row$id))
   invisible(TRUE)
+}
+
+#' Permanently delete tasks
+#'
+#' Removes tasks from the database for good -- together with their tags,
+#' annotations, and dependency links. Where [task_delete()] only marks a task
+#' `deleted` so it can still be reopened, this is the hard delete that empties
+#' the trash, and it cannot be undone.
+#'
+#' @inheritParams task_done
+#' @param id Tasks to purge: integer id, uuid, or key. If `NULL` (default),
+#'   every soft-deleted task is removed -- i.e. empty the trash.
+#'
+#' @return The number of tasks purged, invisibly.
+#'
+#' @seealso [daos::task_delete()], [daos::task_reopen()]
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_purge <- function(db, id = NULL) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  uuids <- if (is.null(id)) {
+    DBI::dbGetQuery(con, "SELECT uuid FROM tasks WHERE status='deleted'")$uuid
+  } else {
+    vapply(id, function(i) .task_row(con, i)$uuid, character(1))
+  }
+  uuids <- unname(uuids)                 # vapply over a character id names the result
+  if (length(uuids) == 0) return(invisible(0L))
+  ph <- paste(rep("?", length(uuids)), collapse = ",")
+  u  <- as.list(uuids)
+  DBI::dbWithTransaction(con, {
+    DBI::dbExecute(con, paste0("DELETE FROM task_tags WHERE task_uuid IN (", ph, ")"), params = u)
+    DBI::dbExecute(con, paste0("DELETE FROM annotations WHERE task_uuid IN (", ph, ")"), params = u)
+    DBI::dbExecute(con, paste0("DELETE FROM dependencies WHERE task_uuid IN (", ph,
+                               ") OR depends_on_uuid IN (", ph, ")"), params = c(u, u))
+    DBI::dbExecute(con, paste0("DELETE FROM tasks WHERE uuid IN (", ph, ")"), params = u)
+  })
+  invisible(length(uuids))
 }
 
 #' Modify a task

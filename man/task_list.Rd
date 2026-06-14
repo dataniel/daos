@@ -19,7 +19,8 @@ task_list(
 \item{db}{Path to the task database, or an open DBI connection.}
 
 \item{status}{Status filter: \code{"pending"} (default), \code{"completed"},
-\code{"deleted"}, or \code{"all"}.}
+\code{"deleted"}, \code{"active"} (pending plus completed, i.e. everything not
+soft-deleted), or \code{"all"}.}
 
 \item{project}{Optional project filter.}
 

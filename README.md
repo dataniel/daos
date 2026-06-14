@@ -68,7 +68,8 @@ pak::pak("dataniel/daos")
 | `task_list()` | List tasks with tags, blocked flag, and urgency |
 | `task_get()` / `task_require()` / `task_blockers()` | Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task |
 | `task_people()` | Per-person pending task counts |
-| `task_done()` / `task_reopen()` / `task_delete()` / `task_modify()` | Complete, reopen, delete, or edit a task |
+| `task_done()` / `task_reopen()` / `task_delete()` / `task_modify()` | Complete, reopen, soft-delete, or edit a task |
+| `task_purge()` | Permanently remove soft-deleted tasks (empty the trash) |
 | `task_annotate()` | Add a timestamped note to a task |
 | `task_projects()` | Per-project progress: counts, completion %, overdue, dates |
 | `task_app()` | Shiny task manager over a shared task database |

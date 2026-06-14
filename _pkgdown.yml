@@ -83,6 +83,7 @@ reference:
       - task_done
       - task_reopen
       - task_delete
+      - task_purge
       - task_modify
       - task_annotate
       - task_annotations

@@ -96,6 +96,10 @@ task_app <- function(db = "tasks.sqlite") {
       padding: 3px 0; border-radius: 999px; white-space: nowrap; letter-spacing: .2px; }
     .tk-status-pending   { background: #fff4e0; color: #b45309; border: 1px solid #fbdca0; }
     .tk-status-completed { background: #e6f6ec; color: #15803d; border: 1px solid #bfe6cd; }
+    .tk-status-deleted   { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .tk-trash { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .btn.tk-danger { color: #b91c1c; border-color: #f6bcbc; background: #fff; }
+    .btn.tk-danger:hover { background: #fee2e2; border-color: #ef9a9a; color: #991b1b; }
     .tk-urg { flex: none; width: 44px; height: 32px; display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 13.5px; color: #1d62a8; background: #eef4fc; border-radius: 8px; }
     .tk-main { flex: 1; min-width: 0; }
@@ -239,7 +243,8 @@ task_app <- function(db = "tasks.sqlite") {
           class = "tk-card",
           shiny::h4("Filtre"),
           shiny::selectInput("f_status", "Status",
-            choices = c("Afventer" = "pending", "F\u00e6rdige" = "completed", "Alle" = "all")),
+            choices = c("Afventer" = "pending", "F\u00e6rdige" = "completed",
+                        "Alle" = "active", "Slettede" = "deleted")),
           shiny::selectInput("f_assignee", "Person", choices = c("Alle" = "")),
           shiny::selectInput("f_project", "Projekt", choices = c("Alle" = "")),
           shiny::selectInput("f_tag", "Tag", choices = c("Alle" = "")),
@@ -438,6 +443,12 @@ task_app <- function(db = "tasks.sqlite") {
       sel <- selected()
       rows <- lapply(seq_len(nrow(df)), function(i) {
         t <- df[i, ]
+        done  <- isTRUE(t$status == "completed")
+        # Completed and deleted tasks are both shown faded and never nagged
+        # about a deadline.
+        faded <- t$status %in% c("completed", "deleted")
+        status_label <- switch(t$status, pending = "Afventer",
+          completed = "✓ Færdig", deleted = "Slettet", t$status)
         # Show a due field on every task. With a date: "Forfald: dd-mm-yyyy",
         # tinted amber when within 3 days and red when overdue. Without one:
         # a muted "ingen frist", so the column reads the same on every row.
@@ -448,18 +459,16 @@ task_app <- function(db = "tasks.sqlite") {
                    else if (dleft <= 3) "tk-soon" else ""
         due_txt <- if (has_due) paste0("Forfald: ", ddmm(t$due)) else "ingen frist"
         # A standalone flag for the rows that need attention now.
-        deadline_flag <- if (!has_due || done) NULL
+        deadline_flag <- if (!has_due || faded) NULL
                          else if (dleft < 0) shiny::span(class = "tk-flag tk-flag-over", "forfaldt")
                          else if (dleft <= 3) shiny::span(class = "tk-flag tk-flag-soon", "tæt på")
         tagchips <- if (nzchar(t$tags))
           lapply(strsplit(t$tags, ",", fixed = TRUE)[[1]],
                  function(x) shiny::span(class = "tk-chip tk-tag", x))
-        done <- isTRUE(t$status == "completed")
         shiny::div(
-          class = paste("tk-row", if (done) "done", if (!is.null(sel) && sel == t$id) "selected"),
+          class = paste("tk-row", if (faded) "done", if (!is.null(sel) && sel == t$id) "selected"),
           onclick = sprintf("Shiny.setInputValue('pick_task','%s',{priority:'event'})", t$id),
-          shiny::span(class = paste0("tk-status tk-status-", t$status),
-                      if (done) "\u2713 F\u00e6rdig" else "Afventer"),
+          shiny::span(class = paste0("tk-status tk-status-", t$status), status_label),
           shiny::div(class = "tk-urg", formatC(t$urgency, format = "f", digits = 1)),
           if (!is.na(t$priority))
             shiny::span(class = paste0("tk-pri tk-pri-", t$priority), t$priority),
@@ -477,7 +486,13 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::span(class = paste("tk-due", due_cls), due_txt)
         )
       })
-      shiny::div(class = "tk-rows", rows)
+      # In the trash view, offer to empty it permanently (hard delete).
+      trash <- if (identical(input$f_status, "deleted"))
+        shiny::div(class = "tk-trash",
+          shiny::actionButton("empty_trash",
+            paste0("\U0001F5D1 Tøm papirkurv (", nrow(df), ")"),
+            class = "btn-default tk-danger"))
+      shiny::tagList(trash, shiny::div(class = "tk-rows", rows))
     })
 
     sel_task <- shiny::reactive({
@@ -525,7 +540,9 @@ task_app <- function(db = "tasks.sqlite") {
             shiny::actionButton("act_edit", "Rediger (E)", class = "btn-default"),
           shiny::actionButton("act_annotate", "Tilf\u00f8j note (N)", class = "btn-default"),
           if (t$status == "pending")
-            shiny::actionButton("act_delete", "Slet (X)", class = "btn-default"))
+            shiny::actionButton("act_delete", "Slet (X)", class = "btn-default"),
+          if (t$status == "deleted")
+            shiny::actionButton("act_purge", "Slet permanent", class = "btn-default tk-danger"))
       )
     })
 
@@ -588,6 +605,36 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::observeEvent(input$act_delete, {
       shiny::req(selected()); task_delete(db_path(), selected()); selected(NULL); bump(); fbump()
       shiny::showNotification("Opgave slettet.", duration = 2)
+    })
+    # Permanent deletion is irreversible, so both paths confirm first.
+    shiny::observeEvent(input$act_purge, {
+      shiny::req(selected())
+      shiny::showModal(shiny::modalDialog(
+        title = "Slet permanent?",
+        "Opgaven fjernes helt fra databasen og kan ikke gendannes.",
+        footer = shiny::tagList(shiny::modalButton("Annuller"),
+          shiny::actionButton("purge_ok", "Slet permanent", class = "btn-primary tk-danger")),
+        easyClose = TRUE))
+    })
+    shiny::observeEvent(input$purge_ok, {
+      shiny::req(selected()); task_purge(db_path(), selected()); selected(NULL)
+      shiny::removeModal(); bump(); fbump()
+      shiny::showNotification("Opgave slettet permanent.", duration = 2)
+    })
+    shiny::observeEvent(input$empty_trash, {
+      n <- nrow(task_list(db_path(), status = "deleted"))
+      shiny::showModal(shiny::modalDialog(
+        title = "Tøm papirkurv?",
+        sprintf("%d slettede opgave%s fjernes helt og kan ikke gendannes.",
+                n, if (n == 1) "" else "r"),
+        footer = shiny::tagList(shiny::modalButton("Annuller"),
+          shiny::actionButton("empty_trash_ok", "Tøm papirkurv", class = "btn-primary tk-danger")),
+        easyClose = TRUE))
+    })
+    shiny::observeEvent(input$empty_trash_ok, {
+      n <- task_purge(db_path()); selected(NULL); shiny::removeModal(); bump(); fbump()
+      shiny::showNotification(sprintf("%d opgave%s slettet permanent.",
+                                      n, if (n == 1) "" else "r"), duration = 2)
     })
     shiny::observeEvent(input$act_annotate, {
       shiny::req(selected())

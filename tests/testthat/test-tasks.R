@@ -141,6 +141,42 @@ test_that("task_done attaches an optional note", {
   expect_equal(task_get(db, 1)$status, "completed")
 })
 
+test_that("deleted tasks are hidden from active but shown under deleted", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "keep"); task_add(db, "trash")
+  task_delete(db, task_list(db)$id[task_list(db)$description == "trash"])
+  expect_equal(task_list(db, status = "pending")$description, "keep")
+  expect_equal(task_list(db, status = "active")$description, "keep")   # not deleted
+  expect_equal(nrow(task_list(db, status = "all")), 2)                 # all includes it
+  expect_equal(task_list(db, status = "deleted")$description, "trash")
+})
+
+test_that("task_purge hard-deletes the trash and cleans up related rows", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "a", key = "a", tags = "x")
+  task_add(db, "b", key = "b", depends = "a")
+  task_annotate(db, "a", "note on a")
+  task_delete(db, "a"); task_delete(db, "b")
+
+  expect_equal(task_purge(db), 2L)                       # empties the trash
+  expect_equal(nrow(task_list(db, status = "all")), 0)
+  # tags, annotations, and dependency links went with them
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  expect_equal(DBI::dbGetQuery(con, "SELECT COUNT(*) n FROM task_tags")$n, 0)
+  expect_equal(DBI::dbGetQuery(con, "SELECT COUNT(*) n FROM annotations")$n, 0)
+  expect_equal(DBI::dbGetQuery(con, "SELECT COUNT(*) n FROM dependencies")$n, 0)
+})
+
+test_that("task_purge targets specific tasks and leaves the rest", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "one", key = "one"); task_add(db, "two")
+  task_delete(db, "one")
+  expect_equal(task_purge(db, "one"), 1L)
+  expect_equal(task_list(db, status = "all")$description, "two")  # 'two' untouched
+  expect_equal(task_purge(db), 0L)                                # trash already empty
+})
+
 test_that("task_modify updates fields and replaces tags", {
   db <- tmp_db(); on.exit(unlink(db))
   task_add(db, "Old", project = "A", tags = "x")
