@@ -11,6 +11,10 @@
 #' values and a comma as the decimal mark (Danish/European convention). For
 #' comma-separated files, pass a custom reader: `reader = readr::read_csv`.
 #'
+#' **Note on Excel:** only the first sheet is read. If a workbook has several
+#' and you did not name one, a warning lists the others. Read a specific sheet
+#' by forwarding the argument: `read_files("x.xlsx", sheet = "Sheet2")`.
+#'
 #' | Extension | Reader |
 #' |-----------|--------|
 #' | `csv` | `readr::read_csv2()` (semicolon-separated, European format) |
@@ -199,6 +203,23 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   }
 }
 
+# read_xlsx()/read_xls() silently read only the first sheet. When a workbook
+# has several and the caller did not name one, warn -- so a partial read is
+# never a surprise -- and point at how to pick another. Reading itself is
+# unchanged.
+.read_excel <- function(path, read_fn, ...) {
+  if (is.null(list(...)$sheet)) {
+    sheets <- tryCatch(readxl::excel_sheets(path), error = function(e) character())
+    if (length(sheets) > 1)
+      cli::cli_warn(c(
+        "{.file {basename(path)}} has {length(sheets)} sheets -- read only the first ({.val {sheets[1]}}).",
+        "i" = "Other sheets: {.val {sheets[-1]}}.",
+        "i" = 'Read another with {.code reader = \\(x) readxl::read_excel(x, sheet = "...")}.'
+      ))
+  }
+  read_fn(path, ...)
+}
+
 .read_files_readers <- function() {
   list(
     csv      = readr::read_csv2,
@@ -208,15 +229,15 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
         cli::cli_abort("Package {.pkg arrow} is required to read parquet files.")
       arrow::read_parquet(...)
     },
-    xlsx     = function(...) {
+    xlsx     = function(path, ...) {
       if (!requireNamespace("readxl", quietly = TRUE))
         cli::cli_abort("Package {.pkg readxl} is required to read xlsx files.")
-      readxl::read_xlsx(...)
+      .read_excel(path, readxl::read_xlsx, ...)
     },
-    xls      = function(...) {
+    xls      = function(path, ...) {
       if (!requireNamespace("readxl", quietly = TRUE))
         cli::cli_abort("Package {.pkg readxl} is required to read xls files.")
-      readxl::read_xls(...)
+      .read_excel(path, readxl::read_xls, ...)
     },
     feather  = function(...) {
       if (!requireNamespace("arrow", quietly = TRUE))

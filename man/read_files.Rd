@@ -69,7 +69,11 @@ or a custom reader, and optionally row-binds or unpacks the result.
 
 \strong{Note on CSV:} uses \code{readr::read_csv2()} which expects semicolon-separated
 values and a comma as the decimal mark (Danish/European convention). For
-comma-separated files, pass a custom reader: \code{reader = readr::read_csv}.\tabular{ll}{
+comma-separated files, pass a custom reader: \code{reader = readr::read_csv}.
+
+\strong{Note on Excel:} only the first sheet is read. If a workbook has several
+and you did not name one, a warning lists the others. Read a specific sheet
+by forwarding the argument: \code{read_files("x.xlsx", sheet = "Sheet2")}.\tabular{ll}{
    Extension \tab Reader \cr
    \code{csv} \tab \code{readr::read_csv2()} (semicolon-separated, European format) \cr
    \code{tsv} \tab \code{readr::read_tsv()} \cr

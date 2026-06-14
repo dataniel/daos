@@ -250,6 +250,10 @@ browse_files <- function(path = getwd()) {
     .bf-fileinfo p { color: #64748b; font-size: 12.5px; margin: 6px 0 2px; }
     .bf-read-ok { color: #16a34a !important; font-weight: 600; }
     .bf-read-no { color: #b45309 !important; font-weight: 600; }
+    .bf-sheets { margin: 8px 0 2px; }
+    .bf-sheets-head { color: #0f3b66; font-weight: 600; font-size: 12.5px; margin: 0 0 4px; }
+    .bf-sheet-chip { display: inline-block; background: #e8f0fa; color: #1d62a8;
+      border-radius: 999px; padding: 2px 10px; font-size: 12px; margin: 0 4px 4px 0; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
     .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
     .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -623,6 +627,12 @@ browse_files <- function(path = getwd()) {
         ext  <- tools::file_ext(cu$full)
         ts   <- function(x) if (length(x) == 0 || is.na(x)) NULL else format(x, "%Y-%m-%d %H:%M")
         readable <- isTRUE(.bf_readable(cu$full))
+        # For Excel files, peek at the sheet names (cheap -- excel_sheets()
+        # reads only the workbook structure, not the cells), so you can see
+        # there is more than one before reading.
+        sheets <- if (tolower(ext) %in% c("xlsx", "xls") &&
+                      requireNamespace("readxl", quietly = TRUE))
+          tryCatch(readxl::excel_sheets(cu$full), error = function(e) NULL)
         shiny::div(
           class = "bf-fileinfo",
           shiny::p(.bf_icon("f", cu$full), shiny::strong(basename(cu$full))),
@@ -631,10 +641,16 @@ browse_files <- function(path = getwd()) {
           if (!is.null(ts(info$ctime))) shiny::p(paste0("Oprettet: ", ts(info$ctime))),
           if (!is.null(ts(info$mtime))) shiny::p(paste0("\u00c6ndret: ", ts(info$mtime))),
           if (!is.null(ts(info$atime))) shiny::p(paste0("Tilg\u00e5et: ", ts(info$atime))),
+          if (length(sheets)) shiny::div(
+            class = "bf-sheets",
+            shiny::p(class = "bf-sheets-head", paste0(length(sheets), " ark:")),
+            lapply(sheets, function(s) shiny::span(class = "bf-sheet-chip", s))),
           if (nzchar(ext)) shiny::p(
             class = if (readable) "bf-read-ok" else "bf-read-no",
             if (readable) "\u2713 Kan l\u00e6ses med read_files()"
             else paste0("\u2717 read_files() underst\u00f8tter ikke .", ext)),
+          if (length(sheets) > 1) shiny::p(class = "bf-hint",
+            "read_files() l\u00e6ser kun det f\u00f8rste ark \u2014 v\u00e6lg et andet med reader = \\(x) readxl::read_excel(x, sheet = \"...\")."),
           shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 r reader \u00b7 o \u00e5bner i stifinder.")
         )
       }

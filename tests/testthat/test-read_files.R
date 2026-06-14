@@ -156,3 +156,14 @@ test_that("read_files(out = 'unpack', .overwrite = TRUE) overwrites existing var
   read_files(c(a = f), out = "unpack", .envir = env, .overwrite = TRUE)
   expect_s3_class(env$a, "data.frame")
 })
+
+test_that("read_files() warns on a multi-sheet Excel and reads the first", {
+  skip_if_not_installed("readxl")
+  skip_if_not_installed("writexl")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(list(One = data.frame(x = 1), Two = data.frame(y = 2)), f)
+  expect_warning(d1 <- read_files(f), "sheets")
+  expect_equal(names(d1), "x")                       # the first sheet
+  expect_no_warning(d2 <- read_files(f, sheet = "Two"))   # naming a sheet silences it
+  expect_equal(names(d2), "y")
+})
