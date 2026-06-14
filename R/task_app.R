@@ -249,7 +249,7 @@ task_app <- function(db = "tasks.sqlite") {
             shiny::column(6, shiny::selectInput("n_priority", "Prioritet",
               choices = c("Ingen" = "", "H\u00f8j" = "H", "Mellem" = "M", "Lav" = "L"))),
             shiny::column(6, suppressWarnings(shiny::dateInput("n_due", "Forfald",
-              value = NA, format = "dd-mm-yyyy", language = "da", weekstart = 1,
+              value = Sys.Date(), format = "dd-mm-yyyy", language = "da", weekstart = 1,
               autoclose = TRUE)))
           ),
           shiny::selectInput("n_recur", "Gentag",
