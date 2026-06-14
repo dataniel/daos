@@ -60,7 +60,7 @@ Press `r` to toggle *reader mode*: instead of the bare path, `Enter` and `y`
 read the target with `read_files()`. A single file is read inline --
 
 ```{r}
-read_files("data/x.tsv")
+daos::read_files("data/x.tsv")
 ```
 
 while several paths are bound to a `my_paths` object first, then read, so the
@@ -72,8 +72,12 @@ my_paths <- c(
   "data/b.csv"
 )
 
-read_files(my_paths)
+daos::read_files(my_paths)
 ```
+
+(The call is namespaced as `daos::read_files()` so the pasted line runs even
+when you reached the browser via `daos::browse_files()` without attaching the
+package.)
 
 The format is detected for you either way.
 

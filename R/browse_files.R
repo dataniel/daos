@@ -67,13 +67,15 @@
 # Reader-mode expression. A single file reads inline -- read_files("x") --
 # since an intermediate object would just be noise. Several paths are bound
 # to `my_paths` first (a blank line, then the read), so the vector is named
-# and left around to reuse. read_files() detects the format either way.
+# and left around to reuse. read_files() detects the format either way. It is
+# namespaced as daos::read_files() so the pasted line runs even when the
+# package was only reached via daos::browse_files(), without library(daos).
 .bf_reader_expr <- function(paths) {
   s <- .bf_rstring(paths)
   if (length(paths) <= 1) {
-    paste0("read_files(", s, ")")
+    paste0("daos::read_files(", s, ")")
   } else {
-    paste0("my_paths <- ", s, "\n\nread_files(my_paths)")
+    paste0("my_paths <- ", s, "\n\ndaos::read_files(my_paths)")
   }
 }
 
@@ -114,9 +116,9 @@
 #'   clipboard.
 #' - `r` toggles *reader mode*: when on, `Enter` and `y` read the target with
 #'   [daos::read_files()] instead of inserting the bare path. A single file is
-#'   read inline (`read_files("data/x.tsv")`); several paths are bound to a
+#'   read inline (`daos::read_files("data/x.tsv")`); several paths are bound to a
 #'   `my_paths` object first, then read after a blank line
-#'   (`my_paths <- c(...)` then `read_files(my_paths)`). Only files are read;
+#'   (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files are read;
 #'   folders in the target are left out, since [daos::read_files()] cannot
 #'   read a directory. Toggle it off to go back to plain paths.
 #' - `y` copies that same expression to the clipboard without closing.
@@ -632,7 +634,7 @@ browse_files <- function(path = getwd()) {
       } else {
         paste0(
           "Reader til \u2014 inds\u00e6tter <code>",
-          if (n_files <= 1) "read_files(...)" else "read_files(my_paths)",
+          if (n_files <= 1) "daos::read_files(...)" else "daos::read_files(my_paths)",
           "</code>",
           if (n_dirs > 0) " \u00b7 mapper udelades" else "")
       }

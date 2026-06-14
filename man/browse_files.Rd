@@ -34,9 +34,9 @@ several, with forward slashes. Outside RStudio it falls back to the
 clipboard.
 \item \code{r} toggles \emph{reader mode}: when on, \code{Enter} and \code{y} read the target with
 \code{\link[=read_files]{read_files()}} instead of inserting the bare path. A single file is
-read inline (\code{read_files("data/x.tsv")}); several paths are bound to a
+read inline (\code{daos::read_files("data/x.tsv")}); several paths are bound to a
 \code{my_paths} object first, then read after a blank line
-(\code{my_paths <- c(...)} then \code{read_files(my_paths)}). Only files are read;
+(\code{my_paths <- c(...)} then \code{daos::read_files(my_paths)}). Only files are read;
 folders in the target are left out, since \code{\link[=read_files]{read_files()}} cannot
 read a directory. Toggle it off to go back to plain paths.
 \item \code{y} copies that same expression to the clipboard without closing.
