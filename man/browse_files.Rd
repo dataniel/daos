@@ -36,9 +36,11 @@ clipboard.
 \code{\link[=read_files]{read_files()}} instead of inserting the bare path. A single file is
 read inline (\code{daos::read_files("data/x.tsv")}); several paths are bound to a
 \code{my_paths} object first, then read after a blank line
-(\code{my_paths <- c(...)} then \code{daos::read_files(my_paths)}). Only files are read;
-folders in the target are left out, since \code{\link[=read_files]{read_files()}} cannot
-read a directory. Toggle it off to go back to plain paths.
+(\code{my_paths <- c(...)} then \code{daos::read_files(my_paths)}). Only files
+\code{\link[=read_files]{read_files()}} can open are wrapped; folders and files of an
+unsupported type are left out (with a warning), since wrapping them
+would only produce a call that errors. Readable files are flagged with a
+green icon in the browser. Toggle it off to go back to plain paths.
 \item \code{y} copies that same expression to the clipboard without closing.
 \item \code{o} opens the item under the cursor in the system file explorer via
 \code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file is revealed).

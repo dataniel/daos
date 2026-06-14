@@ -199,8 +199,8 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   }
 }
 
-.read_files_auto <- function(path) {
-  readers <- list(
+.read_files_readers <- function() {
+  list(
     csv      = readr::read_csv2,
     tsv      = readr::read_tsv,
     parquet  = function(...) {
@@ -276,7 +276,14 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     },
     txt      = readr::read_lines
   )
+}
 
+# Supported extensions, so callers (e.g. browse_files) can test whether a
+# file is readable without invoking a reader.
+.read_files_exts <- function() base::names(.read_files_readers())
+
+.read_files_auto <- function(path) {
+  readers <- .read_files_readers()
   ext <- tolower(tools::file_ext(path))
   if (!ext %in% base::names(readers)) {
     cli::cli_abort(c(

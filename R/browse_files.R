@@ -64,6 +64,13 @@
   paste0("c(\n  ", paste(quoted, collapse = ",\n  "), "\n)")
 }
 
+# TRUE for files daos::read_files() can open, judged by extension. Folders
+# and unknown extensions are FALSE. Vectorised.
+.bf_readable <- function(path) {
+  ext <- tolower(tools::file_ext(path))
+  nzchar(ext) & ext %in% .read_files_exts()
+}
+
 # Reader-mode expression. A single file reads inline -- read_files("x") --
 # since an intermediate object would just be noise. Several paths are bound
 # to `my_paths` first (a blank line, then the read), so the vector is named
@@ -80,13 +87,24 @@
 }
 
 # The text that gets inserted/copied. Plain paths by default; in reader mode
-# the *files* are read with read_files() while directories fall back to bare
-# paths -- read_files() can't read a folder. A target of only folders is thus
-# unchanged by reader mode.
+# only the *readable* files are wrapped in read_files() -- directories and
+# files read_files() cannot open (by extension) are left out, since wrapping
+# them would just produce a call that errors. A target with nothing readable
+# is thus unchanged by reader mode.
 .bf_expr <- function(paths, reader) {
   if (!reader || length(paths) == 0) return(.bf_rstring(paths))
-  files <- paths[!dir.exists(paths)]
-  if (length(files) == 0) .bf_rstring(paths) else .bf_reader_expr(files)
+  readable <- paths[!dir.exists(paths) & .bf_readable(paths)]
+  if (length(readable) == 0) .bf_rstring(paths) else .bf_reader_expr(readable)
+}
+
+# The row icon: a blue folder, a green document for files read_files() can
+# read, or a grey document for everything else -- so readable files stand
+# out while browsing.
+.bf_icon <- function(type, full) {
+  if (identical(type, "d"))
+    return(shiny::span(class = "bf-ico bf-ico-d", "\U0001F4C1"))
+  cls <- if (isTRUE(.bf_readable(full))) "bf-ico bf-ico-readable" else "bf-ico bf-ico-f"
+  shiny::span(class = cls, "\U0001F4C4")
 }
 
 # Human-readable file size.
@@ -118,9 +136,11 @@
 #'   [daos::read_files()] instead of inserting the bare path. A single file is
 #'   read inline (`daos::read_files("data/x.tsv")`); several paths are bound to a
 #'   `my_paths` object first, then read after a blank line
-#'   (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files are read;
-#'   folders in the target are left out, since [daos::read_files()] cannot
-#'   read a directory. Toggle it off to go back to plain paths.
+#'   (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files
+#'   [daos::read_files()] can open are wrapped; folders and files of an
+#'   unsupported type are left out (with a warning), since wrapping them
+#'   would only produce a call that errors. Readable files are flagged with a
+#'   green icon in the browser. Toggle it off to go back to plain paths.
 #' - `y` copies that same expression to the clipboard without closing.
 #' - `o` opens the item under the cursor in the system file explorer via
 #'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
@@ -216,6 +236,7 @@ browse_files <- function(path = getwd()) {
     .bf-ico { margin-right: 8px; }
     .bf-ico-d { color: #1d62a8; }
     .bf-ico-f { color: #94a3b8; }
+    .bf-ico-readable { color: #16a34a; }
     .bf-check { color: #16a34a; float: right; margin-left: 8px; font-weight: 700; }
     .bf-item.sb-faux, .bf-faux { background: #eef4fb; color: #1d62a8; font-weight: 600; cursor: default; }
     .bf-faux:hover { background: #eef4fb; }
@@ -227,6 +248,8 @@ browse_files <- function(path = getwd()) {
     .bf-fileinfo { padding: 10px 8px; }
     .bf-fileinfo strong { color: #0f3b66; word-break: break-all; }
     .bf-fileinfo p { color: #64748b; font-size: 12.5px; margin: 6px 0 2px; }
+    .bf-read-ok { color: #16a34a !important; font-weight: 600; }
+    .bf-read-no { color: #b45309 !important; font-weight: 600; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
     .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
     .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -254,6 +277,8 @@ browse_files <- function(path = getwd()) {
       background: rgba(29,98,168,.12); color: #174e86;
       border-radius: 5px; padding: 1px 6px; font-size: 12px;
     }
+    .bf-info-warn { color: #b45309; background: #fef3c7; border-color: #fbdca0; }
+    .bf-info-warn code { background: rgba(180,83,9,.12); color: #92400e; }
     .bf-chip {
       margin-left: auto; color: #16a34a; font-size: 13px; font-weight: 600;
       background: #dcfce7; border-radius: 999px; padding: 5px 14px;
@@ -486,8 +511,7 @@ browse_files <- function(path = getwd()) {
       shiny::div(
         class = paste(cls, collapse = " "),
         `data-full` = row$full, `data-type` = row$type, onclick = onclick,
-        shiny::span(class = paste0("bf-ico bf-ico-", row$type),
-                    if (row$type == "d") "\U0001F4C1" else "\U0001F4C4"),
+        .bf_icon(row$type, row$full),
         row$name,
         if (marked_now) shiny::span(class = "bf-check", "\u2713")
       )
@@ -564,8 +588,7 @@ browse_files <- function(path = getwd()) {
               class = paste(cls, collapse = " "),
               onclick = if (row$type == "d")
                 sprintf("Shiny.setInputValue('go', '%s', {priority:'event'})", row$full),
-              shiny::span(class = paste0("bf-ico bf-ico-", row$type),
-                          if (row$type == "d") "\U0001F4C1" else "\U0001F4C4"),
+              .bf_icon(row$type, row$full),
               row$name
             )
           })
@@ -591,21 +614,27 @@ browse_files <- function(path = getwd()) {
           row <- kids[i, ]
           shiny::div(
             class = "bf-item bf-preview-ro",
-            shiny::span(class = paste0("bf-ico bf-ico-", row$type),
-                        if (row$type == "d") "\U0001F4C1" else "\U0001F4C4"),
+            .bf_icon(row$type, row$full),
             row$name
           )
         })
       } else {
         info <- file.info(cu$full)
         ext  <- tools::file_ext(cu$full)
+        ts   <- function(x) if (length(x) == 0 || is.na(x)) NULL else format(x, "%Y-%m-%d %H:%M")
+        readable <- isTRUE(.bf_readable(cu$full))
         shiny::div(
           class = "bf-fileinfo",
-          shiny::p(shiny::span(class = "bf-ico bf-ico-f", "\U0001F4C4"),
-                   shiny::strong(basename(cu$full))),
+          shiny::p(.bf_icon("f", cu$full), shiny::strong(basename(cu$full))),
           shiny::p(paste0("St\u00f8rrelse: ", .bf_size(info$size))),
-          if (!is.na(info$mtime)) shiny::p(paste0("\u00c6ndret: ", format(info$mtime, "%Y-%m-%d %H:%M"))),
           if (nzchar(ext)) shiny::p(paste0("Type: .", ext)),
+          if (!is.null(ts(info$ctime))) shiny::p(paste0("Oprettet: ", ts(info$ctime))),
+          if (!is.null(ts(info$mtime))) shiny::p(paste0("\u00c6ndret: ", ts(info$mtime))),
+          if (!is.null(ts(info$atime))) shiny::p(paste0("Tilg\u00e5et: ", ts(info$atime))),
+          if (nzchar(ext)) shiny::p(
+            class = if (readable) "bf-read-ok" else "bf-read-no",
+            if (readable) "\u2713 Kan l\u00e6ses med read_files()"
+            else paste0("\u2717 read_files() underst\u00f8tter ikke .", ext)),
           shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 r reader \u00b7 o \u00e5bner i stifinder.")
         )
       }
@@ -619,30 +648,38 @@ browse_files <- function(path = getwd()) {
       n  <- length(tg)
       nm <- length(marked())
       on <- reader()
-      # Reader only reads files; folders in the target stay bare paths. So
-      # the read_files() shape is driven by the file count, and reader is
-      # "active" only when there is at least one file to read.
-      n_dirs   <- if (on && n > 0) sum(dir.exists(tg)) else 0L
-      n_files  <- n - n_dirs
-      active   <- on && n_files > 0
+      # Reader only wraps files read_files() can open. Folders and unreadable
+      # files are excluded, so the button and shape follow the readable count,
+      # and the note names what is being left out.
+      files   <- if (on && n > 0) tg[!dir.exists(tg)] else character()
+      n_dirs  <- if (on && n > 0) n - length(files) else 0L
+      read_ok <- if (length(files)) files[.bf_readable(files)] else character()
+      n_read  <- length(read_ok)
+      n_bad   <- length(files) - n_read
+      active  <- on && n_read > 0
+      warn    <- on && n_bad > 0
 
       label <- if (active) "Inds\u00e6t read_files()" else {
         paste("Inds\u00e6t", if (n <= 1) "sti" else paste(n, "stier"))
       }
+      ex <- character()
+      if (n_bad > 0)  ex <- c(ex, paste0(n_bad, if (n_bad == 1) " fil" else " filer", " read_files ikke kan l\u00e6se"))
+      if (n_dirs > 0) ex <- c(ex, paste0(n_dirs, if (n_dirs == 1) " mappe" else " mapper"))
       info <- if (!on) NULL else if (!active) {
-        "Reader til \u2014 mapper kan ikke l\u00e6ses, inds\u00e6tter sti"
+        if (warn) "Reader til \u2014 read_files() kan ikke l\u00e6se det valgte, inds\u00e6tter sti"
+        else "Reader til \u2014 mapper kan ikke l\u00e6ses, inds\u00e6tter sti"
       } else {
         paste0(
           "Reader til \u2014 inds\u00e6tter <code>",
-          if (n_files <= 1) "daos::read_files(...)" else "daos::read_files(my_paths)",
+          if (n_read <= 1) "daos::read_files(...)" else "daos::read_files(my_paths)",
           "</code>",
-          if (n_dirs > 0) " \u00b7 mapper udelades" else "")
+          if (length(ex)) paste0(" \u00b7 udelader ", paste(ex, collapse = " og ")) else "")
       }
       shiny::div(
         class = "bf-actions",
         shiny::actionButton(
           "do_insert", shiny::tagList(label, kbd("Enter")),
-          icon = shiny::icon("file-import"), class = "btn-primary bf-btn"),
+          icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
         shiny::actionButton(
           "do_copy", shiny::tagList("Kopier", kbd("y")),
           icon = shiny::icon("copy"), class = "btn-default bf-btn"),
@@ -650,7 +687,8 @@ browse_files <- function(path = getwd()) {
           "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
           icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
         if (!is.null(info))
-          shiny::span(class = "bf-info", shiny::icon("info-circle"),
+          shiny::span(class = if (warn) "bf-info bf-info-warn" else "bf-info",
+                      shiny::icon(if (warn) "exclamation-triangle" else "info-circle"),
                       shiny::HTML(info)),
         if (nm > 0)
           shiny::span(class = "bf-chip",

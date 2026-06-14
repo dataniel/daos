@@ -46,6 +46,32 @@ test_that(".bf_rstring() flips backslashes to forward slashes", {
   expect_equal(daos:::.bf_rstring("C:\\data\\fil.csv"), '"C:/data/fil.csv"')
 })
 
+test_that(".bf_readable() follows read_files' supported extensions", {
+  expect_true(all(daos:::.bf_readable(c("a.csv", "b.XLSX", "c.parquet"))))
+  expect_false(any(daos:::.bf_readable(c("a.pdf", "b.docx", "noext", "folder"))))
+  # exactly read_files' own list
+  expect_setequal(
+    tools::file_ext(c("a.csv","a.tsv"))[daos:::.bf_readable(c("a.csv","a.tsv"))],
+    c("csv", "tsv"))
+})
+
+test_that(".bf_expr() in reader mode wraps only readable files", {
+  d <- file.path(tempfile("bfx")); dir.create(d)
+  on.exit(unlink(d, recursive = TRUE))
+  fwd <- function(p) gsub("\\\\", "/", p)            # .bf_rstring uses forward slashes
+  csv <- file.path(d, "a.csv"); writeLines("x", csv)
+  pdf <- file.path(d, "b.pdf"); writeLines("x", pdf)
+  sub <- file.path(d, "sub");   dir.create(sub)
+
+  expect_equal(daos:::.bf_expr(csv, TRUE), sprintf('daos::read_files("%s")', fwd(csv)))
+  # an unreadable file or a folder falls back to a bare path
+  expect_equal(daos:::.bf_expr(pdf, TRUE), sprintf('"%s"', fwd(pdf)))
+  expect_equal(daos:::.bf_expr(sub, TRUE), sprintf('"%s"', fwd(sub)))
+  # mixed: only the csv is wrapped, pdf and folder dropped
+  expect_equal(daos:::.bf_expr(c(csv, pdf, sub), TRUE),
+               sprintf('daos::read_files("%s")', fwd(csv)))
+})
+
 test_that(".bf_is_root() detects filesystem roots", {
   root <- make_tree()
   on.exit(unlink(root, recursive = TRUE))
