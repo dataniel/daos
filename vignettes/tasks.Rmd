@@ -57,17 +57,17 @@ where the interesting part is.
 
 ## Driving tasks from a production script
 
-Think of a monthly production with a handful of steps: pull the sources,
-validate, compile, publish. Instead of tracking that in your head or a
-spreadsheet, let the script record it. Add the step as a task at the
-start, annotate it with what actually happened, and mark it done when the
-step succeeds:
+Think of the accounts statistics: a production with a handful of steps --
+pull the sources, validate, compile, publish. Instead of tracking that in
+your head or a spreadsheet, let the script record it. Add the step as a
+task at the start, annotate it with what actually happened, and mark it
+done when the step succeeds:
 
 ```{r}
 db <- "//server/share/production/tasks.sqlite"
 
-task_add(db, "Compile Q3 national accounts",
-         project = "NR-Q3", assignee = "pipeline",
+task_add(db, "Compile the accounts statistics",
+         project = "RS-2026", assignee = "pipeline",
          priority = "H", due = "2026-07-15")
 
 # ... the step runs ...
@@ -113,7 +113,7 @@ next month's appears automatically:
 
 ```{r}
 task_add(db, "Monthly source refresh",
-         project = "NR", recur = "monthly", due = "2026-07-01")
+         project = "RS", recur = "monthly", due = "2026-07-01")
 ```
 
 The recurrence handling is deliberately simple (documented on
@@ -128,8 +128,8 @@ another is reported as `blocked` until its dependency is done, so a script
 just what is pending:
 
 ```{r}
-task_add(db, "Validate sources",  project = "NR-Q3")          # id 10
-task_add(db, "Compile accounts",  project = "NR-Q3",
+task_add(db, "Validate sources",  project = "RS-2026")        # id 10
+task_add(db, "Compile accounts",  project = "RS-2026",
          depends = 10)                                          # waits for 10
 
 ready <- task_list(db, status = "pending")

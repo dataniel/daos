@@ -33,10 +33,11 @@ A statbank table is a set of variables, each with its own list of values,
 and a table is fetched by choosing some values from each. The standard web
 interface presents this as nested menus: open a folder, open a table, then
 a wall of multi-selects. It works, but it asks you to already know what you
-are looking for. You pick `art = Number` without the interface ever
-hinting that the table also offers an index, or chained values, or a
-share. The information you need to choose well is exactly the information
-the menu does not surface while you choose.
+are looking for. You pick current prices without the interface ever
+hinting that the table also offers chained values, an index, or a share --
+the very options that might be the one you actually want. The information
+you need to choose well is exactly the information the menu does not
+surface while you choose.
 
 ## What the app does now
 
@@ -73,9 +74,9 @@ query, and from then on it runs headless.
 ```{r}
 # the kind of call the code tab hands you
 statbank_get(
-  "BE/BE01/BEXSAT1.PX",
-  tid = c(2023, 2024, 2025),
-  art = "Antal"
+  "NR/NR01/NRXxxx.PX",
+  tid   = c(2023, 2024, 2025),
+  enhed = "Kædede værdier"
 )
 ```
 
@@ -97,28 +98,27 @@ Today the app guides you on *what values exist*. The more interesting step
 is guidance on *what those values mean* -- and that part does not exist
 yet, in this app or in the official interface.
 
-Take the national accounts. A unit variable might offer current prices,
-chained values, an index, and a few more, and the choice is not cosmetic:
-if you want the volume development of an aggregate, you want chained
-values, and a newcomer has no way to know that from a label reading
-`2020-priser, kædede værdier`. The knowledge exists -- it is in the
-methodology, in colleagues' heads -- but never next to the checkbox where
-the decision is actually made.
+Take a value that can be shown in current prices or as chained values. The
+choice is not cosmetic: if you want the volume development over time -- real
+growth, with price changes stripped out -- you want chained values, and a
+newcomer has no way to know that from a label reading `Løbende priser`
+versus `Kædede værdier`. The knowledge exists -- it is in the methodology,
+in colleagues' heads -- but never next to the checkbox where the decision
+is actually made.
 
 The direction `statbank_app()` is sketching is to put it there. Imagine the
 value popup carrying a line of plain-language help per option:
 
-> **Chained values** -- pick this for volume development (real growth over
-> time), stripping out price changes.
+> **Chained values (kædede værdier)** -- pick this for volume development:
+> real growth over time, with price changes stripped out.
 >
-> **Current prices** -- pick this for the nominal size of the economy in a
-> given year.
+> **Current prices (løbende priser)** -- pick this for the nominal size in a
+> given year, price changes included.
 
 So you are met with the relevant guidance while you browse, not after you
 have downloaded the wrong series and noticed it does not behave. The same
-idea generalises beyond national accounts: a "what is this and when do I
-want it" note attached to the variables and values where the choice is
-genuinely consequential.
+idea generalises: a "what is this and when do I want it" note attached to
+the variables and values where the choice is genuinely consequential.
 
 This is not implemented. It is the reason the app is framed as a proof of
 concept rather than a tool: the navigation, the previews, and the code tab
@@ -139,8 +139,8 @@ meta$variables          # what the app would show you in the popups
 
 df <- statbank_get(
   "NR/NR01/NRXxxx.PX",
-  tid  = 2015:2024,
-  type = "Chained values"
+  tid   = 2015:2024,
+  enhed = "Kædede værdier"
 )
 ```
 
