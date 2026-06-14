@@ -84,6 +84,12 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-stat .tk-l { font-size: 11.5px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; margin-top: 2px; }
     .tk-stat.tk-over { border-color: #fecaca; background: #fff5f5; }
     .tk-stat.tk-over .tk-n { color: #dc2626; }
+    .tk-count { font-size: 12px; color: #94a3b8; font-weight: 600; margin: 0 2px 10px; }
+    .tk-help { display: flex; flex-direction: column; gap: 4px; }
+    .tk-help-row { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: #334155;
+      padding: 4px 2px; border-bottom: 1px solid #f1f5f9; }
+    .tk-help-row:last-child { border-bottom: none; }
+    .tk-help-row .tk-k { flex: none; min-width: 58px; text-align: center; }
     .tk-rows { display: flex; flex-direction: column; gap: 7px; }
     .tk-row { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid #e8edf3;
       border-radius: 12px; cursor: pointer; background: #fff; transition: border-color .12s, box-shadow .12s, transform .08s; }
@@ -194,6 +200,7 @@ task_app <- function(db = "tasks.sqlite") {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       function fire(id) { e.preventDefault(); Shiny.setInputValue(id, Date.now()); }
       if (k === 'q') { fire('quit'); return; }
+      if (k === '?') { fire('show_help'); return; }
       if (k === 'o') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Opgaver',   {priority:'event'}); return; }
       if (k === 'p') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Projekter', {priority:'event'}); return; }
       if (k === 'u') { fire('refresh'); return; }
@@ -248,6 +255,7 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::div(
       class = "tk-hero",
       shiny::div(class = "tk-hero-actions",
+        shiny::actionButton("show_help", "Genveje (?)", class = "tk-ghost"),
         shiny::actionButton("refresh", shiny::HTML("&#x21bb; Opdater (U)"), class = "tk-ghost"),
         shiny::actionButton("quit", "Luk (Q)", class = "tk-ghost tk-ghost-quit")),
       shiny::div(class = "tk-hero-text",
@@ -295,24 +303,15 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::selectInput("f_sort", "Sort\u00e9r efter",
             choices = c("Vigtighed" = "urgency", "Forfald (dato)" = "due",
                         "Oprettet (dato)" = "entry", "Projekt" = "project")),
-          shiny::selectInput("f_dir", "R\u00e6kkef\u00f8lge",
-            choices = c("Stigende" = "asc", "Faldende" = "desc")),
+          shiny::fluidRow(
+            shiny::column(6, shiny::selectInput("f_dir", "R\u00e6kkef\u00f8lge",
+              choices = c("Stigende" = "asc", "Faldende" = "desc"))),
+            shiny::column(6, shiny::selectInput("f_limit", "Vis",
+              choices = c("25" = "25", "50" = "50", "100" = "100", "Alle" = "all"),
+              selected = "50"))
+          ),
           shiny::actionButton("reset_filters", "Nulstil filtre (R)",
-                              class = "btn-default", width = "100%"),
-          shiny::div(class = "tk-legend",
-            shiny::HTML(paste(
-              "<b>Genveje</b>",
-              "<span class='tk-k'>j</span><span class='tk-k'>k</span> v\u00e6lg",
-              "<span class='tk-k'>f</span> f\u00e6rdig",
-              "<span class='tk-k'>e</span> rediger",
-              "<span class='tk-k'>n</span> note",
-              "<span class='tk-k'>g</span> gen\u00e5bn",
-              "<span class='tk-k'>x</span> slet",
-              "<span class='tk-k'>r</span> nulstil",
-              "<span class='tk-k'>u</span> opdater",
-              "<span class='tk-k'>o</span> opgaver",
-              "<span class='tk-k'>p</span> projekter",
-              "<span class='tk-k'>q</span> luk", sep = "<br>")))
+                              class = "btn-default", width = "100%")
         )
       ),
       shiny::mainPanel(
@@ -370,6 +369,27 @@ task_app <- function(db = "tasks.sqlite") {
 
     shiny::observeEvent(input$quit, shiny::stopApp())
 
+    shiny::observeEvent(input$show_help, {
+      k <- function(key, desc) shiny::tags$div(class = "tk-help-row",
+        shiny::tags$span(class = "tk-k", key), shiny::tags$span(desc))
+      shiny::showModal(shiny::modalDialog(
+        title = "Tastaturgenveje", easyClose = TRUE, footer = shiny::modalButton("Luk"),
+        shiny::div(class = "tk-help",
+          k("j / k", "flyt markering op/ned"),
+          k("f", "markér færdig"),
+          k("e", "rediger opgave"),
+          k("n", "tilføj note"),
+          k("g", "genåbn"),
+          k("x", "slet (papirkurv)"),
+          k("Enter", "tilføj opgave (i formularen)"),
+          k("Esc", "forlad tekstfelt"),
+          k("r", "nulstil filtre"),
+          k("u", "opdater"),
+          k("o / p", "skift mellem Opgaver og Projekter"),
+          k("?", "vis denne hjælp"),
+          k("q", "luk appen"))))
+    })
+
     shiny::observeEvent(input$goto_tab,
       shiny::updateTabsetPanel(session, "main_tabs", selected = input$goto_tab))
 
@@ -380,6 +400,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::updateSelectInput(session, "f_tag",      selected = "")
       shiny::updateSelectInput(session, "f_sort",     selected = "urgency")
       shiny::updateSelectInput(session, "f_dir",      selected = "asc")
+      shiny::updateSelectInput(session, "f_limit",    selected = "50")
     })
 
     # j/k (or arrows) move the selection through the current list.
@@ -406,7 +427,10 @@ task_app <- function(db = "tasks.sqlite") {
 
     output$db_label <- shiny::renderText(paste("Database:", db_path()))
 
-    tasks <- shiny::reactive({
+    # The full filtered/sorted list, and the capped view shown in the list.
+    # Navigation and rendering use the capped `tasks()`; `tasks_all()` is kept
+    # for the "viser N af M" count.
+    tasks_all <- shiny::reactive({
       refresh()
       task_list(
         db_path(),
@@ -417,6 +441,11 @@ task_app <- function(db = "tasks.sqlite") {
         sort     = input$f_sort %||% "urgency",
         desc     = identical(input$f_dir, "desc")
       )
+    })
+    tasks <- shiny::reactive({
+      df <- tasks_all()
+      lim <- input$f_limit %||% "50"
+      if (identical(lim, "all")) df else utils::head(df, as.integer(lim))
     })
 
     all_tasks <- shiny::reactive({
@@ -548,7 +577,12 @@ task_app <- function(db = "tasks.sqlite") {
           shiny::actionButton("empty_trash",
             paste0("\U0001F5D1 Tøm papirkurv (", nrow(df), ")"),
             class = "btn-default tk-danger"))
-      shiny::tagList(trash, shiny::div(class = "tk-rows", rows))
+      total <- nrow(tasks_all())
+      count <- shiny::div(class = "tk-count",
+        if (nrow(df) < total)
+          paste0("Viser ", nrow(df), " af ", total, " — vælg flere under Vis, eller filtrer")
+        else paste0(total, if (total == 1) " opgave" else " opgaver"))
+      shiny::tagList(trash, count, shiny::div(class = "tk-rows", rows))
     })
 
     sel_task <- shiny::reactive({
