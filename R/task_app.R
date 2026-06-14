@@ -176,6 +176,7 @@ task_app <- function(db = "tasks.sqlite") {
       if (k === 'q') { fire('quit'); return; }
       if (k === 'o') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Opgaver',   {priority:'event'}); return; }
       if (k === 'p') { e.preventDefault(); Shiny.setInputValue('goto_tab', 'Projekter', {priority:'event'}); return; }
+      if (k === 'u') { fire('refresh'); return; }
       if (k === 'r') { fire('reset_filters'); return; }
       if (k === 'f') { fire('act_done'); return; }
       if (k === 'e') { fire('act_edit'); return; }
@@ -202,7 +203,7 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::div(
       class = "tk-hero",
       shiny::div(class = "tk-hero-actions",
-        shiny::actionButton("refresh", shiny::HTML("&#x21bb; Opdater"), class = "tk-ghost"),
+        shiny::actionButton("refresh", shiny::HTML("&#x21bb; Opdater (U)"), class = "tk-ghost"),
         shiny::actionButton("quit", "Luk (Q)", class = "tk-ghost tk-ghost-quit")),
       shiny::div(class = "tk-hero-text",
         shiny::h2(shiny::HTML("&#x2713;&#xFE0E; Opgaver")),
@@ -265,6 +266,7 @@ task_app <- function(db = "tasks.sqlite") {
               "<span class='tk-k'>g</span> gen\u00e5bn",
               "<span class='tk-k'>x</span> slet",
               "<span class='tk-k'>r</span> nulstil",
+              "<span class='tk-k'>u</span> opdater",
               "<span class='tk-k'>o</span> opgaver",
               "<span class='tk-k'>p</span> projekter",
               "<span class='tk-k'>q</span> luk", sep = "<br>")))
@@ -275,13 +277,13 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::tabsetPanel(
           id = "main_tabs", type = "pills",
           shiny::tabPanel(
-            "Opgaver",
+            "Opgaver (O)", value = "Opgaver",
             shiny::div(style = "margin-top: 16px;", shiny::uiOutput("stats")),
             shiny::div(class = "tk-card", shiny::uiOutput("tasklist")),
             shiny::uiOutput("detail")
           ),
           shiny::tabPanel(
-            "Projekter",
+            "Projekter (P)", value = "Projekter",
             shiny::div(style = "margin-top: 16px;", class = "tk-card",
                        shiny::uiOutput("projects"))
           )
