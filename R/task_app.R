@@ -347,9 +347,17 @@ task_app <- function(db = "tasks.sqlite") {
     refresh <- shiny::reactiveVal(0)
     form_ver <- shiny::reactiveVal(0)
     selected <- shiny::reactiveVal(NULL)
+    # Fingerprint of the database state the UI last drew, so the poller can
+    # tell when nothing changed and skip the redraw that made it blink.
+    db_fp <- shiny::reactiveVal(.task_fingerprint(start_db))
     # Isolate the read so the bumps never make their caller depend on the
-    # value -- otherwise the timer observe below would loop on itself.
-    bump  <- function() refresh(shiny::isolate(refresh()) + 1)
+    # value -- otherwise the timer observe below would loop on itself. Every
+    # bump records the fingerprint it is drawing, so a following poll tick
+    # sees no change and stays quiet.
+    bump  <- function() {
+      db_fp(.task_fingerprint(shiny::isolate(db_path())))
+      refresh(shiny::isolate(refresh()) + 1)
+    }
     # form_ver only changes on the user's own actions, so the timer never
     # rebuilds the form pickers and never resets what is being typed.
     fbump <- function() form_ver(shiny::isolate(form_ver()) + 1)
@@ -386,11 +394,14 @@ task_app <- function(db = "tasks.sqlite") {
       selected(ids[ni])
     })
 
-    # Re-read the list/projects on a timer so other people's changes show
-    # up. This deliberately does not touch the form pickers.
+    # Poll on a timer so other people's changes show up, but only bump (and
+    # thus redraw) when the database actually changed -- otherwise every tick
+    # re-rendered the list and made the app blink. The fingerprint read is
+    # cheap, so an unchanged database polls silently.
     shiny::observe({
       shiny::invalidateLater(10000, session)
-      bump()
+      cur <- .task_fingerprint(shiny::isolate(db_path()))
+      if (!identical(cur, shiny::isolate(db_fp()))) bump()
     })
 
     output$db_label <- shiny::renderText(paste("Database:", db_path()))

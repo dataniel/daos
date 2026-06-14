@@ -80,6 +80,23 @@
 
 .task_now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%S")
 
+# A cheap signature of the whole database, for a poller to tell whether
+# anything changed before re-rendering. Row counts plus the latest task
+# `modified` and annotation `entry` catch adds, edits, completions,
+# deletions, purges, and new notes -- so an unchanged database yields the
+# same string and the UI can skip a redraw.
+.task_fingerprint <- function(db) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  r <- DBI::dbGetQuery(con,
+    "SELECT (SELECT COUNT(*) FROM tasks)                    AS nt,
+            (SELECT IFNULL(MAX(modified), '') FROM tasks)   AS mt,
+            (SELECT COUNT(*) FROM annotations)              AS na,
+            (SELECT IFNULL(MAX(entry), '') FROM annotations) AS ma,
+            (SELECT COUNT(*) FROM dependencies)             AS nd")
+  paste(r$nt, r$mt, r$na, r$ma, r$nd, sep = "|")
+}
+
 .or_na <- function(x) if (is.null(x) || length(x) == 0) NA else x
 
 # The canonical uuid shape (8-4-4-4-12 lowercase hex), used to tell a uuid

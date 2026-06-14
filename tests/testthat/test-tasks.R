@@ -247,6 +247,28 @@ test_that(".task_uuid produces unique 36-char ids", {
   expect_equal(length(unique(ids)), 50)
 })
 
+test_that(".task_fingerprint stays put until the database changes", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "a", key = "a")
+  fp1 <- daos:::.task_fingerprint(db)
+  expect_identical(daos:::.task_fingerprint(db), fp1)   # unchanged -> same string
+
+  task_add(db, "b")
+  fp2 <- daos:::.task_fingerprint(db)
+  expect_false(identical(fp1, fp2))                     # a new task
+
+  task_annotate(db, "a", "note")
+  fp3 <- daos:::.task_fingerprint(db)
+  expect_false(identical(fp2, fp3))                     # a new annotation
+
+  Sys.sleep(1); task_modify(db, "a", priority = "H")
+  fp4 <- daos:::.task_fingerprint(db)
+  expect_false(identical(fp3, fp4))                     # an edit
+
+  task_delete(db, "a"); task_purge(db)
+  expect_false(identical(fp4, daos:::.task_fingerprint(db)))  # rows removed
+})
+
 test_that(".task_advance moves dates by period or days", {
   expect_equal(daos:::.task_advance("2026-01-01", "weekly"), "2026-01-08")
   expect_equal(daos:::.task_advance("2026-01-01", "10"), "2026-01-11")
