@@ -71,6 +71,13 @@
   nzchar(ext) & ext %in% .read_files_exts()
 }
 
+# Plain-text extensions we show a quick first-lines peek for, so you can see
+# what a script/config holds without opening it.
+.bf_text_exts <- function()
+  c("r", "rmd", "qmd", "txt", "md", "sql", "py", "js", "ts", "css", "scss",
+    "html", "xml", "yaml", "yml", "json", "toml", "sh", "bat", "ps1", "log",
+    "ini", "cfg", "conf", "csv", "tsv", "tex")
+
 # Reader-mode expression. A single file reads inline -- read_files("x") --
 # since an intermediate object would just be noise. Several paths are bound
 # to `my_paths` first (a blank line, then the read), so the vector is named
@@ -129,6 +136,8 @@
 .bf_icon <- function(type, full) {
   if (identical(type, "d"))
     return(shiny::span(class = "bf-ico bf-ico-d", "\U0001F4C1"))
+  if (tolower(tools::file_ext(full)) %in% c("xlsx", "xls"))
+    return(shiny::span(class = "bf-ico bf-ico-xlsx", "\U0001F4D7"))  # green book: enterable
   cls <- if (isTRUE(.bf_readable(full))) "bf-ico bf-ico-readable" else "bf-ico bf-ico-f"
   shiny::span(class = cls, "\U0001F4C4")
 }
@@ -268,6 +277,12 @@ browse_files <- function(path = getwd()) {
     .bf-ico-d { color: #1d62a8; }
     .bf-ico-f { color: #94a3b8; }
     .bf-ico-readable { color: #16a34a; }
+    .bf-ico-xlsx { color: #16a34a; }
+    .bf-item.bf-xlsx { color: #15803d; font-weight: 600; }
+    .bf-item.bf-xlsx:hover { background: #dcfce7; }
+    .bf-enter { float: right; color: #16a34a; font-weight: 700; font-size: 11.5px;
+      letter-spacing: .3px; margin-left: 8px; opacity: .55; }
+    .bf-item.bf-xlsx:hover .bf-enter, .bf-item.bf-xlsx.cursor .bf-enter { opacity: 1; }
     .bf-check { color: #16a34a; float: right; margin-left: 8px; font-weight: 700; }
     .bf-item.sb-faux, .bf-faux { background: #eef4fb; color: #1d62a8; font-weight: 600; cursor: default; }
     .bf-faux:hover { background: #eef4fb; }
@@ -290,7 +305,13 @@ browse_files <- function(path = getwd()) {
     .bf-sheet-peek th, .bf-sheet-peek td { border: 1px solid #e2e8f0; padding: 3px 7px;
       text-align: left; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .bf-sheet-peek th { background: #f1f5f9; color: #475569; font-weight: 600; }
-    .bf-crumb-file { color: #0f3b66; font-weight: 700; }
+    .bf-code-peek { background: #0f172a; color: #e2e8f0; border-radius: 8px;
+      padding: 10px 12px; font-family: ui-monospace, Consolas, monospace;
+      font-size: 11.5px; line-height: 1.5; white-space: pre; overflow: auto;
+      max-height: 42vh; margin: 8px 0; }
+    .bf-crumb-file { color: #16a34a; font-weight: 700; }
+    .bf-col-current.bf-sheet-mode { background: #f0fdf4; border-color: #bbf7d0; }
+    .bf-col-current.bf-sheet-mode .bf-colhead { color: #16a34a; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
     .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
     .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -612,11 +633,12 @@ browse_files <- function(path = getwd()) {
         sprintf("Shiny.setInputValue('pick_file', '%s', {priority:'event'})", row$full)
       }
       shiny::div(
-        class = paste(cls, collapse = " "),
+        class = paste(c(cls, if (is_xlsx) "bf-xlsx"), collapse = " "),
         `data-full` = row$full, `data-type` = row$type, onclick = onclick,
         .bf_icon(row$type, row$full),
         row$name,
-        if (marked_now) shiny::span(class = "bf-check", "\u2713")
+        if (marked_now) shiny::span(class = "bf-check", "\u2713"),
+        if (is_xlsx) shiny::span(class = "bf-enter", "\u203a ark")   # go-deeper hint
       )
     }
 
@@ -651,7 +673,7 @@ browse_files <- function(path = getwd()) {
       if (!is.null(sheet_file()))
         crumbs <- c(crumbs, list(
           shiny::span(class = "bf-sep", "/"),
-          shiny::span(class = "bf-crumb-file", basename(sheet_file()))))
+          shiny::span(class = "bf-crumb-file", paste0("\U0001F4D7 ", basename(sheet_file())))))
       crumbs
     })
 
@@ -674,7 +696,7 @@ browse_files <- function(path = getwd()) {
         }
         cur_col <- shiny::div(
           class = "bf-col bf-col-current bf-sheet-mode",
-          shiny::div(class = "bf-colhead", basename(sf)),
+          shiny::div(class = "bf-colhead", paste0("\U0001F4D7 ", basename(sf))),
           if (length(sheets) == 0)
             shiny::div(class = "bf-empty",
               shiny::div(class = "bf-empty-ico", "\U0001F4D6"),
@@ -813,11 +835,20 @@ browse_files <- function(path = getwd()) {
         sheets <- if (tolower(ext) %in% c("xlsx", "xls") &&
                       requireNamespace("readxl", quietly = TRUE))
           tryCatch(readxl::excel_sheets(cu$full), error = function(e) NULL)
+        # For scripts/text, peek at the first lines so you can recall what a
+        # file holds without opening it. Read one extra line to detect "more".
+        peek <- if (tolower(ext) %in% .bf_text_exts())
+          tryCatch(readLines(cu$full, n = 41, warn = FALSE, encoding = "UTF-8"),
+                   error = function(e) NULL)
+        code_block <- if (length(peek)) shiny::tagList(
+          shiny::tags$pre(class = "bf-code-peek", paste(utils::head(peek, 40), collapse = "\n")),
+          if (length(peek) > 40) shiny::p(class = "bf-hint", "\u2026 (f\u00f8rste 40 linjer)"))
         shiny::div(
           class = "bf-fileinfo",
           shiny::p(.bf_icon("f", cu$full), shiny::strong(basename(cu$full))),
           shiny::p(paste0("St\u00f8rrelse: ", .bf_size(info$size))),
           if (nzchar(ext)) shiny::p(paste0("Type: .", ext)),
+          code_block,
           if (!is.null(ts(info$ctime))) shiny::p(paste0("Oprettet: ", ts(info$ctime))),
           if (!is.null(ts(info$mtime))) shiny::p(paste0("\u00c6ndret: ", ts(info$mtime))),
           if (!is.null(ts(info$atime))) shiny::p(paste0("Tilg\u00e5et: ", ts(info$atime))),
