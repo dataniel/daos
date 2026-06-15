@@ -1014,7 +1014,10 @@ browse_files <- function(path = getwd()) {
                  error = function(e) shiny::showNotification(conditionMessage(e),
                                                              duration = 4, type = "error"))
     })
-    # h at a drive root has nowhere to go -- a wink instead of nothing.
+    # h at a drive root has nowhere to go -- a wink instead of nothing, and
+    # it escalates if you keep hammering it (reset on any real navigation).
+    root_hits <- shiny::reactiveVal(0)
+    shiny::observeEvent(cur_path(), root_hits(0), ignoreInit = TRUE)
     shiny::observeEvent(input$hit_root, {
       msgs <- c(
         "\U0001F6A7 Stop! Her er kanten af din computer.",
@@ -1033,7 +1036,20 @@ browse_files <- function(path = getwd()) {
         "\U0001F9F1 root@her: permission denied — du ER roden.",
         "\U0001F4C0 Toppen af C-drevet. Skønnere bliver det ikke."
       )
-      shiny::showNotification(sample(msgs, 1), duration = 3, type = "message")
+      persistent <- c(
+        "\U0001F95A Okay, du fandt et easter egg. Tillykke.",
+        "\U0001F6D7 Knappen virker stadig ikke. Det lover jeg.",
+        "\U0001F9D8 Træk vejret. Roden er roden.",
+        "\U0001F3C6 Verdensmester i at trykke h. Imponerende.",
+        "\U0001F440 Jeg holder øje. Der kommer ikke flere mapper."
+      )
+      n <- shiny::isolate(root_hits()) + 1
+      root_hits(n)
+      msg <- if (n == 1) sample(msgs, 1)
+             else if (n == 2) "\U0001F928 Igen? Der er stadig ikke mere deroppe."
+             else if (n == 3) "\U0001F620 Hold nu op! Roden rykker sig ikke."
+             else sample(persistent, 1)
+      shiny::showNotification(msg, duration = 3, type = "message")
     })
     # Jump back to the directory the browser opened in.
     shiny::observeEvent(input$go_start, {
