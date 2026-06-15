@@ -310,8 +310,14 @@ browse_files <- function(path = getwd()) {
       font-size: 11.5px; line-height: 1.5; white-space: pre; overflow: auto;
       max-height: 42vh; margin: 8px 0; }
     .bf-crumb-file { color: #16a34a; font-weight: 700; }
-    .bf-col-current.bf-sheet-mode { background: #f0fdf4; border-color: #bbf7d0; }
+    .bf-col-current.bf-sheet-mode { border-color: #bbf7d0; }
     .bf-col-current.bf-sheet-mode .bf-colhead { color: #16a34a; }
+    /* Inside a workbook the cursor and the marked rows go Excel-green. */
+    .bf-sheet-mode .bf-item.cursor { outline-color: #16a34a; background: #dcfce7; }
+    .bf-sheet-mode .bf-item.marked { background: #bbf7d0; }
+    .bf-sheet-mode .bf-item.marked.cursor { background: #86efac; }
+    .bf-in-xlsx .bf-hero { background: linear-gradient(135deg, #14532d 0%, #16a34a 100%); }
+    .bf-in-xlsx .bf-hero .bf-sub { color: #d7f5e1; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
     .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
     .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -439,6 +445,10 @@ browse_files <- function(path = getwd()) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(function(){}, function(){ bfFallbackCopy(txt); });
       } else { bfFallbackCopy(txt); }
+    });
+    // Turn the banner green while inside an Excel workbook.
+    Shiny.addCustomMessageHandler('bf_xlsx_mode', function(on) {
+      document.body.classList.toggle('bf-in-xlsx', !!on);
     });
   "
 
@@ -575,6 +585,9 @@ browse_files <- function(path = getwd()) {
       if (!is.null(f)) cursor(list(full = f, type = "f"))
     })
     shiny::observeEvent(input$pick_sheet, sheet_cursor(input$pick_sheet))
+
+    # Green banner while inside a workbook.
+    shiny::observe(session$sendCustomMessage("bf_xlsx_mode", !is.null(sheet_file())))
 
     # Place the cursor when the directory changes, honouring the memory.
     shiny::observe({
