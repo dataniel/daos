@@ -644,6 +644,9 @@ browse_files <- function(path = getwd()) {
       cur_path(input$go)
     })
     shiny::observeEvent(input$pick_file, {
+      # Picking a file leaves any open workbook (e.g. clicking a file in the
+      # parent column while inside an Excel file).
+      sheet_file(NULL); sheet_marked(character()); sheet_cursor(NULL)
       cursor(list(full = input$pick_file, type = "f"))
       nav$mem[[cur_path()]] <- input$pick_file
     })
@@ -749,7 +752,9 @@ browse_files <- function(path = getwd()) {
               onclick = if (row$type == "d")
                 sprintf("Shiny.setInputValue('go', '%s', {priority:'event'})", row$full)
               else if (has_readxl && tolower(tools::file_ext(row$full)) %in% c("xlsx", "xls"))
-                sprintf("Shiny.setInputValue('enter_xlsx', '%s', {priority:'event'})", row$full),
+                sprintf("Shiny.setInputValue('enter_xlsx', '%s', {priority:'event'})", row$full)
+              else  # a plain file: leave the workbook and select it
+                sprintf("Shiny.setInputValue('pick_file', '%s', {priority:'event'})", row$full),
               .bf_icon(row$type, row$full), row$name)
           }))
         preview_col <- shiny::div(
