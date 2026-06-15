@@ -411,6 +411,7 @@ browse_files <- function(path = getwd()) {
       function goUp() {
         var crumbs = document.querySelectorAll('.bf-crumbs a');
         if (crumbs.length >= 2) crumbs[crumbs.length - 2].click();
+        else Shiny.setInputValue('hit_root', Date.now());
       }
       // Inside an Excel file, h/left leaves the sheet view; otherwise it
       // climbs to the parent directory.
@@ -1012,6 +1013,18 @@ browse_files <- function(path = getwd()) {
         tryCatch(.bf_open_file(f),
                  error = function(e) shiny::showNotification(conditionMessage(e),
                                                              duration = 4, type = "error"))
+    })
+    # h at a drive root has nowhere to go -- a wink instead of nothing.
+    shiny::observeEvent(input$hit_root, {
+      msgs <- c(
+        "\U0001F6A7 Stop! Her er kanten af din computer.",
+        "\U0001F573\UFE0F Du er nået til bunden af kaninhullet — dybere op går det ikke.",
+        "\U0001FA90 Her slutter det kendte univers (altså dine drev).",
+        "⛔ Ingen vej ud herfra — du står på selve roden.",
+        "\U0001F9F1 Det er rod nok her. Prøv den anden vej.",
+        "\U0001F9D7 Du har nået toppen. Der er ikke mere bjerg."
+      )
+      shiny::showNotification(sample(msgs, 1), duration = 3, type = "message")
     })
     # Jump back to the directory the browser opened in.
     shiny::observeEvent(input$go_start, {
