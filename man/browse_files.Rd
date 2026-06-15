@@ -41,6 +41,11 @@ read inline (\code{daos::read_files("data/x.tsv")}); several paths are bound to 
 unsupported type are left out (with a warning), since wrapping them
 would only produce a call that errors. Readable files are flagged with a
 green icon in the browser. Toggle it off to go back to plain paths.
+\item On an Excel file (\code{.xlsx}/\code{.xls}), \code{l}/Enter steps \emph{into} the workbook
+and lists its sheets; mark sheets with \code{Space} and the inserted code
+reads exactly those -- one \code{\link[=read_files]{read_files()}} call per sheet (a single
+sheet reads inline). The preview shows the first rows of the sheet under
+the cursor. \code{h} leaves the workbook. Needs \code{readxl}.
 \item \code{y} copies that same expression to the clipboard without closing.
 \item \code{o} opens the item under the cursor in the system file explorer via
 \code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file is revealed).

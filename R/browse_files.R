@@ -97,6 +97,32 @@
   if (length(readable) == 0) .bf_rstring(paths) else .bf_reader_expr(readable)
 }
 
+# Turn an Excel sheet name into a valid, unique R variable name for the
+# generated code: lowercased, non-alphanumerics to "_", a leading digit or
+# empty name prefixed with "ark_", duplicates disambiguated.
+.bf_sheet_var <- function(sheets) {
+  v <- tolower(sheets)
+  v <- gsub("[^a-z0-9]+", "_", v)
+  v <- gsub("^_+|_+$", "", v)
+  bad <- !nzchar(v) | grepl("^[0-9]", v)
+  v[bad] <- paste0("ark_", v[bad])
+  make.unique(v, sep = "_")
+}
+
+# Code reading the chosen sheets of one workbook. One sheet reads inline; for
+# several, one aligned assignment per sheet (the "one object per sheet" shape),
+# each via daos::read_files(path, sheet = ...).
+.bf_sheet_expr <- function(path, sheets) {
+  if (length(sheets) == 0) return("")
+  p <- gsub("\\\\", "/", path)
+  if (length(sheets) == 1)
+    return(sprintf('daos::read_files("%s", sheet = "%s")', p, sheets))
+  vars <- .bf_sheet_var(sheets)
+  sprintf('%-*s <- daos::read_files("%s", sheet = "%s")',
+          max(nchar(vars)), vars, p, sheets) |>
+    paste(collapse = "\n")
+}
+
 # The row icon: a blue folder, a green document for files read_files() can
 # read, or a grey document for everything else -- so readable files stand
 # out while browsing.
@@ -141,6 +167,11 @@
 #'   unsupported type are left out (with a warning), since wrapping them
 #'   would only produce a call that errors. Readable files are flagged with a
 #'   green icon in the browser. Toggle it off to go back to plain paths.
+#' - On an Excel file (`.xlsx`/`.xls`), `l`/Enter steps *into* the workbook
+#'   and lists its sheets; mark sheets with `Space` and the inserted code
+#'   reads exactly those -- one [daos::read_files()] call per sheet (a single
+#'   sheet reads inline). The preview shows the first rows of the sheet under
+#'   the cursor. `h` leaves the workbook. Needs `readxl`.
 #' - `y` copies that same expression to the clipboard without closing.
 #' - `o` opens the item under the cursor in the system file explorer via
 #'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
@@ -180,7 +211,7 @@ browse_files <- function(path = getwd()) {
   result <- new.env(parent = emptyenv())
   result$paths  <- character()
   result$insert <- FALSE
-  result$reader <- FALSE
+  result$expr   <- ""
 
   theme <- if (requireNamespace("bslib", quietly = TRUE)) {
     tryCatch(bslib::bs_theme(version = 5, bootswatch = "zephyr"),
@@ -254,6 +285,12 @@ browse_files <- function(path = getwd()) {
     .bf-sheets-head { color: #0f3b66; font-weight: 600; font-size: 12.5px; margin: 0 0 4px; }
     .bf-sheet-chip { display: inline-block; background: #e8f0fa; color: #1d62a8;
       border-radius: 999px; padding: 2px 10px; font-size: 12px; margin: 0 4px 4px 0; }
+    .bf-sheet-peek { overflow-x: auto; margin: 6px 0; }
+    .bf-sheet-peek table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+    .bf-sheet-peek th, .bf-sheet-peek td { border: 1px solid #e2e8f0; padding: 3px 7px;
+      text-align: left; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .bf-sheet-peek th { background: #f1f5f9; color: #475569; font-weight: 600; }
+    .bf-crumb-file { color: #0f3b66; font-weight: 700; }
     .bf-hint { color: #64748b; font-size: 12.5px; }
     .bf-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }
     .bf-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -327,10 +364,17 @@ browse_files <- function(path = getwd()) {
         var crumbs = document.querySelectorAll('.bf-crumbs a');
         if (crumbs.length >= 2) crumbs[crumbs.length - 2].click();
       }
+      // Inside an Excel file, h/left leaves the sheet view; otherwise it
+      // climbs to the parent directory.
+      function goBack() {
+        if (document.querySelector('.bf-col-current.bf-sheet-mode'))
+          Shiny.setInputValue('exit_xlsx', Date.now());
+        else goUp();
+      }
 
       // An empty folder has no rows; h/left must still get you back out.
       var items = document.querySelectorAll('.bf-col-current .bf-item');
-      if (items.length === 0) { if (back) goUp(); return; }
+      if (items.length === 0) { if (back) goBack(); return; }
 
       var cur = -1;
       for (var i = 0; i < items.length; i++) {
@@ -360,7 +404,7 @@ browse_files <- function(path = getwd()) {
       } else if (open) {
         if (cur >= 0) items[cur].click();
       } else if (back) {
-        goUp();
+        goBack();
       }
     });
     function bfFallbackCopy(txt) {
@@ -384,7 +428,8 @@ browse_files <- function(path = getwd()) {
     kbd_html("mellemrum"), " mark\u00e9r ",
     kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
     kbd_html("r"), " reader ",
-    kbd_html("o"), " stifinder ", kbd_html("Q"), " luk"
+    kbd_html("o"), " stifinder ", kbd_html("Q"), " luk",
+    "<br>", kbd_html("l"), " p\u00e5 en Excel-fil g\u00e5r ind i arkene"
   )
 
   ui <- shiny::fluidPage(
@@ -422,6 +467,20 @@ browse_files <- function(path = getwd()) {
     cursor   <- shiny::reactiveVal(NULL)
     marked   <- shiny::reactiveVal(character())
     reader   <- shiny::reactiveVal(FALSE)
+    has_readxl <- requireNamespace("readxl", quietly = TRUE)
+
+    # Excel "module": when sheet_file is set, the browser is inside that
+    # workbook -- the current column lists its sheets to mark instead of
+    # files, and the insert reads the chosen sheets with read_files().
+    sheet_file   <- shiny::reactiveVal(NULL)
+    sheet_cursor <- shiny::reactiveVal(NULL)
+    sheet_marked <- shiny::reactiveVal(character())
+    sheet_cache  <- new.env(parent = emptyenv())
+    sheets_of <- function(path) {
+      if (is.null(sheet_cache[[path]]))
+        sheet_cache[[path]] <- tryCatch(readxl::excel_sheets(path), error = function(e) character())
+      sheet_cache[[path]]
+    }
 
     cache <- new.env(parent = emptyenv())
     listing <- function(dir) {
@@ -437,6 +496,17 @@ browse_files <- function(path = getwd()) {
       if (length(m) > 0) return(m)
       cu <- cursor()
       if (!is.null(cu)) cu$full else character()
+    })
+    # Inside a workbook: the marked sheets, or the cursor sheet.
+    sheet_target <- shiny::reactive({
+      m <- sheet_marked()
+      if (length(m) > 0) return(m)
+      cs <- sheet_cursor(); if (!is.null(cs)) cs else character()
+    })
+    # The text that gets inserted/copied, for whichever mode is active.
+    current_expr <- shiny::reactive({
+      if (!is.null(sheet_file())) .bf_sheet_expr(sheet_file(), sheet_target())
+      else .bf_expr(target(), reader())
     })
 
     # Per-directory cursor memory (plain env, non-reactive). `mem` maps a
@@ -462,31 +532,55 @@ browse_files <- function(path = getwd()) {
     }
 
     finish <- function(insert) {
-      result$paths  <- target()
+      result$expr   <- current_expr()
+      result$paths  <- if (!is.null(sheet_file())) sheet_target() else target()
       result$insert <- insert
-      result$reader <- reader()
       shiny::stopApp()
     }
     shiny::observeEvent(input$quit, finish(FALSE))
     shiny::observeEvent(input$do_insert, finish(TRUE))
     shiny::observeEvent(input$toggle_reader, reader(!reader()))
 
+    # Enter a workbook (l/click on an .xlsx); leave it (h) back to the file.
+    shiny::observeEvent(input$enter_xlsx, {
+      path <- input$enter_xlsx
+      sheet_file(path); sheet_marked(character())
+      s <- sheets_of(path)
+      sheet_cursor(if (length(s)) s[1] else NULL)
+    })
+    shiny::observeEvent(input$exit_xlsx, {
+      f <- sheet_file()
+      sheet_file(NULL); sheet_marked(character()); sheet_cursor(NULL)
+      if (!is.null(f)) cursor(list(full = f, type = "f"))
+    })
+    shiny::observeEvent(input$pick_sheet, sheet_cursor(input$pick_sheet))
+
     # Place the cursor when the directory changes, honouring the memory.
     shiny::observe({
       cursor(initial_cursor(cur_path()))
     })
     shiny::observeEvent(input$bf_cursor, {
-      cursor(list(full = input$bf_cursor$full, type = input$bf_cursor$type))
-      nav$mem[[cur_path()]] <- input$bf_cursor$full
+      if (!is.null(sheet_file()) && identical(input$bf_cursor$type, "x")) {
+        sheet_cursor(input$bf_cursor$full)
+      } else {
+        cursor(list(full = input$bf_cursor$full, type = input$bf_cursor$type))
+        nav$mem[[cur_path()]] <- input$bf_cursor$full
+      }
     })
 
     shiny::observeEvent(input$bf_toggle, {
       p <- input$bf_toggle$full
-      m <- marked()
-      if (p %in% m) marked(setdiff(m, p)) else marked(c(m, p))
+      if (!is.null(sheet_file())) {
+        m <- sheet_marked()
+        if (p %in% m) sheet_marked(setdiff(m, p)) else sheet_marked(c(m, p))
+      } else {
+        m <- marked()
+        if (p %in% m) marked(setdiff(m, p)) else marked(c(m, p))
+      }
     })
 
     shiny::observeEvent(input$go, {
+      sheet_file(NULL); sheet_marked(character()); sheet_cursor(NULL)
       old <- cur_path()
       nav$prev <- old
       # Descending into a child: remember it as our place in the parent.
@@ -507,8 +601,13 @@ browse_files <- function(path = getwd()) {
       marked_now <- row$full %in% marked()
       cls <- c("bf-item", paste0("bf-row-", row$type),
                if (cursor_on) "cursor", if (marked_now) "marked")
+      is_xlsx <- has_readxl && tolower(tools::file_ext(row$full)) %in% c("xlsx", "xls")
       onclick <- if (row$type == "d") {
         sprintf("Shiny.setInputValue('go', '%s', {priority:'event'})", row$full)
+      } else if (is_xlsx) {
+        # l/click descends into the workbook's sheets; Space still marks the
+        # file path itself.
+        sprintf("Shiny.setInputValue('enter_xlsx', '%s', {priority:'event'})", row$full)
       } else {
         sprintf("Shiny.setInputValue('pick_file', '%s', {priority:'event'})", row$full)
       }
@@ -548,10 +647,63 @@ browse_files <- function(path = getwd()) {
             parts[i])
         ))
       }
+      # Inside a workbook, show its name as the last (non-link) crumb.
+      if (!is.null(sheet_file()))
+        crumbs <- c(crumbs, list(
+          shiny::span(class = "bf-sep", "/"),
+          shiny::span(class = "bf-crumb-file", basename(sheet_file()))))
       crumbs
     })
 
     output$browser <- shiny::renderUI({
+      # Inside a workbook: list its sheets to mark, with the folder on the
+      # left and a peek on the right.
+      sf <- sheet_file()
+      if (!is.null(sf)) {
+        sheets <- sheets_of(sf); scur <- sheet_cursor(); smark <- sheet_marked()
+        sheet_row <- function(s) {
+          marked_now <- s %in% smark
+          cls <- c("bf-item", if (!is.null(scur) && s == scur) "cursor", if (marked_now) "marked")
+          js_s <- gsub("'", "\\'", s, fixed = TRUE)   # sheet names may contain '
+          shiny::div(
+            class = paste(cls, collapse = " "),
+            `data-full` = s, `data-type` = "x",
+            onclick = sprintf("Shiny.setInputValue('pick_sheet', '%s', {priority:'event'})", js_s),
+            shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), s,
+            if (marked_now) shiny::span(class = "bf-check", "✓"))
+        }
+        cur_col <- shiny::div(
+          class = "bf-col bf-col-current bf-sheet-mode",
+          shiny::div(class = "bf-colhead", basename(sf)),
+          if (length(sheets) == 0)
+            shiny::div(class = "bf-empty",
+              shiny::div(class = "bf-empty-ico", "\U0001F4D6"),
+              shiny::p(shiny::strong("Ingen ark")),
+              shiny::p(class = "bf-hint", "Tryk h for at gå tilbage."))
+          else lapply(sheets, sheet_row))
+        path  <- cur_path(); nodes <- listing(path)
+        parent_col <- shiny::div(
+          class = "bf-col",
+          shiny::div(class = "bf-colhead", basename(path)),
+          lapply(seq_len(nrow(nodes)), function(i) {
+            row <- nodes[i, ]
+            active <- normalizePath(row$full, winslash = "/", mustWork = FALSE) ==
+                      normalizePath(sf, winslash = "/", mustWork = FALSE)
+            shiny::div(
+              class = paste(c("bf-item", if (active) "active"), collapse = " "),
+              onclick = if (row$type == "d")
+                sprintf("Shiny.setInputValue('go', '%s', {priority:'event'})", row$full)
+              else if (has_readxl && tolower(tools::file_ext(row$full)) %in% c("xlsx", "xls"))
+                sprintf("Shiny.setInputValue('enter_xlsx', '%s', {priority:'event'})", row$full),
+              .bf_icon(row$type, row$full), row$name)
+          }))
+        preview_col <- shiny::div(
+          class = "bf-col bf-col-preview",
+          shiny::div(class = "bf-colhead", "Ark-preview"),
+          shiny::uiOutput("preview"))
+        return(shiny::div(class = "bf-browser", parent_col, cur_col, preview_col))
+      }
+
       path <- cur_path()
       nodes <- listing(path)
 
@@ -609,6 +761,34 @@ browse_files <- function(path = getwd()) {
     })
 
     output$preview <- shiny::renderUI({
+      # Inside a workbook: peek at the first rows of the cursor sheet.
+      sf <- sheet_file()
+      if (!is.null(sf)) {
+        s <- sheet_cursor()
+        if (is.null(s)) return(NULL)
+        df <- tryCatch(readxl::read_excel(sf, sheet = s, n_max = 8),
+                       error = function(e) NULL)
+        if (is.null(df) || ncol(df) == 0)
+          return(shiny::div(class = "bf-fileinfo",
+            shiny::p(shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), shiny::strong(s)),
+            shiny::p(class = "bf-hint", "Tomt eller ulæseligt ark.")))
+        ncol_total <- ncol(df); nrow_show <- nrow(df)
+        nshow <- min(ncol_total, 6L)
+        df <- df[, seq_len(nshow), drop = FALSE]
+        cell <- function(v) { v <- format(v); if (is.na(v) || v == "NA") "" else v }
+        tbl <- shiny::tags$table(
+          shiny::tags$tr(lapply(names(df), function(nm) shiny::tags$th(nm))),
+          lapply(seq_len(nrow(df)), function(r)
+            shiny::tags$tr(lapply(df[r, , drop = TRUE], function(v) shiny::tags$td(cell(v))))))
+        return(shiny::div(class = "bf-fileinfo",
+          shiny::p(shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), shiny::strong(s)),
+          shiny::div(class = "bf-sheet-peek", tbl),
+          shiny::p(class = "bf-hint",
+            paste0("Første ", nrow_show, " rækker · ",
+                   if (ncol_total > nshow) paste0(nshow, " af ", ncol_total) else ncol_total,
+                   " kolonner")),
+          shiny::p(class = "bf-hint", "Mellemrum markérer ark · Enter indsætter · h tilbage")))
+      }
       cu <- cursor()
       if (is.null(cu)) return(NULL)
       if (identical(cu$type, "d")) {
@@ -660,6 +840,20 @@ browse_files <- function(path = getwd()) {
     # of paths in the target set (marked, or the cursor when none are).
     kbd <- function(k) shiny::tags$span(class = "bf-kbd", k)
     output$actions <- shiny::renderUI({
+      if (!is.null(sheet_file())) {
+        nsh <- length(sheet_target()); nmk <- length(sheet_marked())
+        info_txt <- if (nsh <= 1) "Excel — indsætter <code>read_files(sheet = ...)</code>"
+                    else paste0("Excel — ", nsh, " ark, hvert sit objekt")
+        return(shiny::div(
+          class = "bf-actions",
+          shiny::actionButton("do_insert",
+            shiny::tagList(paste("Indsæt", max(nsh, 1L), "ark"), kbd("Enter")),
+            icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
+          shiny::actionButton("do_copy", shiny::tagList("Kopier", kbd("y")),
+            icon = shiny::icon("copy"), class = "btn-default bf-btn"),
+          shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
+          if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
+      }
       tg <- target()
       n  <- length(tg)
       nm <- length(marked())
@@ -713,14 +907,14 @@ browse_files <- function(path = getwd()) {
     })
 
     output$rstring <- shiny::renderText({
-      tg <- target()
-      if (length(tg) == 0) "(intet valgt)" else .bf_expr(tg, reader())
+      e <- current_expr()
+      if (!nzchar(e)) "(intet valgt)" else e
     })
 
     shiny::observeEvent(input$do_copy, {
-      tg <- target()
-      if (length(tg) > 0) {
-        session$sendCustomMessage("bf_clip", .bf_expr(tg, reader()))
+      e <- current_expr()
+      if (nzchar(e)) {
+        session$sendCustomMessage("bf_clip", e)
         shiny::showNotification("Kopieret til udklipsholderen.", duration = 2, type = "message")
       }
     })
@@ -739,8 +933,8 @@ browse_files <- function(path = getwd()) {
 
   # Deliver the result after the app has closed, so the active document
   # is the user's script/console again, not the app viewer.
-  if (result$insert && length(result$paths) > 0) {
-    expr <- .bf_expr(result$paths, result$reader)
+  if (result$insert && nzchar(result$expr)) {
+    expr <- result$expr
     if (requireNamespace("rstudioapi", quietly = TRUE) &&
         rstudioapi::isAvailable()) {
       rstudioapi::insertText(expr)

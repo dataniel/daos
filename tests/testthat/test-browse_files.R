@@ -55,6 +55,21 @@ test_that(".bf_readable() follows read_files' supported extensions", {
     c("csv", "tsv"))
 })
 
+test_that(".bf_sheet_var() makes valid, unique R names", {
+  expect_equal(daos:::.bf_sheet_var(c("Salg", "Budget 2026", "2024", "Salg")),
+               c("salg", "budget_2026", "ark_2024", "salg_1"))
+})
+
+test_that(".bf_sheet_expr() reads one sheet inline and several as objects", {
+  expect_equal(daos:::.bf_sheet_expr("C:\\data\\fil.xlsx", "Salg"),
+               'daos::read_files("C:/data/fil.xlsx", sheet = "Salg")')
+  norm  <- function(x) gsub(" +", " ", x)
+  lines <- strsplit(daos:::.bf_sheet_expr("data/fil.xlsx", c("A", "Budget")), "\n")[[1]]
+  expect_equal(norm(lines[1]), 'a <- daos::read_files("data/fil.xlsx", sheet = "A")')
+  expect_equal(norm(lines[2]), 'budget <- daos::read_files("data/fil.xlsx", sheet = "Budget")')
+  expect_equal(daos:::.bf_sheet_expr("x.xlsx", character()), "")
+})
+
 test_that(".bf_expr() in reader mode wraps only readable files", {
   d <- file.path(tempfile("bfx")); dir.create(d)
   on.exit(unlink(d, recursive = TRUE))
