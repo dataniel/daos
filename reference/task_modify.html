@@ -59,7 +59,8 @@
 <span>  tags <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  priority <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  due <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  recur <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  recur <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  depends <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -113,6 +114,10 @@ by a stable, readable name instead of a brittle integer. The numeric
 integer number of days, or one of <code>"daily"</code>, <code>"weekly"</code>,
 <code>"biweekly"</code>, <code>"monthly"</code>, <code>"quarterly"</code>, <code>"yearly"</code>. Needs a <code>due</code>.</p></dd>
 
+
+<dt id="arg-depends">depends<a class="anchor" aria-label="anchor" href="#arg-depends"></a></dt>
+<dd><p>Optional ids (integer, uuid, or key) this task depends on.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -121,7 +126,9 @@ integer number of days, or one of <code>"daily"</code>, <code>"weekly"</code>,
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Pass <code>key</code> to set or rename the task's key; pass <code>key = ""</code> to
-remove it. A new key must still be unique.</p>
+remove it. A new key must still be unique. Pass <code>tags</code> or <code>depends</code> to
+<em>replace</em> the task's tags or its dependencies (use <code>character(0)</code> to
+clear them); pass <code>recur = ""</code> to stop a task recurring.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

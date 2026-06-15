@@ -23,6 +23,7 @@ so concurrent callers – a colleague in the app and a scheduled script –
 do not step on each other.
 
 ``` r
+
 task_db("//server/share/production/tasks.sqlite")  # create or open
 ```
 
@@ -49,6 +50,7 @@ a task at the start, annotate it with what actually happened, and mark
 it done when the step succeeds:
 
 ``` r
+
 db <- "//server/share/production/tasks.sqlite"
 
 task_add(db, "Compile the accounts statistics", key = "compile-accounts",
@@ -76,6 +78,7 @@ meant – the call would quietly act on the wrong one. A `key` is a
 stable, readable name you choose yourself when you add the task:
 
 ``` r
+
 task_add(db, "Validate sources", key = "validate-sources", project = "RS-2026")
 ```
 
@@ -86,6 +89,7 @@ and then use anywhere an id is accepted –
 `depends =`, and the rest:
 
 ``` r
+
 task_done(db, "validate-sources")
 ```
 
@@ -102,6 +106,7 @@ stays pending and the error is recorded, so the next person sees exactly
 where production stopped and why:
 
 ``` r
+
 run_step <- function(db, id, expr) {
   out <- tryCatch(force(expr), error = function(e) e)
   if (inherits(out, "error")) {
@@ -133,6 +138,7 @@ statistics stay a plain pipeline, and the tracking is ordinary
 statements next to it that read from what the analysis already produced:
 
 ``` r
+
 # the statistics -- untouched, no task code in here
 stats <- df |>
   dplyr::group_by(group) |>
@@ -161,6 +167,7 @@ scheduled job can close this month’s task and next month’s appears
 automatically:
 
 ``` r
+
 task_add(db, "Monthly source refresh",
          project = "RS", recur = "monthly", due = "2026-07-01")
 ```
@@ -178,6 +185,7 @@ script – or a person in the app – can see what is *ready* to run rather
 than just what is pending:
 
 ``` r
+
 task_add(db, "Compile accounts", project = "RS-2026",
          depends = "validate-sources")          # waits for the keyed task above
 
@@ -198,6 +206,7 @@ only reads the task database – it never touches your data – so it sits
 beside the analysis:
 
 ``` r
+
 task_require(db, "validate-sources")   # abort unless that task is done
 
 stats <- compile(sources)              # only runs once the dependency is satisfied
@@ -226,6 +235,7 @@ a check that nothing is overdue is then a few lines of R against the
 same shared file the app reads:
 
 ``` r
+
 overview <- task_projects(db)
 overdue  <- task_list(db, status = "pending")
 overdue  <- overdue[!is.na(overdue$due) & overdue$due < Sys.Date(), ]
@@ -241,6 +251,7 @@ clicks, the pipeline writes, and the two views agree because there is
 only ever one file.
 
 ``` r
+
 task_app("//server/share/production/tasks.sqlite")
 ```
 
@@ -249,3 +260,14 @@ note, `g` reopen, `x` delete, `r` reset filters, `o`/`p` to switch
 between the tasks and projects pages, `q` to quit – and re-reads the
 database on a timer, so changes a script makes appear without a manual
 refresh.
+
+Deleting is a soft delete:
+[`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md)
+(and `x` in the app) only marks a task `deleted` so it can be reopened,
+which is why it disappears from the default
+[`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
+and from the app’s “Alle” view but still lives in the database. The
+app’s “Slettede” view is the trash – reopen from there, or empty it for
+good with
+[`task_purge()`](https://dataniel.github.io/daos/reference/task_purge.md),
+the irreversible hard delete.

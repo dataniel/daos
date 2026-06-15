@@ -15,7 +15,8 @@ task_modify(
   tags = NULL,
   priority = NULL,
   due = NULL,
-  recur = NULL
+  recur = NULL,
+  depends = NULL
 )
 ```
 
@@ -68,6 +69,10 @@ task_modify(
   number of days, or one of `"daily"`, `"weekly"`, `"biweekly"`,
   `"monthly"`, `"quarterly"`, `"yearly"`. Needs a `due`.
 
+- depends:
+
+  Optional ids (integer, uuid, or key) this task depends on.
+
 ## Value
 
 `TRUE`, invisibly.
@@ -75,4 +80,6 @@ task_modify(
 ## Details
 
 Pass `key` to set or rename the task's key; pass `key = ""` to remove
-it. A new key must still be unique.
+it. A new key must still be unique. Pass `tags` or `depends` to
+*replace* the task's tags or its dependencies (use `character(0)` to
+clear them); pass `recur = ""` to stop a task recurring.

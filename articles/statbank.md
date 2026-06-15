@@ -11,6 +11,7 @@ is my attempt at a different feel for it. It is not a finished product,
 just a take on what navigating a statbank could be like.
 
 ``` r
+
 statbank_app()           # Greenland (default)
 statbank_app(bank = "fo") # the Faroe Islands
 ```
@@ -58,6 +59,7 @@ If you already know the table and the values, the `statbank_*` client is
 what the app builds calls to, and you can skip the app entirely:
 
 ``` r
+
 statbank_search("national accounts")
 meta <- statbank_meta("NR/NR01/NRXxxx.PX")   # the variables and values
 

@@ -125,6 +125,8 @@
   : Reopen a task
 - [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md)
   : Delete a task
+- [`task_purge()`](https://dataniel.github.io/daos/reference/task_purge.md)
+  : Permanently delete tasks
 - [`task_modify()`](https://dataniel.github.io/daos/reference/task_modify.md)
   : Modify a task
 - [`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md)

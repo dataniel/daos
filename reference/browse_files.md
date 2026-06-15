@@ -44,9 +44,19 @@ the cursor path is used, a character vector when several are marked.
   (`daos::read_files("data/x.tsv")`); several paths are bound to a
   `my_paths` object first, then read after a blank line
   (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files
-  are read; folders in the target are left out, since
   [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-  cannot read a directory. Toggle it off to go back to plain paths.
+  can open are wrapped; folders and files of an unsupported type are
+  left out (with a warning), since wrapping them would only produce a
+  call that errors. Readable files are flagged with a green icon in the
+  browser. Toggle it off to go back to plain paths.
+
+- On an Excel file (`.xlsx`/`.xls`), `l`/Enter steps *into* the workbook
+  and lists its sheets; mark sheets with `Space` and the inserted code
+  reads exactly those – one
+  [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+  call per sheet (a single sheet reads inline). The preview shows the
+  first rows of the sheet under the cursor. `h` leaves the workbook.
+  Needs `readxl`.
 
 - `y` copies that same expression to the clipboard without closing.
 
@@ -54,9 +64,13 @@ the cursor path is used, a character vector when several are marked.
   [`open_in_explorer()`](https://dataniel.github.io/daos/reference/open_in_explorer.md)
   (a folder opens, a file is revealed).
 
+- `a` opens the file itself in its default application (the workbook
+  when inside one).
+
 - `l`/`->` enters a folder; `h`/`<-` goes up, all the way to the drive
   chooser at the root. The cursor remembers its place in each folder, so
-  going back up lands on the folder you came from.
+  going back up lands on the folder you came from. `g` jumps back to the
+  directory the browser opened in.
 
 - `Q` closes the app without inserting.
 

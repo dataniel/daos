@@ -288,6 +288,13 @@ two views agree because there is only ever one file.</p>
 filters, <code>o</code>/<code>p</code> to switch between the tasks and
 projects pages, <code>q</code> to quit – and re-reads the database on a
 timer, so changes a script makes appear without a manual refresh.</p>
+<p>Deleting is a soft delete: <code><a href="../reference/task_delete.html">task_delete()</a></code> (and
+<code>x</code> in the app) only marks a task <code>deleted</code> so it
+can be reopened, which is why it disappears from the default
+<code><a href="../reference/task_list.html">task_list()</a></code> and from the app’s “Alle” view but still lives
+in the database. The app’s “Slettede” view is the trash – reopen from
+there, or empty it for good with <code><a href="../reference/task_purge.html">task_purge()</a></code>, the
+irreversible hard delete.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

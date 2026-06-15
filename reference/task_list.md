@@ -14,6 +14,7 @@ task_list(
   assignee = NULL,
   tag = NULL,
   sort = c("urgency", "due", "entry", "project"),
+  desc = FALSE,
   .only_uuid = NULL
 )
 ```
@@ -26,8 +27,9 @@ task_list(
 
 - status:
 
-  Status filter: `"pending"` (default), `"completed"`, `"deleted"`, or
-  `"all"`.
+  Status filter: `"pending"` (default), `"completed"`, `"deleted"`,
+  `"active"` (pending plus completed, i.e. everything not soft-deleted),
+  or `"all"`.
 
 - project:
 
@@ -43,7 +45,13 @@ task_list(
 
 - sort:
 
-  One of `"urgency"` (default), `"due"`, `"entry"`, `"project"`.
+  One of `"urgency"` (default), `"due"` (forfaldsdato), `"entry"`
+  (oprettelsesdato), or `"project"`.
+
+- desc:
+
+  If `TRUE`, reverse the sort order (e.g. latest due date or newest task
+  first). Tasks with no due date or project stay last either way.
 
 - .only_uuid:
 
