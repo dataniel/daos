@@ -1022,7 +1022,16 @@ browse_files <- function(path = getwd()) {
         "\U0001FA90 Her slutter det kendte univers (altså dine drev).",
         "⛔ Ingen vej ud herfra — du står på selve roden.",
         "\U0001F9F1 Det er rod nok her. Prøv den anden vej.",
-        "\U0001F9D7 Du har nået toppen. Der er ikke mere bjerg."
+        "\U0001F9D7 Du har nået toppen. Der er ikke mere bjerg.",
+        "\U0001F30A Længere ud kommer du ikke uden en båd.",
+        "\U0001F6F8 Houston, vi har ramt roden.",
+        "\U0001F422 Det er drev hele vejen ned — men ikke længere op.",
+        "\U0001F9ED Kortet slutter her. Hinsides er der kun drager.",
+        "\U0001F510 Adgang nægtet til det store intet.",
+        "\U0001FAB5 Du kan ikke se skoven for bare drev.",
+        "\U0001F644 Seriøst? Der er virkelig ikke mere deroppe.",
+        "\U0001F9F1 root@her: permission denied — du ER roden.",
+        "\U0001F4C0 Toppen af C-drevet. Skønnere bliver det ikke."
       )
       shiny::showNotification(sample(msgs, 1), duration = 3, type = "message")
     })
