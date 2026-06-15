@@ -731,7 +731,7 @@ browse_files <- function(path = getwd()) {
             `data-full` = s, `data-type` = "x",
             onclick = sprintf("Shiny.setInputValue('pick_sheet', '%s', {priority:'event'})", js_s),
             shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), s,
-            if (marked_now) shiny::span(class = "bf-check", "✓"))
+            if (marked_now) shiny::span(class = "bf-check", "\u2713"))
         }
         cur_col <- shiny::div(
           class = "bf-col bf-col-current bf-sheet-mode",
@@ -740,7 +740,7 @@ browse_files <- function(path = getwd()) {
             shiny::div(class = "bf-empty",
               shiny::div(class = "bf-empty-ico", "\U0001F4D6"),
               shiny::p(shiny::strong("Ingen ark")),
-              shiny::p(class = "bf-hint", "Tryk h for at gå tilbage."))
+              shiny::p(class = "bf-hint", "Tryk h for at g\u00e5 tilbage."))
           else lapply(sheets, sheet_row))
         path  <- cur_path(); nodes <- listing(path)
         parent_col <- shiny::div(
@@ -834,7 +834,7 @@ browse_files <- function(path = getwd()) {
         if (is.null(df) || ncol(df) == 0)
           return(shiny::div(class = "bf-fileinfo",
             shiny::p(shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), shiny::strong(s)),
-            shiny::p(class = "bf-hint", "Tomt eller ulæseligt ark.")))
+            shiny::p(class = "bf-hint", "Tomt eller ul\u00e6seligt ark.")))
         ncol_total <- ncol(df); nrow_show <- nrow(df)
         nshow <- min(ncol_total, 6L)
         df <- df[, seq_len(nshow), drop = FALSE]
@@ -847,10 +847,10 @@ browse_files <- function(path = getwd()) {
           shiny::p(shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), shiny::strong(s)),
           shiny::div(class = "bf-sheet-peek", tbl),
           shiny::p(class = "bf-hint",
-            paste0("Første ", nrow_show, " rækker · ",
+            paste0("F\u00f8rste ", nrow_show, " r\u00e6kker \u00b7 ",
                    if (ncol_total > nshow) paste0(nshow, " af ", ncol_total) else ncol_total,
                    " kolonner")),
-          shiny::p(class = "bf-hint", "Mellemrum markérer ark · Enter indsætter · h tilbage")))
+          shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer ark \u00b7 Enter inds\u00e6tter \u00b7 h tilbage")))
       }
       cu <- cursor()
       if (is.null(cu)) return(NULL)
@@ -914,16 +914,16 @@ browse_files <- function(path = getwd()) {
     output$actions <- shiny::renderUI({
       if (!is.null(sheet_file())) {
         nsh <- length(sheet_target()); nmk <- length(sheet_marked())
-        info_txt <- if (nsh <= 1) "Excel — indsætter <code>read_files(sheet = ...)</code>"
-                    else paste0("Excel — ", nsh, " ark, hvert sit objekt")
+        info_txt <- if (nsh <= 1) "Excel \u2014 inds\u00e6tter <code>read_files(sheet = ...)</code>"
+                    else paste0("Excel \u2014 ", nsh, " ark, hvert sit objekt")
         return(shiny::div(
           class = "bf-actions",
           shiny::actionButton("do_insert",
-            shiny::tagList(paste("Indsæt", max(nsh, 1L), "ark"), kbd("Enter")),
+            shiny::tagList(paste("Inds\u00e6t", max(nsh, 1L), "ark"), kbd("Enter")),
             icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
           shiny::actionButton("do_copy", shiny::tagList("Kopier", kbd("y")),
             icon = shiny::icon("copy"), class = "btn-default bf-btn"),
-          shiny::actionButton("do_openfile", shiny::tagList("Åbn fil", kbd("a")),
+          shiny::actionButton("do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
             icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
           shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
           if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
@@ -1021,27 +1021,27 @@ browse_files <- function(path = getwd()) {
     shiny::observeEvent(input$hit_root, {
       msgs <- c(
         "\U0001F6A7 Stop! Her er kanten af din computer.",
-        "\U0001F573\UFE0F Du er nået til bunden af kaninhullet — dybere op går det ikke.",
-        "\U0001FA90 Her slutter det kendte univers (altså dine drev).",
-        "⛔ Ingen vej ud herfra — du står på selve roden.",
-        "\U0001F9F1 Det er rod nok her. Prøv den anden vej.",
-        "\U0001F9D7 Du har nået toppen. Der er ikke mere bjerg.",
-        "\U0001F30A Længere ud kommer du ikke uden en båd.",
+        "\U0001F573\UFE0F Du er n\u00e5et til bunden af kaninhullet \u2014 dybere op g\u00e5r det ikke.",
+        "\U0001FA90 Her slutter det kendte univers (alts\u00e5 dine drev).",
+        "\u26d4 Ingen vej ud herfra \u2014 du st\u00e5r p\u00e5 selve roden.",
+        "\U0001F9F1 Det er rod nok her. Pr\u00f8v den anden vej.",
+        "\U0001F9D7 Du har n\u00e5et toppen. Der er ikke mere bjerg.",
+        "\U0001F30A L\u00e6ngere ud kommer du ikke uden en b\u00e5d.",
         "\U0001F6F8 Houston, vi har ramt roden.",
-        "\U0001F422 Det er drev hele vejen ned — men ikke længere op.",
+        "\U0001F422 Det er drev hele vejen ned \u2014 men ikke l\u00e6ngere op.",
         "\U0001F9ED Kortet slutter her. Hinsides er der kun drager.",
-        "\U0001F510 Adgang nægtet til det store intet.",
+        "\U0001F510 Adgang n\u00e6gtet til det store intet.",
         "\U0001FAB5 Du kan ikke se skoven for bare drev.",
-        "\U0001F644 Seriøst? Der er virkelig ikke mere deroppe.",
-        "\U0001F9F1 root@her: permission denied — du ER roden.",
-        "\U0001F4C0 Toppen af C-drevet. Skønnere bliver det ikke."
+        "\U0001F644 Seri\u00f8st? Der er virkelig ikke mere deroppe.",
+        "\U0001F9F1 root@her: permission denied \u2014 du ER roden.",
+        "\U0001F4C0 Toppen af C-drevet. Sk\u00f8nnere bliver det ikke."
       )
       persistent <- c(
         "\U0001F95A Okay, du fandt et easter egg. Tillykke.",
         "\U0001F6D7 Knappen virker stadig ikke. Det lover jeg.",
-        "\U0001F9D8 Træk vejret. Roden er roden.",
+        "\U0001F9D8 Tr\u00e6k vejret. Roden er roden.",
         "\U0001F3C6 Verdensmester i at trykke h. Imponerende.",
-        "\U0001F440 Jeg holder øje. Der kommer ikke flere mapper."
+        "\U0001F440 Jeg holder \u00f8je. Der kommer ikke flere mapper."
       )
       n <- shiny::isolate(root_hits()) + 1
       root_hits(n)

@@ -367,17 +367,17 @@ task_app <- function(db = "tasks.sqlite") {
         title = "Tastaturgenveje", easyClose = TRUE, footer = shiny::modalButton("Luk"),
         shiny::div(class = "tk-help",
           k("j / k", "flyt markering op/ned"),
-          k("f", "markér færdig"),
+          k("f", "mark\u00e9r f\u00e6rdig"),
           k("e", "rediger opgave"),
-          k("n", "tilføj note"),
-          k("g", "genåbn"),
+          k("n", "tilf\u00f8j note"),
+          k("g", "gen\u00e5bn"),
           k("x", "slet (papirkurv)"),
-          k("Enter", "tilføj opgave (i formularen)"),
+          k("Enter", "tilf\u00f8j opgave (i formularen)"),
           k("Esc", "forlad tekstfelt"),
           k("r", "nulstil filtre"),
           k("u", "opdater"),
           k("o / p", "skift mellem Opgaver og Projekter"),
-          k("?", "vis denne hjælp"),
+          k("?", "vis denne hj\u00e6lp"),
           k("q", "luk appen"))))
     })
 
@@ -524,7 +524,7 @@ task_app <- function(db = "tasks.sqlite") {
         # about a deadline.
         faded <- t$status %in% c("completed", "deleted")
         status_label <- switch(t$status, pending = "Afventer",
-          completed = "✓ Færdig", deleted = "Slettet", t$status)
+          completed = "\u2713 F\u00e6rdig", deleted = "Slettet", t$status)
         # Show a due field on every task. With a date: "Forfald: dd-mm-yyyy",
         # tinted amber when within 3 days and red when overdue. Without one:
         # a muted "ingen frist", so the column reads the same on every row.
@@ -537,7 +537,7 @@ task_app <- function(db = "tasks.sqlite") {
         # A standalone flag for the rows that need attention now.
         deadline_flag <- if (!has_due || faded) NULL
                          else if (dleft < 0) shiny::span(class = "tk-flag tk-flag-over", "forfaldt")
-                         else if (dleft <= 3) shiny::span(class = "tk-flag tk-flag-soon", "tæt på")
+                         else if (dleft <= 3) shiny::span(class = "tk-flag tk-flag-soon", "t\u00e6t p\u00e5")
         tagchips <- if (nzchar(t$tags))
           lapply(strsplit(t$tags, ",", fixed = TRUE)[[1]],
                  function(x) shiny::span(class = "tk-chip tk-tag", x))
@@ -566,12 +566,12 @@ task_app <- function(db = "tasks.sqlite") {
       trash <- if (identical(input$f_status, "deleted"))
         shiny::div(class = "tk-trash",
           shiny::actionButton("empty_trash",
-            paste0("\U0001F5D1 Tøm papirkurv (", nrow(df), ")"),
+            paste0("\U0001F5D1 T\u00f8m papirkurv (", nrow(df), ")"),
             class = "btn-default tk-danger"))
       total <- nrow(tasks_all())
       count <- shiny::div(class = "tk-count",
         if (nrow(df) < total)
-          paste0("Viser ", nrow(df), " af ", total, " — vælg flere under Vis, eller filtrer")
+          paste0("Viser ", nrow(df), " af ", total, " \u2014 v\u00e6lg flere under Vis, eller filtrer")
         else paste0(total, if (total == 1) " opgave" else " opgaver"))
       shiny::tagList(trash, count, shiny::div(class = "tk-rows", rows))
     })
@@ -596,7 +596,7 @@ task_app <- function(db = "tasks.sqlite") {
         class = "tk-card tk-detail",
         shiny::h4(t$description),
         drow("Status", t$status),
-        if (!is.na(t$key)) drow("Nøgle", t$key),
+        if (!is.na(t$key)) drow("N\u00f8gle", t$key),
         if (!is.null(blockers) && nrow(blockers) > 0)
           shiny::div(class = "tk-d-row tk-d-block",
             shiny::span(class = "tk-d-k", "Blokeret af"),
@@ -705,11 +705,11 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::observeEvent(input$empty_trash, {
       n <- nrow(task_list(db_path(), status = "deleted"))
       shiny::showModal(shiny::modalDialog(
-        title = "Tøm papirkurv?",
+        title = "T\u00f8m papirkurv?",
         sprintf("%d slettede opgave%s fjernes helt og kan ikke gendannes.",
                 n, if (n == 1) "" else "r"),
         footer = shiny::tagList(shiny::modalButton("Annuller"),
-          shiny::actionButton("empty_trash_ok", "Tøm papirkurv", class = "btn-primary tk-danger")),
+          shiny::actionButton("empty_trash_ok", "T\u00f8m papirkurv", class = "btn-primary tk-danger")),
         easyClose = TRUE))
     })
     shiny::observeEvent(input$empty_trash_ok, {
@@ -749,7 +749,7 @@ task_app <- function(db = "tasks.sqlite") {
       shiny::showModal(shiny::modalDialog(
         title = "Rediger opgave",
         shiny::textInput("e_desc", "Beskrivelse", value = t$description),
-        shiny::textInput("e_key", "Nøgle", value = if (is.na(t$key)) "" else t$key),
+        shiny::textInput("e_key", "N\u00f8gle", value = if (is.na(t$key)) "" else t$key),
         shiny::textInput("e_project", "Projekt", value = if (is.na(t$project)) "" else t$project),
         shiny::textInput("e_assignee", "Person", value = if (is.na(t$assignee)) "" else t$assignee),
         shiny::textInput("e_tags", "Tags", value = t$tags),
