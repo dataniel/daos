@@ -257,9 +257,11 @@ browse_files <- function(path = getwd()) {
     .bf-hero h2 { font-weight: 700; letter-spacing: -0.3px; margin: 0 0 4px; color: #fff; font-size: 22px; }
     .bf-sub { color: #c7dbef; margin: 0; font-size: 14px; }
     .bf-tag {
-      float: right; background: rgba(255,255,255,.14); color: #e6eef7;
+      display: none; float: right; background: rgba(255,255,255,.2); color: #ffffff;
       border-radius: 999px; padding: 4px 14px; font-size: 12.5px; letter-spacing: .4px;
+      font-weight: 600;
     }
+    .bf-in-xlsx .bf-tag { display: inline-block; }
     .bf-card {
       background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
       box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 4px 16px rgba(15,23,42,.05);
@@ -491,7 +493,7 @@ browse_files <- function(path = getwd()) {
     ),
     shiny::div(
       class = "bf-hero",
-      shiny::span(class = "bf-tag", "daos"),
+      shiny::span(class = "bf-tag", "\U0001F4D7 Excel mode on"),
       shiny::h2("Filstier"),
       shiny::p(class = "bf-sub",
                "Bladr med tastaturet, mark\u00e9r filer eller mapper, og tag stierne med ind i R.")
