@@ -49,9 +49,12 @@ the cursor. \code{h} leaves the workbook. Needs \code{readxl}.
 \item \code{y} copies that same expression to the clipboard without closing.
 \item \code{o} opens the item under the cursor in the system file explorer via
 \code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file is revealed).
+\item \code{a} opens the file itself in its default application (the workbook when
+inside one).
 \item \code{l}/\verb{->} enters a folder; \code{h}/\verb{<-} goes up, all the way to the drive
 chooser at the root. The cursor remembers its place in each folder,
-so going back up lands on the folder you came from.
+so going back up lands on the folder you came from. \code{g} jumps back to
+the directory the browser opened in.
 \item \code{Q} closes the app without inserting.
 }
 }

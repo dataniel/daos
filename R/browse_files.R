@@ -142,6 +142,20 @@
   shiny::span(class = cls, "\U0001F4C4")
 }
 
+# Open a file in its default application (Windows shell, macOS open, Linux
+# xdg-open). Unlike open_in_explorer(), which reveals the file's location.
+.bf_open_file <- function(path) {
+  p <- normalizePath(path, mustWork = FALSE)
+  if (.Platform$OS.type == "windows") {
+    shell.exec(p)
+  } else {
+    opener <- if (Sys.info()[["sysname"]] == "Darwin") "open" else "xdg-open"
+    system2(opener, shQuote(p), wait = FALSE,
+            stdout = FALSE, stderr = FALSE)
+  }
+  invisible(path)
+}
+
 # Human-readable file size.
 .bf_size <- function(bytes) {
   if (is.na(bytes)) return("")
@@ -184,9 +198,12 @@
 #' - `y` copies that same expression to the clipboard without closing.
 #' - `o` opens the item under the cursor in the system file explorer via
 #'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
+#' - `a` opens the file itself in its default application (the workbook when
+#'   inside one).
 #' - `l`/`->` enters a folder; `h`/`<-` goes up, all the way to the drive
 #'   chooser at the root. The cursor remembers its place in each folder,
-#'   so going back up lands on the folder you came from.
+#'   so going back up lands on the folder you came from. `g` jumps back to
+#'   the directory the browser opened in.
 #' - `Q` closes the app without inserting.
 #'
 #' @param path Directory to start in. Default: the working directory
@@ -377,6 +394,8 @@ browse_files <- function(path = getwd()) {
       if (key === 'Enter') { e.preventDefault(); Shiny.setInputValue('do_insert', Date.now()); return; }
       if (key === 'y') { e.preventDefault(); Shiny.setInputValue('do_copy', Date.now()); return; }
       if (key === 'o') { e.preventDefault(); Shiny.setInputValue('do_open', Date.now()); return; }
+      if (key === 'a') { e.preventDefault(); Shiny.setInputValue('do_openfile', Date.now()); return; }
+      if (key === 'g') { e.preventDefault(); Shiny.setInputValue('go_start', Date.now()); return; }
       if (key === 'r') { e.preventDefault(); Shiny.setInputValue('toggle_reader', Date.now()); return; }
 
       var down = (key === 'j' || key === 'ArrowDown');
@@ -459,7 +478,8 @@ browse_files <- function(path = getwd()) {
     kbd_html("mellemrum"), " mark\u00e9r ",
     kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
     kbd_html("r"), " reader ",
-    kbd_html("o"), " stifinder ", kbd_html("Q"), " luk",
+    kbd_html("o"), " stifinder ", kbd_html("a"), " \u00e5bn fil ",
+    kbd_html("g"), " start ", kbd_html("Q"), " luk",
     "<br>", kbd_html("l"), " p\u00e5 en Excel-fil g\u00e5r ind i arkene"
   )
 
@@ -895,6 +915,8 @@ browse_files <- function(path = getwd()) {
             icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
           shiny::actionButton("do_copy", shiny::tagList("Kopier", kbd("y")),
             icon = shiny::icon("copy"), class = "btn-default bf-btn"),
+          shiny::actionButton("do_openfile", shiny::tagList("Åbn fil", kbd("a")),
+            icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
           shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
           if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
       }
@@ -940,6 +962,9 @@ browse_files <- function(path = getwd()) {
         shiny::actionButton(
           "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
           icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
+          icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
         if (!is.null(info))
           shiny::span(class = if (warn) "bf-info bf-info-warn" else "bf-info",
                       shiny::icon(if (warn) "exclamation-triangle" else "info-circle"),
@@ -970,6 +995,22 @@ browse_files <- function(path = getwd()) {
                  error = function(e) shiny::showNotification(conditionMessage(e),
                                                              duration = 4, type = "error"))
       }
+    })
+    # Open the file itself in its default application: the workbook when
+    # inside one, otherwise the cursor file (not directories).
+    shiny::observeEvent(input$do_openfile, {
+      f <- if (!is.null(sheet_file())) sheet_file()
+           else { cu <- cursor(); if (!is.null(cu) && identical(cu$type, "f")) cu$full else NULL }
+      if (!is.null(f))
+        tryCatch(.bf_open_file(f),
+                 error = function(e) shiny::showNotification(conditionMessage(e),
+                                                             duration = 4, type = "error"))
+    })
+    # Jump back to the directory the browser opened in.
+    shiny::observeEvent(input$go_start, {
+      sheet_file(NULL); sheet_marked(character()); sheet_cursor(NULL)
+      nav$prev <- cur_path()
+      cur_path(start_path)
     })
   }
 
