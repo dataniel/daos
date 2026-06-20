@@ -118,6 +118,97 @@ test_that(".sb_parse_jsonstat() orders categories by index, not list order", {
   expect_equal(out$value, c(10, NA))
 })
 
+test_that(".sb_parse_jsonstat() can return codes and texts side by side", {
+  x <- list(
+    id   = list("gender"),
+    size = list(2L),
+    dimension = list(
+      gender = list(
+        label = "køn",
+        category = list(
+          index = list("0" = 0L, "1" = 1L),
+          label = list("0" = "Kvinde", "1" = "Mand")
+        )
+      )
+    ),
+    value = list(5, 7)
+  )
+  both <- daos:::.sb_parse_jsonstat(x, col_names = "code", values = "both")
+  expect_equal(names(both), c("gender", "gender_txt", "value"))
+  expect_equal(both$gender, c("0", "1"))
+  expect_equal(both$gender_txt, c("Kvinde", "Mand"))
+})
+
+test_that(".sb_parse_jsonstat() snake-cases names when clean_names = TRUE", {
+  x <- list(
+    id   = list("place of birth"),
+    size = list(1L),
+    dimension = list(
+      `place of birth` = list(
+        label = "Fødested",
+        category = list(index = list(T = 0L), label = list(T = "I alt"))
+      )
+    ),
+    value = list(3)
+  )
+  codes <- daos:::.sb_parse_jsonstat(x, col_names = "code", clean_names = TRUE)
+  texts <- daos:::.sb_parse_jsonstat(x, col_names = "text", values = "both",
+                                     clean_names = TRUE)
+  expect_equal(names(codes), c("place_of_birth", "value"))
+  expect_equal(names(texts), c("foedested", "foedested_txt", "value"))
+})
+
+test_that(".sb_clean_names() snake-cases and folds Danish letters", {
+  expect_equal(
+    daos:::.sb_clean_names(c("place of birth", "Fødested", "Brutto/Netto")),
+    c("place_of_birth", "foedested", "brutto_netto")
+  )
+})
+
+test_that(".sb_pivot_wide() spreads a column across columns", {
+  d <- tibble::tibble(
+    tid   = c("2023", "2024", "2023", "2024"),
+    sex   = c("0", "0", "1", "1"),
+    value = c(10, 11, 20, 21)
+  )
+  w <- daos:::.sb_pivot_wide(d, "tid")
+  expect_equal(names(w), c("sex", "2023", "2024"))
+  expect_equal(w$`2023`, c(10, 20))
+  expect_equal(w$`2024`, c(11, 21))
+})
+
+test_that(".sb_pivot_wide() drops the pivot column's _txt sibling", {
+  d <- tibble::tibble(
+    tid     = c("2023", "2024"),
+    tid_txt = c("2023", "2024"),
+    value   = c(5, 6)
+  )
+  w <- daos:::.sb_pivot_wide(d, "tid")
+  expect_false("tid_txt" %in% names(w))
+  expect_false("." %in% names(w))
+  expect_equal(w$`2023`, 5)
+})
+
+test_that(".sb_pivot_wide() returns the data unchanged for an empty column", {
+  d <- tibble::tibble(tid = "2024", value = 1)
+  expect_identical(daos:::.sb_pivot_wide(d, ""), d)
+})
+
+test_that(".sb_is_url() recognises a base URL, and .sb_url() uses it verbatim", {
+  expect_true(daos:::.sb_is_url("https://bank.stat.gl/api/v1/da/Greenland"))
+  expect_false(daos:::.sb_is_url("gl"))
+  expect_equal(
+    daos:::.sb_url("BE/BE01/X.PX", "da",
+                   "https://bank.stat.gl/api/v1/da/Greenland"),
+    "https://bank.stat.gl/api/v1/da/Greenland/BE/BE01/X.PX"
+  )
+})
+
+test_that(".sb_resolve_lang() leaves a URL bank's language alone", {
+  expect_equal(daos:::.sb_resolve_lang(NULL, "https://x/api/v1/da/DB"), "")
+  expect_equal(daos:::.sb_resolve_lang("en", "https://x/api/v1/da/DB"), "en")
+})
+
 test_that(".sb_extract_info() collects notes, source, and contact", {
   x <- list(
     source  = "Statistics Greenland",

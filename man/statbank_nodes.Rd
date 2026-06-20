@@ -16,7 +16,10 @@ bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
 Faroe Islands offer \code{"fo"}, \code{"en"}.}
 
 \item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
-(the Faroe Islands).}
+(the Faroe Islands). It may also be a full base URL (everything
+before the table path, with language and database node already in
+it, e.g. \code{"https://bank.stat.gl/api/v1/da/Greenland"}), to reach any
+PXWeb v1 endpoint; \code{lang} is then ignored.}
 }
 \value{
 A tibble with columns \code{id}, \code{type} (\code{"l"} for folder, \code{"t"}

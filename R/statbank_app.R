@@ -14,15 +14,32 @@
 #' age), are selected with from/to dropdowns. Other variables open a
 #' popup with a searchable checkbox list, select/deselect-all
 #' shortcuts, and a running count; an empty selection means all values.
-#' The settings panel under step 3 toggles the [daos::statbank_get()]
-#' options: codes as column names, codes in the cells, and automatic
-#' type conversion.
+#' The popup lists the values in the table's own (PX) order, with a link
+#' to sort them alphabetically instead.
+#'
+#' Built as a programming aid, the settings under step 3 default to the
+#' code-first shape from [daos::statbank_get()]: coded column names
+#' (snake-cased), coded cells, and type conversion. Pill toggles switch
+#' column names and cells between codes and texts (or "both", which adds
+#' a `<column>_txt` column with the labels), turn snake-casing off, or
+#' paste the full base URL into the generated call so it can be rebuilt
+#' by hand. The language chooser at the top picks the language of titles,
+#' labels, and texts (Greenland offers Danish, Kalaallisut, and English;
+#' the Faroe Islands offer Faroese and English).
 #'
 #' Fetched data can be downloaded as a formatted Excel file (via
-#' [daos::write_excel()] when `openxlsx2` is installed, otherwise CSV),
-#' and the R code can be copied with one click. Pressing `Q` closes the
-#' app and returns the last fetched dataset, so
-#' `df <- statbank_app()` also works as a data-fetching workflow.
+#' [daos::write_excel()] when `openxlsx2` is installed, otherwise CSV).
+#' Before download, a pivot chooser can spread one variable across the
+#' columns -- typically time, the layout spreadsheet users want -- with
+#' the preview updating to match. The R code -- prefixed `daos::` so it
+#' runs without `library(daos)` -- can be inserted into the active RStudio
+#' document with "Inds\u00e6t og luk" (which closes the app) or copied; a toggle
+#' lifts the variable selections into a spliced `my_query` list
+#' (`!!!my_query`). The graph is interactive when `plotly` is installed:
+#' with many series only the largest are highlighted and the rest greyed,
+#' but every line is identifiable on hover. Pressing `Q` closes the app and
+#' returns the last fetched dataset, so `df <- statbank_app()` also works
+#' as a data-fetching workflow.
 #'
 #' The app covers both the Greenland statbank (the default) and the
 #' Faroese one. The bank chooser sits one level above the subject root:
@@ -59,6 +76,12 @@ statbank_app <- function(bank = "gl", lang = NULL) {
   }
   init_bank <- bank
   init_lang <- .sb_resolve_lang(lang, bank)
+
+  # Carries the generated code out of the app when the user asks to insert
+  # it into the editor (like browse_files), delivered after runApp().
+  result <- new.env(parent = emptyenv())
+  result$insert <- FALSE
+  result$code   <- ""
 
   theme <- if (requireNamespace("bslib", quietly = TRUE)) {
     tryCatch(bslib::bs_theme(version = 5, bootswatch = "zephyr"),
@@ -246,6 +269,29 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 18px;
       font-size: 13px; border: none;
     }
+    /* Settings as compact pill toggles and segmented choices, borrowed
+       from browse_files: clearer than a column of checkboxes. */
+    .sb-toggles { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .sb-toggles-label {
+      font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: #94a3b8; margin-right: 2px; min-width: 92px;
+    }
+    .sb-toggle.btn, .sb-seg.btn {
+      display: inline-flex; align-items: center; gap: 7px; box-shadow: none;
+      border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600;
+      color: #64748b; background: #fff; border: 1px solid #d6dee8; margin: 0;
+    }
+    .sb-toggle.btn:hover, .sb-seg.btn:hover { color: #1d62a8; border-color: #1d62a8; background: #fff; }
+    .sb-toggle.on.btn, .sb-seg.on.btn { color: #174e86; background: #e8f0fa; border-color: #1d62a8; }
+    .sb-statusline {
+      margin: 4px 0 14px; display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; color: #64748b;
+    }
+    .sb-statusline code {
+      background: rgba(15,23,42,.06); color: #334155;
+      border-radius: 5px; padding: 1px 6px; font-size: 12px;
+    }
+    .sb-modal-sort { float: right; font-size: 12.5px; }
   "
 
   # Q closes the app (ignored while typing in a field), like in
@@ -337,7 +383,7 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       var txt = document.getElementById('code').innerText;
       var done = function() {
         btn.innerText = 'Kopieret!';
-        setTimeout(function() { btn.innerText = 'Kopier kode'; }, 1500);
+        setTimeout(function() { btn.innerText = 'Kopier'; }, 1500);
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(done, function() {
@@ -369,6 +415,7 @@ statbank_app <- function(bank = "gl", lang = NULL) {
         width = 4,
         shiny::div(class = "sb-step",
                    shiny::span(class = "sb-badge", "1"), "Find en tabel"),
+        shiny::uiOutput("lang_ui"),
         shiny::textInput("search", "Friteksts\u00f8gning",
                          placeholder = "fx befolkning, ledighed, fangst"),
         shiny::selectizeInput("table", "Tabel", choices = NULL,
@@ -390,6 +437,11 @@ statbank_app <- function(bank = "gl", lang = NULL) {
   has_openxlsx   <- requireNamespace("openxlsx2", quietly = TRUE)
   download_label <- if (has_openxlsx) "Download Excel" else "Download CSV"
 
+  # An interactive plotly chart (hover to identify a line among many) when
+  # plotly and scales are installed; otherwise a static ggplot.
+  has_plotly <- requireNamespace("plotly", quietly = TRUE) &&
+    requireNamespace("scales", quietly = TRUE)
+
   server <- function(input, output, session) {
     tables <- shiny::reactiveVal(NULL)
 
@@ -406,16 +458,29 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       shiny::stopApp(invisible(fetched()))
     })
 
-    # Load the table list whenever the bank changes (also at startup).
-    # Reads the language by isolation, since the two are set together.
-    shiny::observeEvent(active_bank(), {
+    # Load the table list whenever the bank or language changes (also at
+    # startup); both feed the tree labels and the table titles.
+    shiny::observe({
       bk <- active_bank()
-      lg <- shiny::isolate(active_lang())
+      lg <- active_lang()
       shiny::withProgress(
         message = paste0("Henter tabelliste fra ", .sb_banks[[bk]]$label, " ..."), {
           tables(statbank_tables(lang = lg, bank = bk))
         })
-    }, ignoreNULL = FALSE)
+    })
+
+    # Language chooser: the languages the active bank offers, with the
+    # current one selected. Picking another reloads everything in it.
+    output$lang_ui <- shiny::renderUI({
+      langs <- .sb_banks[[active_bank()]]$langs
+      shiny::selectInput(
+        "lang", "Sprog",
+        choices  = stats::setNames(langs, .sb_lang_label(langs)),
+        selected = shiny::isolate(active_lang()))
+    })
+    shiny::observeEvent(input$lang, {
+      if (!identical(input$lang, active_lang())) active_lang(input$lang)
+    })
 
     # Node listings for the tree browser, cached per bank, language, and
     # folder.
@@ -621,8 +686,9 @@ statbank_app <- function(bank = "gl", lang = NULL) {
     # The popup: a searchable checkbox list for one variable. The
     # working selection lives in its own reactiveVal while the popup is
     # open, and is written to sel_store on OK.
-    modal_var <- shiny::reactiveVal(NULL)
-    working   <- shiny::reactiveVal(character())
+    modal_var  <- shiny::reactiveVal(NULL)
+    working    <- shiny::reactiveVal(character())
+    modal_sort <- shiny::reactiveVal(FALSE)   # alphabetical vs PX order
 
     open_observers <- list()
     shiny::observeEvent(meta(), {
@@ -632,16 +698,20 @@ statbank_app <- function(bank = "gl", lang = NULL) {
         if (is_range_var(vars, j)) return(NULL)
         shiny::observeEvent(input[[paste0("sbopen_", j)]], {
           modal_var(j)
+          modal_sort(FALSE)
           cur <- sel_store()[[vars$code[j]]]
           working(if (is.null(cur)) character() else cur)
           shiny::showModal(shiny::modalDialog(
             title = vars$text[j],
             shiny::textInput("modal_filter", NULL,
-                             placeholder = "Filtrer i listen ..."),
+                             placeholder = "Filtrer (regex), fx ^20|i alt"),
             shiny::div(
               shiny::actionLink("modal_all", "V\u00e6lg alle viste"),
               " | ",
               shiny::actionLink("modal_none", "Frav\u00e6lg alle viste"),
+              " | ",
+              shiny::actionLink("modal_sort",
+                                shiny::textOutput("modal_sort_lbl", inline = TRUE)),
               shiny::span(class = "sb-hint", style = "float: right;",
                           shiny::textOutput("modal_count", inline = TRUE))
             ),
@@ -665,13 +735,33 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       codes <- vars$values[[j]]
       texts <- vars$valueTexts[[j]]
       if (shiny::isTruthy(input$modal_filter)) {
-        keep  <- grepl(input$modal_filter, texts, ignore.case = TRUE) |
-          grepl(input$modal_filter, codes, ignore.case = TRUE)
+        pat  <- input$modal_filter
+        # The filter is a case-insensitive regex; a half-typed or invalid
+        # pattern falls back to a plain substring so the list never errors.
+        keep <- tryCatch(
+          grepl(pat, texts, ignore.case = TRUE) |
+            grepl(pat, codes, ignore.case = TRUE),
+          error = function(e) {
+            p <- tolower(pat)
+            grepl(p, tolower(texts), fixed = TRUE) |
+              grepl(p, tolower(codes), fixed = TRUE)
+          }
+        )
         codes <- codes[keep]
         texts <- texts[keep]
       }
+      # PX order by default; the sort link switches to alphabetical.
+      if (modal_sort()) {
+        ord   <- order(texts)
+        codes <- codes[ord]
+        texts <- texts[ord]
+      }
       stats::setNames(codes, texts)
     })
+
+    shiny::observeEvent(input$modal_sort, modal_sort(!modal_sort()))
+    output$modal_sort_lbl <- shiny::renderText(
+      if (modal_sort()) "PX-orden" else "Sort\u00e9r A\u2013\u00c5")
 
     shiny::observeEvent(input$modal_filter, {
       shiny::freezeReactiveValue(input, "modal_check")
@@ -714,27 +804,75 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       shiny::removeModal()
     })
 
+    # Output settings, held in reactiveVals so the pill toggles can show
+    # their state. Defaults favour codes, since the app is a programming
+    # aid: coded column names and cells, snake-cased names, conversion on.
+    o_codecols <- shiny::reactiveVal(TRUE)    # codes vs texts as column names
+    o_values   <- shiny::reactiveVal("code")  # "code" | "text" | "both"
+    o_clean    <- shiny::reactiveVal(TRUE)    # snake_case the column names
+    o_typeconv <- shiny::reactiveVal(TRUE)    # readr::type_convert the result
+    o_fullurl  <- shiny::reactiveVal(FALSE)   # paste the base URL into the code
+    o_splice   <- shiny::reactiveVal(FALSE)   # selections as a spliced list2
+
+    shiny::observeEvent(input$set_colcode, o_codecols(TRUE))
+    shiny::observeEvent(input$set_coltext, o_codecols(FALSE))
+    shiny::observeEvent(input$set_valcode, o_values("code"))
+    shiny::observeEvent(input$set_valtext, o_values("text"))
+    shiny::observeEvent(input$set_valboth, o_values("both"))
+    shiny::observeEvent(input$set_clean,    o_clean(!o_clean()))
+    shiny::observeEvent(input$set_typeconv, o_typeconv(!o_typeconv()))
+    shiny::observeEvent(input$set_fullurl,  o_fullurl(!o_fullurl()))
+    shiny::observeEvent(input$set_splice,   o_splice(!o_splice()))
+
     output$fetch_area <- shiny::renderUI({
       shiny::req(meta())
+      seg <- function(id, label, active) shiny::actionButton(
+        id, label, class = paste("sb-seg btn", if (active) "on"))
+      pill <- function(id, label, on) shiny::actionButton(
+        id, label, class = paste("sb-toggle btn", if (on) "on"))
       shiny::tagList(
         shiny::div(class = "sb-step",
                    shiny::span(class = "sb-badge", "3"), "Hent"),
-        shiny::tags$details(
-          class = "sb-advanced",
-          shiny::tags$summary("Indstillinger"),
-          shiny::checkboxInput("opt_codecols", "Koder som kolonnenavne", FALSE),
-          shiny::checkboxInput("opt_codevals", "Koder i cellerne i stedet for tekster", FALSE),
-          shiny::checkboxInput("opt_typeconvert", "Konverter kolonnetyper automatisk", TRUE)
-        ),
+        shiny::div(class = "sb-toggles",
+                   shiny::span(class = "sb-toggles-label", "Kolonnenavne"),
+                   seg("set_colcode", "Koder", o_codecols()),
+                   seg("set_coltext", "Tekster", !o_codecols())),
+        shiny::div(class = "sb-toggles",
+                   shiny::span(class = "sb-toggles-label", "Celleindhold"),
+                   seg("set_valcode", "Koder", o_values() == "code"),
+                   seg("set_valtext", "Tekster", o_values() == "text"),
+                   seg("set_valboth", "Begge", o_values() == "both")),
+        shiny::div(class = "sb-toggles",
+                   shiny::span(class = "sb-toggles-label", "Andet"),
+                   pill("set_clean", "snake_case-navne", o_clean()),
+                   pill("set_typeconv", "Konverter typer", o_typeconv()),
+                   pill("set_fullurl", "Fuld URL i koden", o_fullurl())),
+        shiny::div(class = "sb-toggles",
+                   shiny::span(class = "sb-toggles-label", "Kode"),
+                   pill("set_splice", "Variabler i liste", o_splice())),
+        shiny::div(class = "sb-statusline",
+                   shiny::uiOutput("settings_hint", inline = TRUE)),
         shiny::actionButton("fetch", "Hent data", class = "btn-primary")
       )
     })
 
-    # Option getters with defaults, since the inputs live in a renderUI
-    # and may not exist yet.
-    opt_col_names <- function() if (isTRUE(input$opt_codecols)) "code" else "text"
-    opt_values    <- function() if (isTRUE(input$opt_codevals)) "code" else "text"
-    opt_typeconv  <- function() !isFALSE(input$opt_typeconvert)
+    # A one-line summary of what the current settings produce.
+    output$settings_hint <- shiny::renderUI({
+      cols  <- if (o_codecols()) "kodenavne" else "tekstnavne"
+      cells <- switch(o_values(),
+                      code = "koder i cellerne",
+                      text = "tekster i cellerne",
+                      both = "koder + _txt-tekstkolonner")
+      shiny::tagList(
+        shiny::HTML("&rarr;"),
+        paste0(cols, ", ", cells, if (o_clean()) ", snake_case" else ""))
+    })
+
+    # Option getters used by the fetch and the code preview.
+    opt_col_names <- function() if (o_codecols()) "code" else "text"
+    opt_values    <- function() o_values()
+    opt_clean     <- function() o_clean()
+    opt_typeconv  <- function() o_typeconv()
 
     # Selections as a named list, variable code -> value codes. Time
     # variables come from the from/to pickers; an empty or complete
@@ -771,6 +909,7 @@ statbank_app <- function(bank = "gl", lang = NULL) {
           list(lang = active_lang(), bank = active_bank(),
                .col_names = opt_col_names(),
                .values = opt_values(),
+               .clean_names = opt_clean(),
                .type_convert = opt_typeconv())
         )))
       })
@@ -1071,29 +1210,47 @@ statbank_app <- function(bank = "gl", lang = NULL) {
             type = "pills",
             shiny::tabPanel(
               shiny::tagList(shiny::span(class = "sb-tabicon", "\u25a6"), "Data"),
-              shiny::div(style = "margin: 10px 0;",
-                         shiny::downloadButton("download", download_label,
-                                               class = "btn-sm")),
+              shiny::div(
+                style = "display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin: 10px 0;",
+                shiny::div(style = "min-width: 240px;", shiny::uiOutput("pivot_ui")),
+                shiny::downloadButton("download", download_label, class = "btn-sm")),
               shiny::div(class = "sb-hint", shiny::textOutput("n_rows")),
               shiny::tableOutput("preview"),
               shiny::uiOutput("data_notes")),
             shiny::tabPanel(
               shiny::tagList(shiny::span(class = "sb-tabicon", "\u223f"), "Graf"),
-              shiny::plotOutput("plot", height = "500px")),
+              shiny::div(class = "sb-hint", style = "margin: 8px 0 4px;",
+                         shiny::textOutput("plot_caption")),
+              if (has_plotly) plotly::plotlyOutput("plot", height = "520px")
+              else shiny::plotOutput("plot", height = "520px")),
             shiny::tabPanel(
               shiny::tagList(shiny::span(class = "sb-tabicon", "</>"), "R-kode"),
                             shiny::p(class = "sb-hint",
                                      "Kopier koden ind i dit script for at gentage udtr\u00e6kket uden appen:"),
-                            shiny::tags$button(
-                              class = "btn btn-default btn-sm",
+                            shiny::div(
                               style = "margin-bottom: 8px;",
-                              onclick = "sbCopyCode(this);",
-                              "Kopier kode"
+                              shiny::actionButton(
+                                "do_insert_code", "Inds\u00e6t og luk",
+                                class = "btn btn-primary btn-sm"),
+                              shiny::tags$button(
+                                class = "btn btn-default btn-sm",
+                                style = "margin-left: 8px;",
+                                onclick = "sbCopyCode(this);",
+                                "Kopier"
+                              )
                             ),
                             shiny::verbatimTextOutput("code"))
           )
         }
       )
+    })
+
+    # Insert the generated code into the active RStudio document and close;
+    # delivery happens after runApp(). The last fetched data still returns.
+    shiny::observeEvent(input$do_insert_code, {
+      result$code   <- gen_code()
+      result$insert <- TRUE
+      shiny::stopApp(invisible(fetched()))
     })
 
     output$data_notes <- shiny::renderUI({
@@ -1106,14 +1263,37 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       )
     })
 
-    output$n_rows <- shiny::renderText({
+    # Pivot chooser: spread one variable across the columns before
+    # download/preview (Excel users often want time on the columns). The
+    # _txt duplicate of each variable is left out of the options.
+    output$pivot_ui <- shiny::renderUI({
       d <- shiny::req(fetched())
-      if (nrow(d) > 100) paste0("Viser de f\u00f8rste 100 af ", nrow(d), " r\u00e6kker.")
-      else paste(nrow(d), "r\u00e6kker.")
+      cols <- setdiff(names(d), "value")
+      cols <- cols[!grepl("_txt$", cols) | !sub("_txt$", "", cols) %in% cols]
+      shiny::selectInput(
+        "pivot_col", "Pivot: spred en variabel ud p\u00e5 kolonner",
+        choices = c("Ingen (lang form)" = "", stats::setNames(cols, cols)),
+        selected = "")
+    })
+
+    # The data as downloaded/previewed: long by default, wide when a pivot
+    # variable is chosen.
+    download_data <- shiny::reactive({
+      d <- shiny::req(fetched())
+      if (shiny::isTruthy(input$pivot_col)) .sb_pivot_wide(d, input$pivot_col) else d
+    })
+
+    output$n_rows <- shiny::renderText({
+      d <- download_data()
+      base <- if (nrow(d) > 100) paste0("Viser de f\u00f8rste 100 af ", nrow(d), " r\u00e6kker.")
+              else paste(nrow(d), "r\u00e6kker.")
+      if (shiny::isTruthy(input$pivot_col))
+        base <- paste0(base, " Pivoteret: ", input$pivot_col, " p\u00e5 kolonnerne.")
+      base
     })
 
     output$preview <- shiny::renderTable({
-      d <- utils::head(shiny::req(fetched()), 100)
+      d <- utils::head(download_data(), 100)
       d[] <- lapply(d, function(x) {
         if (is.numeric(x)) {
           format(x, trim = TRUE, scientific = FALSE, drop0trailing = TRUE)
@@ -1132,7 +1312,7 @@ statbank_app <- function(bank = "gl", lang = NULL) {
         paste0(id, "_", nowf(), if (has_openxlsx) ".xlsx" else ".csv")
       },
       content = function(file) {
-        d <- shiny::req(fetched())
+        d <- shiny::req(download_data())
         if (has_openxlsx) {
           tmp <- tempfile(fileext = ".xlsx")
           write_excel(d, tmp)
@@ -1144,32 +1324,136 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       }
     )
 
-    output$plot <- shiny::renderPlot({
+    # Plot data: a tidy frame with a time x, a numeric value, a series
+    # label, and a hover string. The series label is built from the other
+    # variables; with .values = "both" each variable has a code and a
+    # <code>_txt column, so the readable _txt one is kept for the label
+    # and its code sibling dropped.
+    plot_data <- shiny::reactive({
       d    <- shiny::req(fetched())
       vars <- meta()$variables
-      time_idx <- which(vars$time | tolower(vars$code) == "time" | tolower(vars$text) == "tid")
-      shiny::validate(shiny::need(length(time_idx) > 0, "Tabellen har ingen tidsvariabel at plotte over."))
-      time_col <- if (isTRUE(input$opt_codecols)) {
-        vars$code[time_idx[1]]
-      } else {
-        tolower(vars$text[time_idx[1]])
-      }
-      shiny::validate(shiny::need(time_col %in% names(d), "Tidsvariablen indgaar ikke i udtraekket."))
+      time_idx <- which(vars$time | tolower(vars$code) == "time" |
+                          tolower(vars$text) == "tid")
+      shiny::validate(shiny::need(length(time_idx) > 0,
+        "Tabellen har ingen tidsvariabel at plotte over."))
+      base_nm  <- if (o_codecols()) vars$code[time_idx[1]] else tolower(vars$text[time_idx[1]])
+      cand     <- unique(c(base_nm, .sb_clean_names(base_nm)))
+      time_col <- intersect(cand, names(d))[1]
+      shiny::validate(shiny::need(!is.na(time_col),
+        "Tidsvariablen indg\u00e5r ikke i udtr\u00e6kket."))
 
-      other <- setdiff(names(d), c(time_col, "value"))
-      d$grp <- if (length(other) > 0) interaction(d[other], sep = ", ") else factor("serie")
-      d$tid_num <- suppressWarnings(as.numeric(d[[time_col]]))
-      x_col <- if (all(!is.na(d$tid_num))) "tid_num" else time_col
+      group_cols <- setdiff(names(d), c(time_col, paste0(time_col, "_txt"), "value"))
+      group_cols <- group_cols[!(paste0(group_cols, "_txt") %in% group_cols)]
+      grp <- if (length(group_cols) > 0) {
+        do.call(paste, c(lapply(group_cols, function(g) as.character(d[[g]])),
+                         sep = " \u00b7 "))
+      } else rep("serie", nrow(d))
 
-      ggplot2::ggplot(d, ggplot2::aes(x = .data[[x_col]], y = .data$value,
-                                      colour = .data$grp, group = .data$grp)) +
-        ggplot2::geom_line(linewidth = 0.8) +
-        ggplot2::labs(x = vars$text[time_idx[1]], y = "value", colour = NULL) +
-        ggplot2::theme_minimal(base_size = 13)
+      tlab <- as.character(d[[time_col]])
+      tnum <- suppressWarnings(as.numeric(tlab))
+      x    <- if (!anyNA(tnum)) tnum else factor(tlab, levels = unique(tlab))
+      vfmt <- format(d$value, big.mark = ".", decimal.mark = ",",
+                     trim = TRUE, scientific = FALSE)
+
+      list(
+        d = tibble::tibble(x = x, value = d$value, grp = grp,
+                           tip = paste0(grp, "<br>", tlab, ": ", vfmt)),
+        time_lab = vars$text[time_idx[1]],
+        n_series = length(unique(grp))
+      )
     })
 
-    # The statbank_get() call that reproduces the selection, one call per line.
-    output$code <- shiny::renderText({
+    # Eight-colour palette; series beyond it are greyed and only the top
+    # eight by average level are highlighted, so a wide table still reads.
+    sb_palette <- c("#0f172a", "#1d62a8", "#10b981", "#f59e0b",
+                    "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
+
+    build_plot <- function(interactive) {
+      pd <- plot_data(); d <- pd$d; n <- pd$n_series
+      aes_hi <- if (interactive)
+        ggplot2::aes(x = .data$x, y = .data$value, colour = .data$grp,
+                     group = .data$grp, text = .data$tip)
+      else
+        ggplot2::aes(x = .data$x, y = .data$value, colour = .data$grp,
+                     group = .data$grp)
+
+      if (n <= length(sb_palette)) {
+        cols <- stats::setNames(rep_len(sb_palette, n), unique(d$grp))
+        p <- ggplot2::ggplot(d, aes_hi) +
+          ggplot2::geom_line(linewidth = 0.9) +
+          # Markers help when there are few series and few periods; drop
+          # them once the series get dense so the lines stay clean.
+          (if (n <= 4) ggplot2::geom_point(size = 1.4) else NULL) +
+          ggplot2::scale_colour_manual(values = cols)
+        legend_pos <- if (n > 1) "top" else "none"
+      } else {
+        means <- tapply(d$value, d$grp, mean, na.rm = TRUE)
+        top   <- names(sort(means, decreasing = TRUE))[seq_len(length(sb_palette))]
+        ctx   <- d[!d$grp %in% top, , drop = FALSE]
+        hi    <- d[d$grp %in% top, , drop = FALSE]
+        hi$grp <- factor(hi$grp, levels = top)
+        aes_ctx <- if (interactive)
+          ggplot2::aes(x = .data$x, y = .data$value, group = .data$grp, text = .data$tip)
+        else
+          ggplot2::aes(x = .data$x, y = .data$value, group = .data$grp)
+        p <- ggplot2::ggplot() +
+          ggplot2::geom_line(data = ctx, aes_ctx, colour = "#dbe3ec", linewidth = 0.5) +
+          ggplot2::geom_line(data = hi, aes_hi, linewidth = 1) +
+          ggplot2::scale_colour_manual(
+            values = stats::setNames(rep_len(sb_palette, length(top)), top))
+        legend_pos <- "top"
+      }
+
+      if (has_plotly)
+        p <- p + ggplot2::scale_y_continuous(
+          labels = scales::label_number(big.mark = ".", decimal.mark = ","))
+      p +
+        ggplot2::labs(x = pd$time_lab, y = "value", colour = NULL) +
+        ggplot2::theme_minimal(base_size = 13) +
+        ggplot2::theme(
+          panel.grid.minor   = ggplot2::element_blank(),
+          panel.grid.major.x = ggplot2::element_blank(),
+          panel.grid.major.y = ggplot2::element_line(colour = "#eef2f7"),
+          axis.text          = ggplot2::element_text(colour = "#64748b"),
+          legend.title       = ggplot2::element_blank(),
+          legend.position    = legend_pos
+        )
+    }
+
+    output$plot_caption <- shiny::renderText({
+      n <- plot_data()$n_series
+      if (n <= length(sb_palette)) return("")
+      paste0(n, " serier i alt \u2014 de ", length(sb_palette),
+             " st\u00f8rste er fremh\u00e6vet, resten er gr\u00e5.",
+             " Hold musen over en linje for at se hvilken.")
+    })
+
+    if (has_plotly) {
+      output$plot <- plotly::renderPlotly({
+        plotly::ggplotly(build_plot(TRUE), tooltip = "text") |>
+          plotly::layout(
+            legend = list(orientation = "h", y = 1.12, x = 0, title = list(text = "")),
+            hoverlabel = list(bgcolor = "white", bordercolor = "#e2e8f0",
+                              font = list(family = "Segoe UI, sans-serif")),
+            # A faint vertical guide line on hover, to read a period across
+            # all the series at once.
+            xaxis = list(showspikes = TRUE, spikemode = "across", spikesnap = "cursor",
+                         spikethickness = 1, spikedash = "dot", spikecolor = "#cbd5e1"),
+            paper_bgcolor = "rgba(0,0,0,0)", plot_bgcolor = "rgba(0,0,0,0)") |>
+          plotly::config(displayModeBar = "hover", displaylogo = FALSE,
+                         modeBarButtonsToRemove = list("select2d", "lasso2d",
+                                                       "autoScale2d", "hoverClosestCartesian",
+                                                       "hoverCompareCartesian"))
+      })
+    } else {
+      output$plot <- shiny::renderPlot(build_plot(FALSE))
+    }
+
+    # The statbank_get() call that reproduces the selection (one argument
+    # per line), optionally with the variable selections lifted into a
+    # spliced `my_query` list. Prefixed daos:: so it runs without
+    # library(daos).
+    gen_code <- shiny::reactive({
       shiny::req(meta())
       vars <- meta()$variables
       sels <- selections()
@@ -1186,24 +1470,61 @@ statbank_app <- function(bank = "gl", lang = NULL) {
           out <- paste0('"', sels[[j]], '"', collapse = ", ")
           if (length(sels[[j]]) > 1) paste0("c(", out, ")") else out
         }
-        paste0("  ", nm, " = ", vals)
+        paste0(nm, " = ", vals)
       }, character(1))
       args <- args[!is.na(args)]
+
+      b <- .sb_banks[[active_bank()]]
+      bank_opts <- if (o_fullurl()) {
+        # The resolved base URL, so the call is self-contained and can be
+        # rebuilt by hand; the URL already carries the language.
+        paste0('bank = "', b$base, "/", active_lang(), "/", b$db, '"')
+      } else {
+        c(
+          if (active_bank() != "gl") paste0('bank = "', active_bank(), '"'),
+          if (active_lang() != b$default_lang) paste0('lang = "', active_lang(), '"')
+        )
+      }
       opts <- c(
-        if (active_bank() != "gl") paste0('  bank = "', active_bank(), '"'),
-        if (active_lang() != .sb_banks[[active_bank()]]$default_lang)
-          paste0('  lang = "', active_lang(), '"'),
-        if (isTRUE(input$opt_codecols)) '  .col_names = "code"',
-        if (isTRUE(input$opt_codevals)) '  .values = "code"',
-        if (isFALSE(input$opt_typeconvert)) '  .type_convert = FALSE'
+        bank_opts,
+        if (!o_codecols()) '.col_names = "text"',
+        if (o_values() == "text") '.values = "text"',
+        if (o_values() == "both") '.values = "both"',
+        if (!o_clean()) '.clean_names = FALSE',
+        if (!o_typeconv()) '.type_convert = FALSE'
       )
-      paste0(
-        "df <- statbank_get(\n",
-        paste(c(paste0('  "', meta()$path, '"'), args, opts), collapse = ",\n"),
-        "\n)"
-      )
+
+      # With splice on (and at least one selection), the variables move into
+      # a `my_query` list passed with !!! -- which works because
+      # statbank_get() gathers ... with rlang::list2().
+      ind <- function(x) paste0("  ", x)
+      if (o_splice() && length(args) > 0) {
+        pre  <- paste0("my_query <- list(\n", paste(ind(args), collapse = ",\n"), "\n)\n\n")
+        body <- c(paste0('"', meta()$path, '"'), "!!!my_query", opts)
+      } else {
+        pre  <- ""
+        body <- c(paste0('"', meta()$path, '"'), args, opts)
+      }
+      paste0(pre, "df <- daos::statbank_get(\n",
+             paste(ind(body), collapse = ",\n"), "\n)")
     })
+
+    output$code <- shiny::renderText(gen_code())
   }
 
-  invisible(shiny::runApp(shiny::shinyApp(ui, server), quiet = TRUE))
+  out <- shiny::runApp(shiny::shinyApp(ui, server), quiet = TRUE)
+
+  # Deliver the code after the app has closed, so the active document is the
+  # user's script/console again, not the app viewer (as in browse_files()).
+  if (result$insert && nzchar(result$code)) {
+    if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+      rstudioapi::insertText(result$code)
+    } else if (.Platform$OS.type == "windows") {
+      utils::writeClipboard(result$code)
+      cli::cli_alert_info("Ikke i RStudio -- koden er kopieret til udklipsholderen i stedet.")
+    } else {
+      cli::cli_alert_info("Ikke i RStudio -- returnerer det seneste udtr\u00e6k.")
+    }
+  }
+  invisible(out)
 }

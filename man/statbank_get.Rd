@@ -9,8 +9,9 @@ statbank_get(
   ...,
   lang = NULL,
   bank = "gl",
-  .col_names = c("text", "code"),
-  .values = c("text", "code"),
+  .col_names = c("code", "text"),
+  .values = c("code", "text", "both"),
+  .clean_names = TRUE,
   .type_convert = TRUE
 )
 }
@@ -29,13 +30,22 @@ bank's own default. Greenland offers \code{"da"}, \code{"kl"}, \code{"en"}; the
 Faroe Islands offer \code{"fo"}, \code{"en"}.}
 
 \item{bank}{Which statbank: \code{"gl"} (Greenland, the default) or \code{"fo"}
-(the Faroe Islands).}
+(the Faroe Islands). It may also be a full base URL (everything
+before the table path, with language and database node already in
+it, e.g. \code{"https://bank.stat.gl/api/v1/da/Greenland"}), to reach any
+PXWeb v1 endpoint; \code{lang} is then ignored.}
 
-\item{.col_names}{\code{"text"} (default) names the columns by the
-variables' display texts; \code{"code"} uses the variable codes.}
+\item{.col_names}{\code{"code"} (default) names the columns by the variable
+codes; \code{"text"} uses the variables' display texts.}
 
-\item{.values}{\code{"text"} (default) fills the cells with value display
-texts; \code{"code"} uses the value codes.}
+\item{.values}{\code{"code"} (default) fills the cells with value codes;
+\code{"text"} uses the value display texts; \code{"both"} keeps the codes and
+adds a \verb{<column>_txt} column with the display texts next to each.}
+
+\item{.clean_names}{If \code{TRUE} (default), column names are snake-cased
+(lower-case, Danish letters folded to ASCII, non-alphanumerics to
+\verb{_}), so e.g. a \code{"place of birth"} code becomes \code{place_of_birth}.
+Set to \code{FALSE} to keep the raw codes or labels.}
 
 \item{.type_convert}{If \code{TRUE} (default), the result is passed
 through \code{\link[readr:type_convert]{readr::type_convert()}}, so e.g. a year column comes back
@@ -60,15 +70,18 @@ without knowing the internal codes. Matching ignores case and folds
 Danish letters (\code{foedested} matches \verb{f\\u00f8dested}). Use \code{"*"} to select
 all values; variables that are not mentioned default to all values.
 
-By default, columns are named by the variables' display texts in the
-chosen language, and cells hold the display texts of the values. Set
-\code{.col_names = "code"} and/or \code{.values = "code"} to get the internal
-codes instead, e.g. when a coded column (such as sex as 0/1) is
-wanted for joins or modelling. The option arguments are dot-prefixed
-so they can never collide with a variable name in \code{...}.
+Built as a programming aid, the defaults favour codes: columns are
+named by the variable codes (snake-cased via \code{.clean_names}) and cells
+hold the value codes -- the shape that joins and models cleanly. Set
+\code{.col_names = "text"} and/or \code{.values = "text"} for the display texts
+in the chosen language instead, or \code{.values = "both"} to get the codes
+\emph{and} a \verb{<column>_txt} column with the labels alongside. The option
+arguments are dot-prefixed so they can never collide with a variable
+name in \code{...}.
 }
 \examples{
 \dontrun{
+# Default: coded columns and cells, snake-cased names.
 df <- statbank_get(
   "BE/BE01/BEXSAT1.PX",
   tid = c(2023, 2024, 2025),
@@ -76,13 +89,22 @@ df <- statbank_get(
 )
 attr(df, "notes")
 
-# Codes instead of display texts, no type conversion:
+# Codes with the display texts alongside (a <column>_txt per variable):
+df <- statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, .values = "both")
+
+# Display texts instead of codes, as in the previous default:
 df <- statbank_get(
   "BE/BE01/BEXSAT1.PX",
   tid = 2024,
-  .col_names = "code",
-  .values = "code",
-  .type_convert = FALSE
+  .col_names = "text",
+  .values = "text"
+)
+
+# Point at any PXWeb v1 endpoint by giving bank a full base URL:
+df <- statbank_get(
+  "BE/BE01/BEXSAT1.PX",
+  tid = 2024,
+  bank = "https://bank.stat.gl/api/v1/da/Greenland"
 )
 }
 

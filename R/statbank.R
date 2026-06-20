@@ -23,6 +23,14 @@
 
 .sb_cache <- new.env(parent = emptyenv())
 
+# A `bank` argument may be a registry key ("gl"/"fo") or a full base URL
+# (everything before the table path, language and database node already
+# baked in), so a caller can point the client at any PXWeb v1 endpoint --
+# and the app can paste that URL into the generated call for free editing.
+.sb_is_url <- function(bank) {
+  is.character(bank) && length(bank) == 1 && grepl("^https?://", bank)
+}
+
 .sb_bank <- function(bank) {
   b <- .sb_banks[[bank]]
   if (is.null(b)) {
@@ -38,6 +46,8 @@
 # language is validated against the bank's offering (the Faroe instance
 # has no Danish or Greenlandic).
 .sb_resolve_lang <- function(lang, bank) {
+  # A custom base URL carries its own language; nothing to resolve.
+  if (.sb_is_url(bank)) return(if (is.null(lang)) "" else lang)
   b <- .sb_bank(bank)
   if (is.null(lang)) return(b$default_lang)
   if (!lang %in% b$langs) {
@@ -47,6 +57,16 @@
     ))
   }
   lang
+}
+
+# Human-readable names for the language codes the banks offer, for the
+# app's language chooser. Unknown codes fall back to the code itself.
+# Vectorised.
+.sb_lang_label <- function(code) {
+  m <- c(da = "Dansk", kl = "Kalaallisut", en = "English", fo = "F\u00f8royskt")
+  out <- unname(m[code])
+  out[is.na(out)] <- code[is.na(out)]
+  out
 }
 
 #' List one level of a statbank table tree
@@ -62,7 +82,10 @@
 #'   bank's own default. Greenland offers `"da"`, `"kl"`, `"en"`; the
 #'   Faroe Islands offer `"fo"`, `"en"`.
 #' @param bank Which statbank: `"gl"` (Greenland, the default) or `"fo"`
-#'   (the Faroe Islands).
+#'   (the Faroe Islands). It may also be a full base URL (everything
+#'   before the table path, with language and database node already in
+#'   it, e.g. `"https://bank.stat.gl/api/v1/da/Greenland"`), to reach any
+#'   PXWeb v1 endpoint; `lang` is then ignored.
 #'
 #' @return A tibble with columns `id`, `type` (`"l"` for folder, `"t"`
 #'   for table), `text`, and `updated` (tables only, `NA` for folders).
@@ -231,21 +254,28 @@ statbank_meta <- function(table, lang = NULL, bank = "gl") {
 #' Danish letters (`foedested` matches `f\u00f8dested`). Use `"*"` to select
 #' all values; variables that are not mentioned default to all values.
 #'
-#' By default, columns are named by the variables' display texts in the
-#' chosen language, and cells hold the display texts of the values. Set
-#' `.col_names = "code"` and/or `.values = "code"` to get the internal
-#' codes instead, e.g. when a coded column (such as sex as 0/1) is
-#' wanted for joins or modelling. The option arguments are dot-prefixed
-#' so they can never collide with a variable name in `...`.
+#' Built as a programming aid, the defaults favour codes: columns are
+#' named by the variable codes (snake-cased via `.clean_names`) and cells
+#' hold the value codes -- the shape that joins and models cleanly. Set
+#' `.col_names = "text"` and/or `.values = "text"` for the display texts
+#' in the chosen language instead, or `.values = "both"` to get the codes
+#' *and* a `<column>_txt` column with the labels alongside. The option
+#' arguments are dot-prefixed so they can never collide with a variable
+#' name in `...`.
 #'
 #' @inheritParams statbank_meta
 #' @param ... Named selections, one per variable. Values can be value
 #'   codes, value texts, or `"*"` for all. Because the option arguments
 #'   are dot-prefixed, a variable can never be shadowed by one of them.
-#' @param .col_names `"text"` (default) names the columns by the
-#'   variables' display texts; `"code"` uses the variable codes.
-#' @param .values `"text"` (default) fills the cells with value display
-#'   texts; `"code"` uses the value codes.
+#' @param .col_names `"code"` (default) names the columns by the variable
+#'   codes; `"text"` uses the variables' display texts.
+#' @param .values `"code"` (default) fills the cells with value codes;
+#'   `"text"` uses the value display texts; `"both"` keeps the codes and
+#'   adds a `<column>_txt` column with the display texts next to each.
+#' @param .clean_names If `TRUE` (default), column names are snake-cased
+#'   (lower-case, Danish letters folded to ASCII, non-alphanumerics to
+#'   `_`), so e.g. a `"place of birth"` code becomes `place_of_birth`.
+#'   Set to `FALSE` to keep the raw codes or labels.
 #' @param .type_convert If `TRUE` (default), the result is passed
 #'   through [readr::type_convert()], so e.g. a year column comes back
 #'   numeric. Set to `FALSE` to keep every variable column as character.
@@ -257,6 +287,7 @@ statbank_meta <- function(table, lang = NULL, bank = "gl") {
 #'
 #' @examples
 #' \dontrun{
+#' # Default: coded columns and cells, snake-cased names.
 #' df <- statbank_get(
 #'   "BE/BE01/BEXSAT1.PX",
 #'   tid = c(2023, 2024, 2025),
@@ -264,13 +295,22 @@ statbank_meta <- function(table, lang = NULL, bank = "gl") {
 #' )
 #' attr(df, "notes")
 #'
-#' # Codes instead of display texts, no type conversion:
+#' # Codes with the display texts alongside (a <column>_txt per variable):
+#' df <- statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, .values = "both")
+#'
+#' # Display texts instead of codes, as in the previous default:
 #' df <- statbank_get(
 #'   "BE/BE01/BEXSAT1.PX",
 #'   tid = 2024,
-#'   .col_names = "code",
-#'   .values = "code",
-#'   .type_convert = FALSE
+#'   .col_names = "text",
+#'   .values = "text"
+#' )
+#'
+#' # Point at any PXWeb v1 endpoint by giving bank a full base URL:
+#' df <- statbank_get(
+#'   "BE/BE01/BEXSAT1.PX",
+#'   tid = 2024,
+#'   bank = "https://bank.stat.gl/api/v1/da/Greenland"
 #' )
 #' }
 #'
@@ -281,8 +321,9 @@ statbank_meta <- function(table, lang = NULL, bank = "gl") {
 #' @importFrom readr type_convert
 #' @export
 statbank_get <- function(table, ..., lang = NULL, bank = "gl",
-                         .col_names = c("text", "code"),
-                         .values = c("text", "code"),
+                         .col_names = c("code", "text"),
+                         .values = c("code", "text", "both"),
+                         .clean_names = TRUE,
                          .type_convert = TRUE) {
   .sb_check_available()
   .col_names <- match.arg(.col_names)
@@ -302,7 +343,8 @@ statbank_get <- function(table, ..., lang = NULL, bank = "gl",
     response = list(format = "json-stat2")
   )
   x   <- .sb_post(meta$path, query, lang, bank)
-  out <- .sb_parse_jsonstat(x, col_names = .col_names, values = .values)
+  out <- .sb_parse_jsonstat(x, col_names = .col_names, values = .values,
+                            clean_names = .clean_names)
 
   if (.type_convert && nrow(out) > 0 &&
       any(vapply(out, is.character, logical(1)))) {
@@ -327,8 +369,12 @@ statbank_get <- function(table, ..., lang = NULL, bank = "gl",
 }
 
 .sb_url <- function(path, lang, bank = "gl") {
-  b <- .sb_bank(bank)
-  url <- paste0(b$base, "/", lang, "/", b$db)
+  if (.sb_is_url(bank)) {
+    url <- sub("/+$", "", bank)
+  } else {
+    b   <- .sb_bank(bank)
+    url <- paste0(b$base, "/", lang, "/", b$db)
+  }
   if (nzchar(path)) url <- paste0(url, "/", path)
   utils::URLencode(url)
 }
@@ -398,6 +444,18 @@ statbank_get <- function(table, ..., lang = NULL, bank = "gl",
   x
 }
 
+# Snake-case column names for the generated data, in base R so no janitor
+# dependency is pulled in. Lower-cases, folds Danish letters to ASCII,
+# turns runs of non-alphanumerics into single underscores, and trims
+# leading/trailing ones. It only reshapes names (never the values), so it
+# stays within the clean_* contract of never inventing characters.
+# make.unique() in the parser handles any collisions afterwards.
+.sb_clean_names <- function(x) {
+  x <- .sb_fold(x)
+  x <- gsub("[^a-z0-9]+", "_", x)
+  gsub("^_+|_+$", "", x)
+}
+
 # Match user selections (named by variable code or text, values by value
 # code or value text) to the table's variables. Returns a named list,
 # variable code -> character vector of value codes, with "*" for all.
@@ -463,27 +521,19 @@ statbank_get <- function(table, ..., lang = NULL, bank = "gl",
 # `size` fields define the dimensions actually present in the value
 # array (the dimension list can hold extra, eliminated dimensions). The
 # value array is row-major: the last dimension varies fastest.
-.sb_parse_jsonstat <- function(x, col_names = "text", values = "text") {
+#
+# `values = "both"` emits, for each dimension, the code column followed by
+# a `<name>_txt` column holding the matching display text -- the shape
+# wanted when codes drive joins/modelling but the labels are handy to read
+# alongside. `clean_names = TRUE` snake-cases the column names via
+# .sb_clean_names() (the `_txt` suffix is appended after cleaning).
+.sb_parse_jsonstat <- function(x, col_names = "text", values = "text",
+                               clean_names = FALSE) {
   ids  <- unlist(x$id)
   size <- unlist(x$size)
   k    <- length(ids)
 
-  cols <- vector("list", k)
-  for (j in seq_len(k)) {
-    dim    <- x$dimension[[ids[j]]]
-    index  <- unlist(dim$category$index)
-    codes  <- names(index)[order(unlist(index))]
-    content <- if (values == "code") {
-      codes
-    } else {
-      unname(unlist(dim$category$label)[codes])
-    }
-    inner  <- if (j < k) prod(size[(j + 1):k]) else 1
-    outer  <- if (j > 1) prod(size[seq_len(j - 1)]) else 1
-    cols[[j]] <- rep(rep(content, each = inner), times = outer)
-  }
-
-  names(cols) <- if (col_names == "code") {
+  base_names <- if (col_names == "code") {
     ids
   } else {
     vapply(seq_len(k), function(j) {
@@ -491,8 +541,51 @@ statbank_get <- function(table, ..., lang = NULL, bank = "gl",
       tolower(if (is.null(lbl) || !nzchar(lbl)) ids[j] else lbl)
     }, character(1))
   }
-  names(cols) <- make.unique(names(cols))
+  if (clean_names) base_names <- .sb_clean_names(base_names)
+
+  cols <- list()
+  nms  <- character()
+  for (j in seq_len(k)) {
+    dim    <- x$dimension[[ids[j]]]
+    index  <- unlist(dim$category$index)
+    codes  <- names(index)[order(unlist(index))]
+    texts  <- unname(unlist(dim$category$label)[codes])
+    inner  <- if (j < k) prod(size[(j + 1):k]) else 1
+    outer  <- if (j > 1) prod(size[seq_len(j - 1)]) else 1
+    expand <- function(v) rep(rep(v, each = inner), times = outer)
+    if (values == "both") {
+      cols <- c(cols, list(expand(codes), expand(texts)))
+      nms  <- c(nms, base_names[j], paste0(base_names[j], "_txt"))
+    } else {
+      cols <- c(cols, list(expand(if (values == "code") codes else texts)))
+      nms  <- c(nms, base_names[j])
+    }
+  }
+  names(cols) <- make.unique(nms)
 
   value <- vapply(x$value, function(v) if (is.null(v)) NA_real_ else as.numeric(v), numeric(1))
   tibble::as_tibble(c(cols, list(value = value)))
+}
+
+# Reshape the long result wide for spreadsheet users: the chosen variable
+# column spreads across columns (e.g. time on the columns), the other
+# variable columns stay as row keys, and `value` fills the cells. The
+# chosen column's code/_txt sibling is dropped first, so it cannot break
+# the one-row-per-key layout. Uses data.table::dcast (already a
+# dependency); an empty/unknown column returns the data unchanged.
+.sb_pivot_wide <- function(d, col) {
+  if (is.null(col) || !nzchar(col) ||
+      !col %in% names(d) || !"value" %in% names(d)) {
+    return(d)
+  }
+  sib <- if (endsWith(col, "_txt")) sub("_txt$", "", col) else paste0(col, "_txt")
+  d   <- d[, setdiff(names(d), sib), drop = FALSE]
+  ids <- setdiff(names(d), c(col, "value"))
+  bt  <- function(x) sprintf("`%s`", x)
+  lhs <- if (length(ids) == 0) "." else paste(vapply(ids, bt, ""), collapse = " + ")
+  f   <- stats::as.formula(paste(lhs, "~", bt(col)))
+  wide <- tibble::as_tibble(
+    data.table::dcast(data.table::as.data.table(d), f, value.var = "value"))
+  wide[["."]] <- NULL   # the dummy LHS when there are no row keys
+  wide
 }
