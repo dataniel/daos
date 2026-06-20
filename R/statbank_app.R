@@ -95,18 +95,21 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       color: #1e293b;
     }
     .sb-hero {
-      margin: -15px -15px 22px -15px;
-      padding: 30px 34px 26px;
-      background: linear-gradient(135deg, #0c3a63 0%, #1d62a8 100%);
+      margin: -15px -15px 26px -15px;
+      padding: 34px 36px 30px;
+      background: linear-gradient(120deg, #0a2c4f 0%, #14477e 100%);
       color: #fff;
+      border-bottom: 3px solid #2f7dc0;
     }
-    .sb-hero h2 { font-weight: 700; letter-spacing: -0.3px; margin: 0 0 4px; color: #fff; }
-    .sb-sub { color: #c7dbef; margin: 0; font-size: 15px; }
-    .sb-tag {
-      float: right; background: rgba(255, 255, 255, .14); color: #e6eef7;
-      border-radius: 999px; padding: 4px 14px; font-size: 12.5px;
-      margin-top: 6px; letter-spacing: .4px;
+    .sb-kicker {
+      text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px;
+      font-weight: 700; color: #98c0e6; margin: 0 0 7px;
     }
+    .sb-hero h2 {
+      font-weight: 700; letter-spacing: -0.4px; margin: 0 0 6px;
+      color: #fff; font-size: 27px;
+    }
+    .sb-sub { color: #cfe0f1; margin: 0; font-size: 15px; max-width: 660px; }
     .well, .sb-card {
       background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
       box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 4px 16px rgba(15, 23, 42, .05);
@@ -128,19 +131,22 @@ statbank_app <- function(bank = "gl", lang = NULL) {
     .sb-fromto label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
     .sb-fromto .form-group { margin-bottom: 8px; }
     .sb-badge {
-      display: inline-flex; width: 24px; height: 24px; border-radius: 50%;
-      background: #1d62a8; color: #fff; align-items: center;
+      display: inline-flex; width: 24px; height: 24px; border-radius: 7px;
+      background: #14477e; color: #fff; align-items: center;
       justify-content: center; font-size: 13px; font-weight: 700;
-      margin-right: 9px; flex: none;
+      margin-right: 10px; flex: none;
     }
     .help-block, .sb-hint { color: #64748b; font-size: 12.5px; }
     .sb-count { color: #64748b; font-size: 12.5px; margin-top: -8px; margin-bottom: 12px; }
     #fetch {
-      width: 100%; border-radius: 10px; font-weight: 600; padding: 10px;
-      background: #1d62a8; border-color: #1d62a8; font-size: 15px;
-      box-shadow: 0 2px 8px rgba(29, 98, 168, .35);
+      width: 100%; border: none; border-radius: 9px; font-weight: 600;
+      padding: 13px 14px; font-size: 15px; letter-spacing: .2px;
+      color: #fff !important; background: #14477e !important;
+      box-shadow: 0 1px 2px rgba(10, 44, 79, .25); margin-top: 4px;
+      transition: background .12s, box-shadow .12s;
     }
-    #fetch:hover { background: #174e86; border-color: #174e86; }
+    #fetch:hover { background: #0e3a68 !important; box-shadow: 0 6px 16px rgba(10, 44, 79, .3); }
+    #fetch:focus-visible { outline: 3px solid rgba(47, 125, 192, .5); outline-offset: 2px; }
     .sb-pick {
       display: block; width: 100%; text-align: left; background: #fff;
       border: 1px solid #d6dee8; border-radius: 10px; padding: 8px 14px;
@@ -252,8 +258,8 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       box-shadow: 0 0 0 3px rgba(29, 98, 168, .12);
     }
     .nav-pills .nav-link.active, .nav-pills > li.active > a {
-      background-color: #1d62a8 !important; color: #fff !important;
-      border-color: #1d62a8 !important;
+      background-color: #14477e !important; color: #fff !important;
+      border-color: #14477e !important;
     }
     .sb-tabicon { margin-right: 7px; opacity: .75; }
     table.table {
@@ -271,18 +277,30 @@ statbank_app <- function(bank = "gl", lang = NULL) {
     }
     /* Settings as compact pill toggles and segmented choices, borrowed
        from browse_files: clearer than a column of checkboxes. */
-    .sb-toggles { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .sb-toggles { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .sb-toggles-label {
       font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
-      text-transform: uppercase; color: #94a3b8; margin-right: 2px; min-width: 92px;
+      text-transform: uppercase; color: #64748b; margin-right: 6px;
+      width: 106px; min-width: 106px; white-space: nowrap;
+    }
+    .sb-toggles-group {
+      font-size: 11px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: #94a3b8;
+      margin: 14px 0 8px; padding-top: 12px; border-top: 1px solid #eef2f7;
     }
     .sb-toggle.btn, .sb-seg.btn {
       display: inline-flex; align-items: center; gap: 7px; box-shadow: none;
-      border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600;
-      color: #64748b; background: #fff; border: 1px solid #d6dee8; margin: 0;
+      border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 600;
+      color: #334155 !important; background: #fff !important;
+      border: 1px solid #cbd5e1 !important; margin: 0;
     }
-    .sb-toggle.btn:hover, .sb-seg.btn:hover { color: #1d62a8; border-color: #1d62a8; background: #fff; }
-    .sb-toggle.on.btn, .sb-seg.on.btn { color: #174e86; background: #e8f0fa; border-color: #1d62a8; }
+    .sb-toggle.btn:hover, .sb-seg.btn:hover {
+      color: #14477e !important; border-color: #14477e !important; background: #f3f7fc !important;
+    }
+    .sb-toggle.on.btn, .sb-seg.on.btn {
+      color: #0e3a68 !important; background: #dceaf8 !important;
+      border-color: #14477e !important; font-weight: 700;
+    }
     .sb-statusline {
       margin: 4px 0 14px; display: flex; align-items: center; gap: 7px;
       font-size: 12.5px; color: #64748b;
@@ -291,7 +309,39 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       background: rgba(15,23,42,.06); color: #334155;
       border-radius: 5px; padding: 1px 6px; font-size: 12px;
     }
-    .sb-modal-sort { float: right; font-size: 12.5px; }
+    .sb-modal-sort { margin-left: auto; }
+    /* A consistent, accessible button system instead of bare text links. */
+    .btn { font-weight: 600; }
+    .btn:focus-visible { outline: 3px solid rgba(47, 125, 192, .4); outline-offset: 2px; }
+    .btn-primary {
+      background-color: #14477e; border-color: #14477e; color: #fff;
+    }
+    .btn-primary:hover, .btn-primary:focus {
+      background-color: #0e3a68; border-color: #0e3a68; color: #fff;
+    }
+    .sb-linkbtn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff; border: 1px solid #d6dee8; color: #14477e;
+      border-radius: 8px; padding: 5px 12px; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; line-height: 1.25; text-decoration: none;
+      transition: border-color .12s, background .12s, color .12s;
+    }
+    .sb-linkbtn:hover {
+      border-color: #14477e; background: #f3f7fc; color: #0e3a68; text-decoration: none;
+    }
+    .sb-linkbtn.on { background: #eaf1fa; border-color: #14477e; color: #0e3a68; }
+    .sb-toolbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 2px;
+    }
+    .sb-toolbar .sb-hint { margin-left: auto; }
+    /* Inputs a touch taller and calmer, for a data-tool feel. */
+    .form-control, .selectize-input, .form-select {
+      min-height: 38px; box-shadow: none !important;
+    }
+    .selectize-input.focus, .form-control:focus, .form-select:focus {
+      border-color: #2f7dc0 !important; box-shadow: 0 0 0 3px rgba(47, 125, 192, .15) !important;
+    }
+    .sb-card, .well { padding: 22px 24px; }
   "
 
   # Q closes the app (ignored while typing in a field), like in
@@ -405,7 +455,7 @@ statbank_app <- function(bank = "gl", lang = NULL) {
     ),
     shiny::div(
       class = "sb-hero",
-      shiny::span(class = "sb-tag", "daos"),
+      shiny::p(class = "sb-kicker", "Officiel statistik"),
       shiny::h2(shiny::textOutput("hero_title", inline = TRUE)),
       shiny::p(class = "sb-sub",
                "Find en tabel, v\u00e6lg dine data, og tag R-koden med hjem.")
@@ -706,13 +756,13 @@ statbank_app <- function(bank = "gl", lang = NULL) {
             shiny::textInput("modal_filter", NULL,
                              placeholder = "Filtrer (regex), fx ^20|i alt"),
             shiny::div(
-              shiny::actionLink("modal_all", "V\u00e6lg alle viste"),
-              " | ",
-              shiny::actionLink("modal_none", "Frav\u00e6lg alle viste"),
-              " | ",
-              shiny::actionLink("modal_sort",
-                                shiny::textOutput("modal_sort_lbl", inline = TRUE)),
-              shiny::span(class = "sb-hint", style = "float: right;",
+              class = "sb-toolbar",
+              shiny::actionButton("modal_all", "V\u00e6lg alle viste", class = "sb-linkbtn"),
+              shiny::actionButton("modal_none", "Frav\u00e6lg alle viste", class = "sb-linkbtn"),
+              shiny::actionButton("modal_sort",
+                                  shiny::textOutput("modal_sort_lbl", inline = TRUE),
+                                  class = "sb-linkbtn"),
+              shiny::span(class = "sb-hint sb-modal-sort",
                           shiny::textOutput("modal_count", inline = TRUE))
             ),
             shiny::div(class = "sb-modal-checks", shiny::uiOutput("modal_body")),
@@ -819,37 +869,45 @@ statbank_app <- function(bank = "gl", lang = NULL) {
     shiny::observeEvent(input$set_valcode, o_values("code"))
     shiny::observeEvent(input$set_valtext, o_values("text"))
     shiny::observeEvent(input$set_valboth, o_values("both"))
-    shiny::observeEvent(input$set_clean,    o_clean(!o_clean()))
-    shiny::observeEvent(input$set_typeconv, o_typeconv(!o_typeconv()))
-    shiny::observeEvent(input$set_fullurl,  o_fullurl(!o_fullurl()))
-    shiny::observeEvent(input$set_splice,   o_splice(!o_splice()))
+    shiny::observeEvent(input$set_clean_on,   o_clean(TRUE))
+    shiny::observeEvent(input$set_clean_off,  o_clean(FALSE))
+    shiny::observeEvent(input$set_type_auto,  o_typeconv(TRUE))
+    shiny::observeEvent(input$set_type_text,  o_typeconv(FALSE))
+    shiny::observeEvent(input$set_url_short,  o_fullurl(FALSE))
+    shiny::observeEvent(input$set_url_full,   o_fullurl(TRUE))
+    shiny::observeEvent(input$set_var_inline, o_splice(FALSE))
+    shiny::observeEvent(input$set_var_list,   o_splice(TRUE))
 
     output$fetch_area <- shiny::renderUI({
       shiny::req(meta())
       seg <- function(id, label, active) shiny::actionButton(
         id, label, class = paste("sb-seg btn", if (active) "on"))
-      pill <- function(id, label, on) shiny::actionButton(
-        id, label, class = paste("sb-toggle btn", if (on) "on"))
+      row <- function(label, ...) shiny::div(
+        class = "sb-toggles",
+        shiny::span(class = "sb-toggles-label", label), ...)
       shiny::tagList(
         shiny::div(class = "sb-step",
                    shiny::span(class = "sb-badge", "3"), "Hent"),
-        shiny::div(class = "sb-toggles",
-                   shiny::span(class = "sb-toggles-label", "Kolonnenavne"),
-                   seg("set_colcode", "Koder", o_codecols()),
-                   seg("set_coltext", "Tekster", !o_codecols())),
-        shiny::div(class = "sb-toggles",
-                   shiny::span(class = "sb-toggles-label", "Celleindhold"),
-                   seg("set_valcode", "Koder", o_values() == "code"),
-                   seg("set_valtext", "Tekster", o_values() == "text"),
-                   seg("set_valboth", "Begge", o_values() == "both")),
-        shiny::div(class = "sb-toggles",
-                   shiny::span(class = "sb-toggles-label", "Andet"),
-                   pill("set_clean", "snake_case-navne", o_clean()),
-                   pill("set_typeconv", "Konverter typer", o_typeconv()),
-                   pill("set_fullurl", "Fuld URL i koden", o_fullurl())),
-        shiny::div(class = "sb-toggles",
-                   shiny::span(class = "sb-toggles-label", "Kode"),
-                   pill("set_splice", "Variabler i liste", o_splice())),
+        row("Kolonnenavne",
+            seg("set_colcode", "Koder", o_codecols()),
+            seg("set_coltext", "Tekster", !o_codecols())),
+        row("Celleindhold",
+            seg("set_valcode", "Koder", o_values() == "code"),
+            seg("set_valtext", "Tekster", o_values() == "text"),
+            seg("set_valboth", "Begge", o_values() == "both")),
+        row("Navneformat",
+            seg("set_clean_on", "snake_case", o_clean()),
+            seg("set_clean_off", "U\u00e6ndret", !o_clean())),
+        row("Kolonnetyper",
+            seg("set_type_auto", "Automatisk", o_typeconv()),
+            seg("set_type_text", "Som tekst", !o_typeconv())),
+        shiny::div(class = "sb-toggles-group", "R-kode"),
+        row("URL i koden",
+            seg("set_url_short", "Kort", !o_fullurl()),
+            seg("set_url_full", "Fuld", o_fullurl())),
+        row("Variabler",
+            seg("set_var_inline", "Inline", !o_splice()),
+            seg("set_var_list", "Som liste", o_splice())),
         shiny::div(class = "sb-statusline",
                    shiny::uiOutput("settings_hint", inline = TRUE)),
         shiny::actionButton("fetch", "Hent data", class = "btn-primary")
@@ -1170,8 +1228,8 @@ statbank_app <- function(bank = "gl", lang = NULL) {
       }
 
       shiny::tagList(
-        shiny::actionLink("back_to_browse", "\u2190 Tilbage til oversigten",
-                          class = "sb-back"),
+        shiny::actionButton("back_to_browse", "\u2190 Tilbage til oversigten",
+                            class = "sb-linkbtn", style = "margin-bottom: 14px;"),
         shiny::h4(meta()$title),
         if (!is.null(sub_line)) shiny::p(class = "sb-tablesub", sub_line),
         if (is.null(fetched())) {
@@ -1413,8 +1471,10 @@ statbank_app <- function(bank = "gl", lang = NULL) {
         ggplot2::theme(
           panel.grid.minor   = ggplot2::element_blank(),
           panel.grid.major.x = ggplot2::element_blank(),
-          panel.grid.major.y = ggplot2::element_line(colour = "#eef2f7"),
-          axis.text          = ggplot2::element_text(colour = "#64748b"),
+          panel.grid.major.y = ggplot2::element_line(colour = "#e5e9f0"),
+          axis.title         = ggplot2::element_text(colour = "#1e293b", size = 12.5),
+          axis.text          = ggplot2::element_text(colour = "#334155"),
+          legend.text        = ggplot2::element_text(colour = "#1e293b", size = 11.5),
           legend.title       = ggplot2::element_blank(),
           legend.position    = legend_pos
         )
@@ -1433,8 +1493,9 @@ statbank_app <- function(bank = "gl", lang = NULL) {
         plotly::ggplotly(build_plot(TRUE), tooltip = "text") |>
           plotly::layout(
             legend = list(orientation = "h", y = 1.12, x = 0, title = list(text = "")),
-            hoverlabel = list(bgcolor = "white", bordercolor = "#e2e8f0",
-                              font = list(family = "Segoe UI, sans-serif")),
+            hoverlabel = list(bgcolor = "white", bordercolor = "#cbd5e1",
+                              font = list(family = "Segoe UI, sans-serif",
+                                          color = "#1e293b", size = 12)),
             # A faint vertical guide line on hover, to read a period across
             # all the series at once.
             xaxis = list(showspikes = TRUE, spikemode = "across", spikesnap = "cursor",
