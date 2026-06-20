@@ -347,7 +347,7 @@
 #'   the same type are marked: `"lapply"` (default, base R) or `"purrr"` for
 #'   `purrr::map()`. Toggle it live in the app with `m`. Only affects the
 #'   generated text, not the browser itself.
-#' @param preview Whether the content preview starts on (`TRUE`, default) -- the
+#' @param preview Whether the content preview starts on (`FALSE`, default) -- the
 #'   text peek for scripts/text and the cell peek for Excel sheets. The preview
 #'   column (file metadata, folder contents) is always shown. Toggle the content
 #'   preview live in the app with `p`.
@@ -372,7 +372,7 @@
 #' @importFrom cli cli_abort
 #' @export
 browse_files <- function(path = getwd(), root = NULL,
-                         map = c("lapply", "purrr"), preview = TRUE,
+                         map = c("lapply", "purrr"), preview = FALSE,
                          base_dir = FALSE, names = FALSE) {
   map <- match.arg(map)
   for (pkg in c("shiny")) {
@@ -532,22 +532,36 @@ browse_files <- function(path = getwd(), root = NULL,
       background: rgba(15,23,42,.08); border-radius: 5px; padding: 1px 6px;
     }
     .bf-btn.btn-primary .bf-kbd { background: rgba(255,255,255,.3); color: #fff; }
-    .bf-info {
-      display: inline-flex; align-items: center; gap: 8px;
-      border-radius: 9px; font-weight: 600; font-size: 13px;
-      padding: 8px 16px; color: #1d62a8; background: #e8f0fa;
-      border: 1px solid #cfe0f2;
-    }
-    .bf-info code {
-      background: rgba(29,98,168,.12); color: #174e86;
-      border-radius: 5px; padding: 1px 6px; font-size: 12px;
-    }
-    .bf-info-warn { color: #b45309; background: #fef3c7; border-color: #fbdca0; }
-    .bf-info-warn code { background: rgba(180,83,9,.12); color: #92400e; }
     .bf-chip {
       margin-left: auto; color: #16a34a; font-size: 13px; font-weight: 600;
       background: #dcfce7; border-radius: 999px; padding: 5px 14px;
     }
+    /* Options row: compact pill toggles, clearly distinct from the actions. */
+    .bf-toggles { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .bf-toggles-label {
+      font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: #94a3b8; margin-right: 2px;
+    }
+    .bf-toggle.btn {
+      display: inline-flex; align-items: center; gap: 7px; box-shadow: none;
+      border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600;
+      color: #64748b; background: #fff; border: 1px solid #d6dee8;
+    }
+    .bf-toggle.btn:hover { color: #1d62a8; border-color: #1d62a8; background: #fff; }
+    .bf-toggle.on.btn { color: #174e86; background: #e8f0fa; border-color: #1d62a8; }
+    .bf-toggle .bf-kbd { background: rgba(15,23,42,.08); }
+    .bf-toggle.on .bf-kbd { background: rgba(29,98,168,.16); color: #174e86; }
+    .bf-statusline {
+      margin: -2px 0 12px; display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; color: #64748b;
+    }
+    .bf-statusline code {
+      background: rgba(15,23,42,.06); color: #334155;
+      border-radius: 5px; padding: 1px 6px; font-size: 12px;
+    }
+    .bf-statusline svg { opacity: .75; }
+    .bf-statusline.warn { color: #b45309; }
+    .bf-statusline.warn code { background: rgba(180,83,9,.1); color: #92400e; }
     .bf-selhead {
       font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
       text-transform: uppercase; color: #94a3b8; margin-bottom: 5px;
@@ -557,9 +571,6 @@ browse_files <- function(path = getwd(), root = NULL,
       font-size: 12.5px; margin: 0; white-space: pre-wrap; word-break: break-all;
       min-height: 20px;
     }
-    .bf-legend { margin-top: 14px; font-size: 12px; color: #64748b; }
-    .bf-legend .bf-kbd { margin: 0 3px 0 10px; }
-    .bf-legend .bf-kbd:first-child { margin-left: 0; }
   "
 
   app_js <- "
@@ -659,22 +670,6 @@ browse_files <- function(path = getwd(), root = NULL,
     });
   "
 
-  kbd_html <- function(k) paste0("<span class='bf-kbd'>", k, "</span>")
-  legend_html <- paste0(
-    kbd_html("j"), kbd_html("k"), " flyt ",
-    kbd_html("l"), " \u00e5bn ", kbd_html("h"), " op ",
-    kbd_html("mellemrum"), " mark\u00e9r ",
-    kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
-    kbd_html("r"), " reader ", kbd_html("m"), " lapply/purrr ",
-    kbd_html("p"), " preview ", kbd_html("b"), " base_dir ",
-    kbd_html("n"), " navne ",
-    kbd_html("f"), " filter ", kbd_html("x"), " ryd filter ",
-    kbd_html("c"), " ryd markering ",
-    kbd_html("o"), " stifinder ", kbd_html("a"), " \u00e5bn fil ",
-    kbd_html("g"), " start ", kbd_html("Q"), " luk",
-    "<br>", kbd_html("l"), " p\u00e5 en Excel-fil g\u00e5r ind i arkene"
-  )
-
   ui <- shiny::fluidPage(
     theme = theme,
     shiny::tags$head(
@@ -713,8 +708,7 @@ browse_files <- function(path = getwd(), root = NULL,
           class = "bf-selbox",
           shiny::div(class = "bf-selhead", "Bliver indsat / kopieret"),
           shiny::tags$pre(shiny::textOutput("rstring"))
-        ),
-        shiny::div(class = "bf-legend", shiny::HTML(legend_html))
+        )
       )
     )
   )
@@ -811,21 +805,24 @@ browse_files <- function(path = getwd(), root = NULL,
       shiny::stopApp()
     }
     shiny::observeEvent(input$quit, finish(FALSE))
+    shiny::observeEvent(input$do_quit, finish(FALSE))
     shiny::observeEvent(input$do_insert, finish(TRUE))
     # Reader and preview toggle from either the key (r/p) or the button.
     shiny::observeEvent(input$toggle_reader, reader(!reader()))
     shiny::observeEvent(input$do_reader, reader(!reader()))
     shiny::observeEvent(input$do_preview, show_preview(!show_preview()))
 
-    # m flips the multi-file iterator (lapply <-> purrr::map); only changes the
-    # generated reader snippet, so a quick note when it lands.
-    shiny::observeEvent(input$toggle_map, {
+    # m (key or pill) flips the multi-file iterator (lapply <-> purrr::map);
+    # only changes the generated reader snippet, so a quick note when it lands.
+    toggle_map_fn <- function() {
       map_mode(if (identical(map_mode(), "purrr")) "lapply" else "purrr")
       fn <- if (identical(map_mode(), "purrr")) "purrr::map()" else "lapply()"
       shiny::showNotification(
         paste0("Flere filer mappes nu med ", fn, "."),
         duration = 2, type = "message")
-    })
+    }
+    shiny::observeEvent(input$toggle_map, toggle_map_fn())
+    shiny::observeEvent(input$do_map, toggle_map_fn())
     # p toggles the in-file content preview.
     shiny::observeEvent(input$toggle_preview, show_preview(!show_preview()))
     # b factors a shared directory into a base_dir variable (key or button).
@@ -1200,28 +1197,42 @@ browse_files <- function(path = getwd(), root = NULL,
     # The action buttons name exactly what they will act on: the number
     # of paths in the target set (marked, or the cursor when none are).
     kbd <- function(k) shiny::tags$span(class = "bf-kbd", k)
+    # A compact option toggle: a pill that fills in when on, with a state icon.
+    toggle_pill <- function(id, label, key, on, icon_on, icon_off) {
+      shiny::actionButton(
+        id, shiny::tagList(label, kbd(key)),
+        icon = shiny::icon(if (on) icon_on else icon_off),
+        class = if (on) "bf-toggle on" else "bf-toggle")
+    }
     output$actions <- shiny::renderUI({
       if (!is.null(sheet_file())) {
         nsh <- length(sheet_target()); nmk <- length(sheet_marked())
         info_txt <- if (nsh <= 1) "Excel \u2014 inds\u00e6tter <code>readxl::read_excel(sheet = ...)</code>"
                     else paste0("Excel \u2014 ", nsh, " ark, hvert sit objekt")
-        return(shiny::div(
-          class = "bf-actions",
-          shiny::actionButton("do_insert",
-            shiny::tagList(paste("Inds\u00e6t", max(nsh, 1L), "ark"), kbd("Enter")),
-            icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
-          shiny::actionButton("do_copy", shiny::tagList("Kopier", kbd("y")),
-            icon = shiny::icon("copy"), class = "btn-default bf-btn"),
-          shiny::actionButton("do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
-            icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
-          shiny::actionButton("do_preview", shiny::tagList("Preview", kbd("p")),
-            icon = shiny::icon(if (show_preview()) "eye" else "eye-slash"),
-            class = "btn-default bf-btn"),
-          shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
-          if (nmk > 0) shiny::actionButton(
-            "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
-            icon = shiny::icon("xmark"), class = "btn-default bf-btn"),
-          if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
+        return(shiny::tagList(
+          shiny::div(
+            class = "bf-actions",
+            shiny::actionButton("do_insert",
+              shiny::tagList(paste("Inds\u00e6t", max(nsh, 1L), "ark"), kbd("Enter")),
+              icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
+            shiny::actionButton("do_copy", shiny::tagList("Kopier", kbd("y")),
+              icon = shiny::icon("copy"), class = "btn-default bf-btn"),
+            shiny::actionButton("do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
+              icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
+            shiny::actionButton("do_start", shiny::tagList("Start", kbd("g")),
+              icon = shiny::icon("house"), class = "btn-default bf-btn"),
+            shiny::actionButton("do_quit", shiny::tagList("Luk", kbd("Q")),
+              icon = shiny::icon("xmark"), class = "btn-default bf-btn"),
+            if (nmk > 0) shiny::actionButton(
+              "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
+              icon = shiny::icon("eraser"), class = "btn-default bf-btn"),
+            if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))),
+          shiny::div(
+            class = "bf-toggles",
+            shiny::span(class = "bf-toggles-label", "Indstillinger"),
+            toggle_pill("do_preview", "Preview", "p", show_preview(), "eye", "eye-slash")),
+          shiny::div(class = "bf-statusline",
+            shiny::icon("table"), shiny::HTML(info_txt))))
       }
       tg <- target()
       n  <- length(tg)
@@ -1238,15 +1249,15 @@ browse_files <- function(path = getwd(), root = NULL,
       active  <- on && n_read > 0
       warn    <- on && n_bad > 0
 
-      label <- if (active) "Inds\u00e6t l\u00e6sekald" else {
+      label <- if (active) "Inds\u00e6t kode" else {
         paste("Inds\u00e6t", if (n <= 1) "sti" else paste(n, "stier"))
       }
       ex <- character()
       if (n_bad > 0)  ex <- c(ex, paste0(n_bad, if (n_bad == 1) " fil" else " filer", " med ukendt format"))
       if (n_dirs > 0) ex <- c(ex, paste0(n_dirs, if (n_dirs == 1) " mappe" else " mapper"))
       info <- if (!on) NULL else if (!active) {
-        if (warn) "Reader til \u2014 ukendt format, inds\u00e6tter sti"
-        else "Reader til \u2014 mapper kan ikke l\u00e6ses, inds\u00e6tter sti"
+        if (warn) "Ukendt format \u2014 inds\u00e6tter sti i stedet"
+        else "Mapper kan ikke l\u00e6ses \u2014 inds\u00e6tter sti i stedet"
       } else {
         readers <- .bf_reader_for(read_ok)
         snippet <- if (n_read == 1) paste0(readers, "(...)")
@@ -1255,50 +1266,57 @@ browse_files <- function(path = getwd(), root = NULL,
                      paste0(binder, "(my_paths, ", readers[1], ")")
                    } else "\u00e9t kald pr. fil"
         paste0(
-          "Reader til \u2014 inds\u00e6tter <code>", snippet, "</code>",
+          "Inds\u00e6tter <code>", snippet, "</code>",
           if (length(ex)) paste0(" \u00b7 udelader ", paste(ex, collapse = " og ")) else "")
       }
-      shiny::div(
-        class = "bf-actions",
-        shiny::actionButton(
-          "do_insert", shiny::tagList(label, kbd("Enter")),
-          icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_copy", shiny::tagList("Kopier", kbd("y")),
-          icon = shiny::icon("copy"), class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
-          icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
-          icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_reader", shiny::tagList("Reader", kbd("r")),
-          icon = shiny::icon(if (reader()) "book-open" else "book"),
-          class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_preview", shiny::tagList("Preview", kbd("p")),
-          icon = shiny::icon(if (show_preview()) "eye" else "eye-slash"),
-          class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_base", shiny::tagList("base_dir", kbd("b")),
-          icon = shiny::icon(if (base_on()) "link" else "link-slash"),
-          class = "btn-default bf-btn"),
-        shiny::actionButton(
-          "do_names", shiny::tagList("navne", kbd("n")),
-          icon = shiny::icon(if (names_on()) "tags" else "tag"),
-          class = "btn-default bf-btn"),
-        if (!is.null(info))
-          shiny::span(class = if (warn) "bf-info bf-info-warn" else "bf-info",
-                      shiny::icon(if (warn) "exclamation-triangle" else "info-circle"),
-                      shiny::HTML(info)),
-        if (nm > 0)
+      shiny::tagList(
+        # Primary actions.
+        shiny::div(
+          class = "bf-actions",
           shiny::actionButton(
-            "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
+            "do_insert", shiny::tagList(label, kbd("Enter")),
+            icon = shiny::icon("file-import"), class = "btn-default bf-btn"),
+          shiny::actionButton(
+            "do_copy", shiny::tagList("Kopier", kbd("y")),
+            icon = shiny::icon("copy"), class = "btn-default bf-btn"),
+          shiny::actionButton(
+            "do_open", shiny::tagList("\u00c5bn i stifinder", kbd("o")),
+            icon = shiny::icon("folder-open"), class = "btn-default bf-btn"),
+          shiny::actionButton(
+            "do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
+            icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
+          shiny::actionButton(
+            "do_start", shiny::tagList("Start", kbd("g")),
+            icon = shiny::icon("house"), class = "btn-default bf-btn"),
+          shiny::actionButton(
+            "do_quit", shiny::tagList("Luk", kbd("Q")),
             icon = shiny::icon("xmark"), class = "btn-default bf-btn"),
-        if (nm > 0)
-          shiny::span(class = "bf-chip",
-                      paste(nm, if (nm == 1) "markeret" else "markerede"))
+          if (nm > 0)
+            shiny::actionButton(
+              "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
+              icon = shiny::icon("eraser"), class = "btn-default bf-btn"),
+          if (nm > 0)
+            shiny::span(class = "bf-chip",
+                        paste(nm, if (nm == 1) "markeret" else "markerede"))),
+        # Options as compact toggles.
+        shiny::div(
+          class = "bf-toggles",
+          shiny::span(class = "bf-toggles-label", "Indstillinger"),
+          toggle_pill("do_reader", "Reader", "r", reader(), "book-open", "book"),
+          toggle_pill("do_preview", "Preview", "p", show_preview(), "eye", "eye-slash"),
+          toggle_pill("do_base", "base_dir", "b", base_on(), "link", "link-slash"),
+          toggle_pill("do_names", "navne", "n", names_on(), "tags", "tag"),
+          shiny::actionButton(
+            "do_map",
+            shiny::tagList(if (identical(map_mode(), "purrr")) "purrr::map" else "lapply",
+                          kbd("m")),
+            icon = shiny::icon("arrow-right-arrow-left"),
+            class = if (identical(map_mode(), "purrr")) "bf-toggle on" else "bf-toggle")),
+        # Reader status, only while reader mode is on.
+        if (!is.null(info))
+          shiny::div(class = if (warn) "bf-statusline warn" else "bf-statusline",
+            shiny::icon(if (warn) "triangle-exclamation" else "circle-info"),
+            shiny::HTML(info))
       )
     })
 
@@ -1370,12 +1388,14 @@ browse_files <- function(path = getwd(), root = NULL,
              else sample(persistent, 1)
       shiny::showNotification(msg, duration = 3, type = "message")
     })
-    # Jump back to the directory the browser opened in.
-    shiny::observeEvent(input$go_start, {
+    # Jump back to the directory the browser opened in (key g or the button).
+    go_to_start <- function() {
       sheet_file(NULL); sheet_marked(character()); sheet_cursor(NULL)
       nav$prev <- cur_path()
       cur_path(start_path)
-    })
+    }
+    shiny::observeEvent(input$go_start, go_to_start())
+    shiny::observeEvent(input$do_start, go_to_start())
   }
 
   shiny::runApp(shiny::shinyApp(ui, server), quiet = TRUE)

@@ -8,7 +8,7 @@ browse_files(
   path = getwd(),
   root = NULL,
   map = c("lapply", "purrr"),
-  preview = TRUE,
+  preview = FALSE,
   base_dir = FALSE,
   names = FALSE
 )
@@ -27,7 +27,7 @@ the same type are marked: \code{"lapply"} (default, base R) or \code{"purrr"} fo
 \code{purrr::map()}. Toggle it live in the app with \code{m}. Only affects the
 generated text, not the browser itself.}
 
-\item{preview}{Whether the content preview starts on (\code{TRUE}, default) -- the
+\item{preview}{Whether the content preview starts on (\code{FALSE}, default) -- the
 text peek for scripts/text and the cell peek for Excel sheets. The preview
 column (file metadata, folder contents) is always shown. Toggle the content
 preview live in the app with \code{p}.}
