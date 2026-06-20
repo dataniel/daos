@@ -43,36 +43,69 @@ the same expression to the clipboard, and `o` opens the item under the
 cursor in the system explorer. No second window, no clipboard
 round-trip.
 
-Press `r` to toggle *reader mode*: instead of the bare path, `Enter` and
-`y` read the target with
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
-A single file is read inline –
+Pass `root` to cap how far up you can climb – the browser never goes
+above that directory, so you can scope it to a project folder:
 
 ``` r
 
-daos::read_files("data/x.tsv")
+browse_files("data", root = "data")   # cannot navigate above data/
 ```
 
-while several paths are bound to a `my_paths` object first, then read,
-so the vector is named and left around to reuse:
+`p` toggles the content preview – the text peek and Excel cell peek –
+while the preview column itself stays put.
+
+Press `r` to toggle *reader mode*: instead of the bare path, `Enter` and
+`y` insert a call that reads the target with the native reader for its
+type –
+[`arrow::read_parquet()`](https://arrow.apache.org/docs/r/reference/read_parquet.html)
+for `.parquet`,
+[`readxl::read_xlsx()`](https://readxl.tidyverse.org/reference/read_excel.html)
+for `.xlsx`,
+[`readr::read_csv2()`](https://readr.tidyverse.org/reference/read_delim.html)
+for `.csv`, and so on. A single file is read inline –
+
+``` r
+
+arrow::read_parquet("data/x.parquet")
+```
+
+while several files of the same type are bound to a `my_paths` object
+and the reader is mapped over them, so the vector is named and left
+around to reuse:
 
 ``` r
 
 my_paths <- c(
-  "data/a.tsv",
-  "data/b.csv"
+  "data/a.parquet",
+  "data/b.parquet"
 )
 
-daos::read_files(my_paths)
+lapply(my_paths, arrow::read_parquet)
 ```
 
-(The call is namespaced as
-[`daos::read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-so the pasted line runs even when you reached the browser via
-[`daos::browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
-without attaching the package.)
+Pass `map = "purrr"` to
+[`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
+to get [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html)
+instead of [`lapply()`](https://rdrr.io/r/base/lapply.html), or toggle
+it live in the app with `m`. A mix of types can’t share one reader, so
+each file gets its own named read instead. The inserted code is
+self-contained – it carries the reader it needs and runs without `daos`
+attached.
 
-The format is detected for you either way.
+Press `b` (or set `base_dir = TRUE`) to factor a shared directory out
+into a `base_dir` variable, so a long common path lives in one place:
+
+``` r
+
+base_dir <- "C:/Users/you/demo"
+
+my_paths <- c(
+  paste0(base_dir, "/a.parquet"),
+  paste0(base_dir, "/b.parquet")
+)
+
+lapply(my_paths, arrow::read_parquet)
+```
 
 ## Jump to a file you already have in code: `open_in_explorer()`
 
