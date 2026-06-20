@@ -55,20 +55,86 @@
 # Render one or more paths as an R expression: a single path becomes a
 # quoted string, several become a c() with one path per line (like
 # addin_text_to_vector). Backslashes are flipped to forward slashes so
-# the result drops straight into R code.
-.bf_rstring <- function(paths) {
+# the result drops straight into R code. With `base` (a shared directory), each
+# element is written relative to a `base_dir` variable -- paste0(base_dir, "/x")
+# -- so the common prefix lives in one place; the caller declares base_dir.
+.bf_rstring <- function(paths, base = "", named = FALSE) {
   if (length(paths) == 0) return("")
-  paths <- gsub("\\\\", "/", paths)
-  quoted <- paste0('"', paths, '"')
-  if (length(quoted) == 1) return(quoted)
-  paste0("c(\n  ", paste(quoted, collapse = ",\n  "), "\n)")
+  elems <- .bf_path_arg(paths, base)
+  # With several paths and `named`, key each element by its file name (valid,
+  # unique R names) so a downstream lapply()/map() returns a named list.
+  if (named && length(elems) > 1)
+    elems <- paste0(.bf_file_var(paths), " = ", elems)
+  if (length(elems) == 1) return(elems)
+  paste0("c(\n  ", paste(elems, collapse = ",\n  "), "\n)")
 }
 
-# TRUE for files daos::read_files() can open, judged by extension. Folders
+# The deepest directory the paths share (forward slashes, no trailing slash).
+# A single path yields its own directory; "" only when there is no shared
+# directory at all (paths on different drives). Used to factor a common prefix
+# into a base_dir variable.
+.bf_common_dir <- function(paths) {
+  paths <- gsub("\\\\", "/", paths)
+  dirs  <- dirname(paths)
+  if (length(paths) == 1) return(sub("/+$", "", dirs))   # one file: its own dir
+  parts <- strsplit(dirs, "/", fixed = TRUE)
+  k <- min(lengths(parts))
+  common <- 0L
+  for (i in seq_len(k)) {
+    seg <- vapply(parts, `[[`, character(1), i)
+    if (length(unique(seg)) == 1L) common <- i else break
+  }
+  if (common == 0L) "" else paste(parts[[1]][seq_len(common)], collapse = "/")
+}
+
+# Native reader call (as a code string) for each extension the browser can
+# generate a read for. Kept here so the inserted snippet is self-contained and
+# runs without daos -- this is browse_files' own copy of the
+# extension -> reader knowledge, deliberately independent of read_files(). CSV
+# follows the Danish convention (read_csv2: semicolon-separated, comma decimal).
+.bf_readers <- function() {
+  c(
+    csv      = "readr::read_csv2",
+    tsv      = "readr::read_tsv",
+    parquet  = "arrow::read_parquet",
+    feather  = "arrow::read_feather",
+    xlsx     = "readxl::read_xlsx",
+    xls      = "readxl::read_xls",
+    rds      = "readRDS",
+    sas7bdat = "haven::read_sas",
+    sav      = "haven::read_sav",
+    por      = "haven::read_por",
+    xpt      = "haven::read_xpt",
+    dta      = "haven::read_dta",
+    json     = "jsonlite::read_json",
+    ndjson   = "jsonlite::stream_in",
+    jsonl    = "jsonlite::stream_in",
+    yaml     = "yaml::read_yaml",
+    yml      = "yaml::read_yaml",
+    txt      = "readr::read_lines"
+  )
+}
+
+# The native reader call string for one path, or NA for an unknown extension.
+.bf_reader_for <- function(path)
+  unname(.bf_readers()[tolower(tools::file_ext(path))])
+
+# TRUE for files the browser knows a reader for, judged by extension. Folders
 # and unknown extensions are FALSE. Vectorised.
 .bf_readable <- function(path) {
   ext <- tolower(tools::file_ext(path))
-  nzchar(ext) & ext %in% .read_files_exts()
+  nzchar(ext) & ext %in% names(.bf_readers())
+}
+
+# Filter file names by the in-folder filter box: a glob when the pattern holds
+# a * or ? (e.g. "*_2026*.tsv"), otherwise a case-insensitive substring. An
+# empty pattern keeps everything. Vectorised over `names`.
+.bf_match <- function(names, pat) {
+  if (is.null(pat) || !nzchar(pat)) return(rep(TRUE, length(names)))
+  if (grepl("[*?]", pat))
+    grepl(utils::glob2rx(pat), names, ignore.case = TRUE)
+  else
+    grepl(tolower(pat), tolower(names), fixed = TRUE)  # case-insensitive substring
 }
 
 # Plain-text extensions we show a quick first-lines peek for, so you can see
@@ -78,60 +144,103 @@
     "html", "xml", "yaml", "yml", "json", "toml", "sh", "bat", "ps1", "log",
     "ini", "cfg", "conf", "csv", "tsv", "tex")
 
-# Reader-mode expression. A single file reads inline -- read_files("x") --
-# since an intermediate object would just be noise. Several paths are bound
-# to `my_paths` first (a blank line, then the read), so the vector is named
-# and left around to reuse. read_files() detects the format either way. It is
-# namespaced as daos::read_files() so the pasted line runs even when the
-# package was only reached via daos::browse_files(), without library(daos).
-.bf_reader_expr <- function(paths) {
-  s <- .bf_rstring(paths)
-  if (length(paths) <= 1) {
-    paste0("daos::read_files(", s, ")")
-  } else {
-    paste0("my_paths <- ", s, "\n\ndaos::read_files(my_paths)")
+# Path element for the one-read-per-file (mixed types) shape: a plain quoted
+# path, or paste0(base_dir, "/rel") when a shared base is factored out.
+.bf_path_arg <- function(paths, base = "") {
+  paths <- gsub("\\\\", "/", paths)
+  if (nzchar(base))
+    paste0('paste0(base_dir, "/', substring(paths, nchar(base) + 2L), '")')
+  else
+    paste0('"', paths, '"')
+}
+
+# A `base_dir <- "..."` declaration line (with trailing blank line) when a base
+# is factored out, else "".
+.bf_base_decl <- function(base)
+  if (nzchar(base)) paste0('base_dir <- "', base, '"\n\n') else ""
+
+# Reader-mode expression, using the native reader for each file so the pasted
+# line runs without daos. A single file reads inline -- arrow::read_parquet("x")
+# -- since an intermediate object would just be noise. Several files of the same
+# type are bound to `my_paths` (a blank line, then the read) and the reader is
+# mapped over them: lapply by default, purrr::map when `map = "purrr"`. A mix of
+# types cannot share one reader, so each file gets its own named read instead.
+# With `base`, the shared directory is pulled into a leading base_dir variable.
+# With `named`, the my_paths vector is keyed by file name so the mapped read
+# returns a named list (the mixed-type shape already names each object).
+.bf_reader_expr <- function(paths, map = "lapply", base = "", named = FALSE) {
+  readers <- .bf_reader_for(paths)
+  decl <- .bf_base_decl(base)
+  if (length(paths) == 1) {
+    return(paste0(decl, readers, "(", .bf_rstring(paths, base), ")"))
   }
+  if (length(unique(readers)) == 1) {
+    binder <- if (identical(map, "purrr")) "purrr::map" else "lapply"
+    return(paste0(decl, "my_paths <- ", .bf_rstring(paths, base, named),
+                  "\n\n", binder, "(my_paths, ", readers[1], ")"))
+  }
+  vars <- .bf_file_var(paths)
+  body <- sprintf('%-*s <- %s(%s)', max(nchar(vars)), vars, readers,
+                  .bf_path_arg(paths, base)) |>
+    paste(collapse = "\n")
+  paste0(decl, body)
+}
+
+# Plain path expression (no reader): the bare vector, optionally with the shared
+# directory factored into a base_dir variable and keyed by file name.
+.bf_plain_expr <- function(paths, base_on = FALSE, named = FALSE) {
+  base <- if (base_on) .bf_common_dir(paths) else ""
+  paste0(.bf_base_decl(base), .bf_rstring(paths, base, named))
 }
 
 # The text that gets inserted/copied. Plain paths by default; in reader mode
-# only the *readable* files are wrapped in read_files() -- directories and
-# files read_files() cannot open (by extension) are left out, since wrapping
-# them would just produce a call that errors. A target with nothing readable
-# is thus unchanged by reader mode.
-.bf_expr <- function(paths, reader) {
-  if (!reader || length(paths) == 0) return(.bf_rstring(paths))
+# only the *readable* files are wrapped in a native read -- directories and
+# files of an unknown type are left out, since wrapping them would just produce
+# a call that errors. A target with nothing readable is thus unchanged by
+# reader mode. `base_on` factors a shared directory into a base_dir variable;
+# `named` keys multi-file output by file name.
+.bf_expr <- function(paths, reader, map = "lapply", base_on = FALSE,
+                     named = FALSE) {
+  if (!reader || length(paths) == 0) return(.bf_plain_expr(paths, base_on, named))
   readable <- paths[!dir.exists(paths) & .bf_readable(paths)]
-  if (length(readable) == 0) .bf_rstring(paths) else .bf_reader_expr(readable)
+  if (length(readable) == 0) return(.bf_plain_expr(paths, base_on, named))
+  base <- if (base_on) .bf_common_dir(readable) else ""
+  .bf_reader_expr(readable, map, base, named)
 }
 
-# Turn an Excel sheet name into a valid, unique R variable name for the
-# generated code: lowercased, non-alphanumerics to "_", a leading digit or
-# empty name prefixed with "ark_", duplicates disambiguated.
-.bf_sheet_var <- function(sheets) {
-  v <- tolower(sheets)
+# Turn arbitrary labels into valid, unique R variable names for generated
+# code: lowercased, non-alphanumerics to "_", a leading digit or empty name
+# given `prefix`, duplicates disambiguated.
+.bf_safe_names <- function(x, prefix) {
+  v <- tolower(x)
   v <- gsub("[^a-z0-9]+", "_", v)
   v <- gsub("^_+|_+$", "", v)
   bad <- !nzchar(v) | grepl("^[0-9]", v)
-  v[bad] <- paste0("ark_", v[bad])
+  v[bad] <- paste0(prefix, v[bad])
   make.unique(v, sep = "_")
 }
+# Variable names for the generated code: sheets prefixed "ark_", files named
+# after their basename (sans extension) and prefixed "dat_" when unusable.
+.bf_sheet_var <- function(sheets) .bf_safe_names(sheets, "ark_")
+.bf_file_var  <- function(paths)
+  .bf_safe_names(tools::file_path_sans_ext(basename(paths)), "dat_")
 
 # Code reading the chosen sheets of one workbook. One sheet reads inline; for
 # several, one aligned assignment per sheet (the "one object per sheet" shape),
-# each via daos::read_files(path, sheet = ...).
+# each via readxl::read_excel(path, sheet = ...).
 .bf_sheet_expr <- function(path, sheets) {
   if (length(sheets) == 0) return("")
   p <- gsub("\\\\", "/", path)
   if (length(sheets) == 1)
-    return(sprintf('daos::read_files("%s", sheet = "%s")', p, sheets))
+    return(sprintf('readxl::read_excel("%s", sheet = "%s")', p, sheets))
   vars <- .bf_sheet_var(sheets)
-  sprintf('%-*s <- daos::read_files("%s", sheet = "%s")',
+  sprintf('%-*s <- readxl::read_excel("%s", sheet = "%s")',
           max(nchar(vars)), vars, p, sheets) |>
     paste(collapse = "\n")
 }
 
-# The row icon: a blue folder, a green document for files read_files() can
-# read, or a grey document for everything else -- so readable files stand
+# The row icon: a blue folder, a green document for files the browser has a
+# reader for, or a grey document for everything else -- so readable files stand
 # out while browsing.
 .bf_icon <- function(type, full) {
   if (identical(type, "d"))
@@ -181,18 +290,21 @@
 #'   string for one path, a multi-line `c(...)` (one path per line) for
 #'   several, with forward slashes. Outside RStudio it falls back to the
 #'   clipboard.
-#' - `r` toggles *reader mode*: when on, `Enter` and `y` read the target with
-#'   [daos::read_files()] instead of inserting the bare path. A single file is
-#'   read inline (`daos::read_files("data/x.tsv")`); several paths are bound to a
-#'   `my_paths` object first, then read after a blank line
-#'   (`my_paths <- c(...)` then `daos::read_files(my_paths)`). Only files
-#'   [daos::read_files()] can open are wrapped; folders and files of an
-#'   unsupported type are left out (with a warning), since wrapping them
-#'   would only produce a call that errors. Readable files are flagged with a
-#'   green icon in the browser. Toggle it off to go back to plain paths.
+#' - `r` toggles *reader mode*: when on, `Enter` and `y` insert a call that
+#'   reads the target with the native reader for its type (e.g.
+#'   `arrow::read_parquet()` for `.parquet`, `readxl::read_xlsx()` for `.xlsx`,
+#'   `readr::read_csv2()` for `.csv`) instead of the bare path -- so the pasted
+#'   line is self-contained and needs no `daos`. A single file is read inline
+#'   (`arrow::read_parquet("data/x.parquet")`); several files of the same type
+#'   are bound to a `my_paths` object and the reader is mapped over them
+#'   (`lapply(my_paths, arrow::read_parquet)`, or `purrr::map(...)` when
+#'   `map = "purrr"`); a mix of types gets one named read per file. Only files
+#'   of a known type are wrapped; folders and unknown types are left out (with a
+#'   warning). Readable files are flagged with a green icon in the browser.
+#'   Toggle it off to go back to plain paths.
 #' - On an Excel file (`.xlsx`/`.xls`), `l`/Enter steps *into* the workbook
 #'   and lists its sheets; mark sheets with `Space` and the inserted code
-#'   reads exactly those -- one [daos::read_files()] call per sheet (a single
+#'   reads exactly those -- one `readxl::read_excel()` call per sheet (a single
 #'   sheet reads inline). The preview shows the first rows of the sheet under
 #'   the cursor. `h` leaves the workbook. Needs `readxl`.
 #' - `y` copies that same expression to the clipboard without closing.
@@ -200,14 +312,48 @@
 #'   [daos::open_in_explorer()] (a folder opens, a file is revealed).
 #' - `a` opens the file itself in its default application (the workbook when
 #'   inside one).
-#' - `l`/`->` enters a folder; `h`/`<-` goes up, all the way to the drive
-#'   chooser at the root. The cursor remembers its place in each folder,
-#'   so going back up lands on the folder you came from. `g` jumps back to
-#'   the directory the browser opened in.
+#' - `l`/`->` enters a folder; `h`/`<-` goes up. Without `root` you can climb
+#'   all the way to the drive chooser; with `root` set, climbing stops there --
+#'   that directory becomes the top, with no parent column above it. The cursor
+#'   remembers its place in each folder, so going back up lands on the folder
+#'   you came from. `g` jumps back to the directory the browser opened in.
+#' - The filter box above the browser narrows the current folder to matching
+#'   files: a glob when the pattern has `*`/`?` (e.g. `*_2026*.tsv`), otherwise a
+#'   case-insensitive substring. Folders always stay visible so you can keep
+#'   navigating, and the filter clears when you move to another folder.
+#' - `m` toggles how a multi-file reader snippet iterates -- `lapply()` or
+#'   `purrr::map()` (see `map`). `p` toggles the content preview: when off, the
+#'   preview column still shows file metadata (size, dates, sheet names) but no
+#'   longer reads into files for the text peek or the Excel cell peek.
+#' - `b` toggles a shared `base_dir`: the files' common directory is pulled into
+#'   a `base_dir <- "..."` line and each path becomes `paste0(base_dir, "/...")`,
+#'   so the folder lives in one place. For one file that is its own directory;
+#'   it only has no effect when the files share no directory (different drives).
+#' - `n` toggles names: with several files marked, the path vector is keyed by
+#'   file name (`c(iris2 = "...", iris3 = "...")`), so the mapped read returns a
+#'   named list. No effect on a single file.
+#' - Reader (`r`), preview (`p`), base_dir (`b`) and names (`n`) are also buttons
+#'   in the action bar; their icon reflects whether each is on.
 #' - `Q` closes the app without inserting.
 #'
 #' @param path Directory to start in. Default: the working directory
 #'   ([getwd()]).
+#' @param root Optional directory that caps how far up you can navigate: the
+#'   browser never climbs above it (no parent column, no drive chooser at that
+#'   level). Default `NULL` allows climbing all the way to the filesystem root.
+#'   A `path` outside `root` is pulled back to `root`.
+#' @param map Initial iterator for a reader-mode snippet when several files of
+#'   the same type are marked: `"lapply"` (default, base R) or `"purrr"` for
+#'   `purrr::map()`. Toggle it live in the app with `m`. Only affects the
+#'   generated text, not the browser itself.
+#' @param preview Whether the content preview starts on (`TRUE`, default) -- the
+#'   text peek for scripts/text and the cell peek for Excel sheets. The preview
+#'   column (file metadata, folder contents) is always shown. Toggle the content
+#'   preview live in the app with `p`.
+#' @param base_dir Whether to start with a shared `base_dir` factored out of
+#'   multi-file snippets (`FALSE`, default). Toggle it live in the app with `b`.
+#' @param names Whether multi-file output starts keyed by file name (`FALSE`,
+#'   default), so a mapped read returns a named list. Toggle live with `n`.
 #'
 #' @return The target paths, invisibly -- a single string when one path
 #'   is marked or the cursor path is used, a character vector when
@@ -217,13 +363,17 @@
 #' \dontrun{
 #' p <- browse_files()          # navigate, mark, press Q
 #' files <- browse_files("data") # start in data/, return marked files
+#' browse_files("data", root = "data") # cannot climb above data/
 #' }
 #'
 #' @seealso [daos::open_in_explorer()]
 #'
 #' @importFrom cli cli_abort
 #' @export
-browse_files <- function(path = getwd()) {
+browse_files <- function(path = getwd(), root = NULL,
+                         map = c("lapply", "purrr"), preview = TRUE,
+                         base_dir = FALSE, names = FALSE) {
+  map <- match.arg(map)
   for (pkg in c("shiny")) {
     if (!requireNamespace(pkg, quietly = TRUE))
       cli::cli_abort("Package {.pkg {pkg}} is required for the app. Install with {.code install.packages('{pkg}')}.")
@@ -231,6 +381,17 @@ browse_files <- function(path = getwd()) {
   if (!dir.exists(path))
     cli::cli_abort("Directory {.path {path}} does not exist.")
   start_path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+
+  # An optional root caps how far up you can climb: navigation never goes above
+  # it (no parent column, no drive chooser at that level). A start path outside
+  # the root is pulled back to the root itself.
+  if (!is.null(root)) {
+    if (!dir.exists(root))
+      cli::cli_abort("Root {.path {root}} does not exist.")
+    root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+    if (!(identical(start_path, root) || startsWith(start_path, paste0(root, "/"))))
+      start_path <- root
+  }
 
   # Carries the result out of the app: the chosen paths, and whether the
   # user asked to insert them into the editor (Enter) or just close (Q).
@@ -271,6 +432,15 @@ browse_files <- function(path = getwd()) {
     .bf-crumbs a { cursor: pointer; color: #1d62a8; text-decoration: none; font-weight: 600; }
     .bf-crumbs a:hover { text-decoration: underline; }
     .bf-crumbs .bf-sep { color: #94a3b8; margin: 0 5px; }
+    .bf-filter { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; }
+    .bf-filter .bf-filter-ico { color: #94a3b8; }
+    .bf-filter .form-group { margin: 0; flex: 1; }
+    .bf-filter input {
+      width: 100%; border: 1px solid #d6dee8; border-radius: 8px;
+      padding: 6px 12px; font-size: 13px; color: #1e293b;
+      font-family: ui-monospace, Consolas, monospace; background: #fff;
+    }
+    .bf-filter input:focus { outline: 2px solid #1d62a8; outline-offset: -1px; border-color: #1d62a8; }
     .bf-browser { display: flex; gap: 14px; }
     .bf-col {
       flex: 1; min-width: 0; max-height: 60vh; overflow-y: auto;
@@ -399,6 +569,10 @@ browse_files <- function(path = getwd()) {
       if (key === 'a') { e.preventDefault(); Shiny.setInputValue('do_openfile', Date.now()); return; }
       if (key === 'g') { e.preventDefault(); Shiny.setInputValue('go_start', Date.now()); return; }
       if (key === 'r') { e.preventDefault(); Shiny.setInputValue('toggle_reader', Date.now()); return; }
+      if (key === 'm') { e.preventDefault(); Shiny.setInputValue('toggle_map', Date.now()); return; }
+      if (key === 'p') { e.preventDefault(); Shiny.setInputValue('toggle_preview', Date.now()); return; }
+      if (key === 'b') { e.preventDefault(); Shiny.setInputValue('toggle_base', Date.now()); return; }
+      if (key === 'n') { e.preventDefault(); Shiny.setInputValue('toggle_names', Date.now()); return; }
 
       var down = (key === 'j' || key === 'ArrowDown');
       var up   = (key === 'k' || key === 'ArrowUp');
@@ -480,7 +654,9 @@ browse_files <- function(path = getwd()) {
     kbd_html("l"), " \u00e5bn ", kbd_html("h"), " op ",
     kbd_html("mellemrum"), " mark\u00e9r ",
     kbd_html("Enter"), " inds\u00e6t ", kbd_html("y"), " kopier ",
-    kbd_html("r"), " reader ",
+    kbd_html("r"), " reader ", kbd_html("m"), " lapply/purrr ",
+    kbd_html("p"), " preview ", kbd_html("b"), " base_dir ",
+    kbd_html("n"), " navne ",
     kbd_html("o"), " stifinder ", kbd_html("a"), " \u00e5bn fil ",
     kbd_html("g"), " start ", kbd_html("Q"), " luk",
     "<br>", kbd_html("l"), " p\u00e5 en Excel-fil g\u00e5r ind i arkene"
@@ -502,6 +678,11 @@ browse_files <- function(path = getwd()) {
     shiny::div(
       class = "bf-card",
       shiny::div(class = "bf-crumbs", shiny::uiOutput("crumbs", inline = TRUE)),
+      shiny::div(
+        class = "bf-filter",
+        shiny::span(class = "bf-filter-ico", shiny::icon("filter")),
+        shiny::textInput("filter", label = NULL, width = "100%",
+                         placeholder = "Filtrer filer i mappen, fx *_2026*.tsv")),
       shiny::uiOutput("browser"),
       shiny::div(
         class = "bf-bar",
@@ -521,11 +702,26 @@ browse_files <- function(path = getwd()) {
     cursor   <- shiny::reactiveVal(NULL)
     marked   <- shiny::reactiveVal(character())
     reader   <- shiny::reactiveVal(FALSE)
+    map_mode <- shiny::reactiveVal(map)       # "lapply" or "purrr", toggled with m
+    show_preview <- shiny::reactiveVal(preview)  # content preview on/off, toggled with p
+    base_on <- shiny::reactiveVal(base_dir)   # factor a shared base_dir, toggled with b
+    names_on <- shiny::reactiveVal(names)      # key multi-file output by name, toggled with n
     has_readxl <- requireNamespace("readxl", quietly = TRUE)
+
+    # Root awareness: with a custom `root`, climbing stops there (no parent
+    # column, no drive chooser); without one, the filesystem root is the cap.
+    norm_path <- function(p) normalizePath(p, winslash = "/", mustWork = FALSE)
+    in_root <- function(p) {
+      if (is.null(root)) return(TRUE)
+      np <- norm_path(p)
+      identical(np, root) || startsWith(np, paste0(root, "/"))
+    }
+    at_root <- function(p)
+      if (!is.null(root)) identical(norm_path(p), root) else .bf_is_root(p)
 
     # Excel "module": when sheet_file is set, the browser is inside that
     # workbook -- the current column lists its sheets to mark instead of
-    # files, and the insert reads the chosen sheets with read_files().
+    # files, and the insert reads the chosen sheets with readxl::read_excel().
     sheet_file   <- shiny::reactiveVal(NULL)
     sheet_cursor <- shiny::reactiveVal(NULL)
     sheet_marked <- shiny::reactiveVal(character())
@@ -560,7 +756,7 @@ browse_files <- function(path = getwd()) {
     # The text that gets inserted/copied, for whichever mode is active.
     current_expr <- shiny::reactive({
       if (!is.null(sheet_file())) .bf_sheet_expr(sheet_file(), sheet_target())
-      else .bf_expr(target(), reader())
+      else .bf_expr(target(), reader(), map_mode(), base_on(), names_on())
     })
 
     # Per-directory cursor memory (plain env, non-reactive). `mem` maps a
@@ -593,7 +789,28 @@ browse_files <- function(path = getwd()) {
     }
     shiny::observeEvent(input$quit, finish(FALSE))
     shiny::observeEvent(input$do_insert, finish(TRUE))
+    # Reader and preview toggle from either the key (r/p) or the button.
     shiny::observeEvent(input$toggle_reader, reader(!reader()))
+    shiny::observeEvent(input$do_reader, reader(!reader()))
+    shiny::observeEvent(input$do_preview, show_preview(!show_preview()))
+
+    # m flips the multi-file iterator (lapply <-> purrr::map); only changes the
+    # generated reader snippet, so a quick note when it lands.
+    shiny::observeEvent(input$toggle_map, {
+      map_mode(if (identical(map_mode(), "purrr")) "lapply" else "purrr")
+      fn <- if (identical(map_mode(), "purrr")) "purrr::map()" else "lapply()"
+      shiny::showNotification(
+        paste0("Flere filer mappes nu med ", fn, "."),
+        duration = 2, type = "message")
+    })
+    # p toggles the in-file content preview.
+    shiny::observeEvent(input$toggle_preview, show_preview(!show_preview()))
+    # b factors a shared directory into a base_dir variable (key or button).
+    shiny::observeEvent(input$toggle_base, base_on(!base_on()))
+    shiny::observeEvent(input$do_base, base_on(!base_on()))
+    # n keys multi-file output by file name (key or button).
+    shiny::observeEvent(input$toggle_names, names_on(!names_on()))
+    shiny::observeEvent(input$do_names, names_on(!names_on()))
 
     # Enter a workbook (l/click on an .xlsx); leave it (h) back to the file.
     shiny::observeEvent(input$enter_xlsx, {
@@ -616,6 +833,10 @@ browse_files <- function(path = getwd()) {
     shiny::observe({
       cursor(initial_cursor(cur_path()))
     })
+    # A filter belongs to the folder you typed it in -- clear it on every move.
+    shiny::observeEvent(cur_path(),
+      shiny::updateTextInput(session, "filter", value = ""),
+      ignoreInit = TRUE)
     shiny::observeEvent(input$bf_cursor, {
       if (!is.null(sheet_file()) && identical(input$bf_cursor$type, "x")) {
         sheet_cursor(input$bf_cursor$full)
@@ -696,17 +917,21 @@ browse_files <- function(path = getwd()) {
       parts <- parts[nzchar(parts)]
       crumbs <- list()
       acc <- if (.Platform$OS.type != "windows") "/" else ""
+      first_shown <- TRUE
       for (i in seq_along(parts)) {
         acc <- if (i == 1 && .Platform$OS.type == "windows") paste0(parts[i], "/")
                else if (acc == "/") paste0("/", parts[i])
                else paste0(acc, if (!endsWith(acc, "/")) "/", parts[i])
+        # Drop crumbs above a custom root, so you cannot click past the cap.
+        if (!in_root(acc)) next
         target_path <- acc
         crumbs <- c(crumbs, list(
-          if (i > 1) shiny::span(class = "bf-sep", "/"),
+          if (!first_shown) shiny::span(class = "bf-sep", "/"),
           shiny::tags$a(onclick = sprintf(
             "Shiny.setInputValue('go', '%s', {priority:'event'})", target_path),
             parts[i])
         ))
+        first_shown <- FALSE
       }
       # Inside a workbook, show its name as the last (non-link) crumb.
       if (!is.null(sheet_file()))
@@ -770,7 +995,16 @@ browse_files <- function(path = getwd()) {
       path <- cur_path()
       nodes <- listing(path)
 
+      # In-folder filter: always keep directories (so you can still navigate),
+      # keep files whose name matches the pattern. Empty pattern keeps all.
+      fnodes <- nodes[nodes$type == "d" | .bf_match(nodes$name, input$filter), ,
+                      drop = FALSE]
+
       init <- initial_cursor(path)
+      # If the remembered cursor was filtered out, fall back to the first row.
+      if (nrow(fnodes) > 0 && (is.null(init) || !(init$full %in% fnodes$full)))
+        init <- list(full = fnodes$full[1], type = fnodes$type[1])
+
       cur_col <- shiny::div(
         class = "bf-col bf-col-current",
         shiny::div(class = "bf-colhead", basename(path)),
@@ -781,14 +1015,22 @@ browse_files <- function(path = getwd()) {
             shiny::p(shiny::strong("Tom mappe")),
             shiny::p(class = "bf-hint", "Tryk h eller \u2190 for at g\u00e5 tilbage.")
           )
-        else lapply(seq_len(nrow(nodes)), function(i) {
-          item_row(nodes[i, ], cursor_on = !is.null(init) && nodes$full[i] == init$full)
+        else if (nrow(fnodes) == 0)
+          shiny::div(
+            class = "bf-empty",
+            shiny::div(class = "bf-empty-ico", "\U0001F50D"),
+            shiny::p(shiny::strong("Intet match")),
+            shiny::p(class = "bf-hint", "Ingen filer matcher filteret.")
+          )
+        else lapply(seq_len(nrow(fnodes)), function(i) {
+          item_row(fnodes[i, ], cursor_on = !is.null(init) && fnodes$full[i] == init$full)
         })
       )
 
-      # Left column: parent directory, or the drive chooser at the root.
-      parent_col <- if (.bf_is_root(path)) {
-        shiny::div(
+      # Left column: parent directory, the drive chooser at the filesystem
+      # root, or nothing once you reach a custom root (climbing stops there).
+      parent_col <- if (at_root(path)) {
+        if (is.null(root)) shiny::div(
           class = "bf-col",
           shiny::div(class = "bf-colhead", "Drev"),
           lapply(.bf_roots(), function(d) drive_row(d, active = startsWith(path, d)))
@@ -829,6 +1071,11 @@ browse_files <- function(path = getwd()) {
       if (!is.null(sf)) {
         s <- sheet_cursor()
         if (is.null(s)) return(NULL)
+        # Content preview off (p): name the sheet but don't read its cells.
+        if (!show_preview())
+          return(shiny::div(class = "bf-fileinfo",
+            shiny::p(shiny::span(class = "bf-ico bf-ico-readable", "\U0001F4D1"), shiny::strong(s)),
+            shiny::p(class = "bf-hint", "Indholds-preview sl\u00e5et fra \u2014 tryk p.")))
         df <- tryCatch(readxl::read_excel(sf, sheet = s, n_max = 8),
                        error = function(e) NULL)
         if (is.null(df) || ncol(df) == 0)
@@ -878,7 +1125,8 @@ browse_files <- function(path = getwd()) {
           tryCatch(readxl::excel_sheets(cu$full), error = function(e) NULL)
         # For scripts/text, peek at the first lines so you can recall what a
         # file holds without opening it. Read one extra line to detect "more".
-        peek <- if (tolower(ext) %in% .bf_text_exts())
+        # Skipped when content preview is off (p) -- metadata still shows.
+        peek <- if (show_preview() && tolower(ext) %in% .bf_text_exts())
           tryCatch(readLines(cu$full, n = 41, warn = FALSE, encoding = "UTF-8"),
                    error = function(e) NULL)
         code_block <- if (length(peek)) shiny::tagList(
@@ -899,10 +1147,10 @@ browse_files <- function(path = getwd()) {
             lapply(sheets, function(s) shiny::span(class = "bf-sheet-chip", s))),
           if (nzchar(ext)) shiny::p(
             class = if (readable) "bf-read-ok" else "bf-read-no",
-            if (readable) "\u2713 Kan l\u00e6ses med read_files()"
-            else paste0("\u2717 read_files() underst\u00f8tter ikke .", ext)),
+            if (readable) paste0("\u2713 L\u00e6ses med ", .bf_reader_for(cu$full), "()")
+            else paste0("\u2717 Ukendt format: .", ext)),
           if (length(sheets) > 1) shiny::p(class = "bf-hint",
-            "read_files() l\u00e6ser kun det f\u00f8rste ark \u2014 v\u00e6lg et andet med reader = \\(x) readxl::read_excel(x, sheet = \"...\")."),
+            "readxl::read_xlsx() l\u00e6ser kun det f\u00f8rste ark \u2014 tryk l for at g\u00e5 ind og v\u00e6lge et bestemt."),
           shiny::p(class = "bf-hint", "Mellemrum mark\u00e9rer \u00b7 Enter inds\u00e6tter \u00b7 r reader \u00b7 o \u00e5bner i stifinder.")
         )
       }
@@ -914,7 +1162,7 @@ browse_files <- function(path = getwd()) {
     output$actions <- shiny::renderUI({
       if (!is.null(sheet_file())) {
         nsh <- length(sheet_target()); nmk <- length(sheet_marked())
-        info_txt <- if (nsh <= 1) "Excel \u2014 inds\u00e6tter <code>read_files(sheet = ...)</code>"
+        info_txt <- if (nsh <= 1) "Excel \u2014 inds\u00e6tter <code>readxl::read_excel(sheet = ...)</code>"
                     else paste0("Excel \u2014 ", nsh, " ark, hvert sit objekt")
         return(shiny::div(
           class = "bf-actions",
@@ -925,6 +1173,9 @@ browse_files <- function(path = getwd()) {
             icon = shiny::icon("copy"), class = "btn-default bf-btn"),
           shiny::actionButton("do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
             icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
+          shiny::actionButton("do_preview", shiny::tagList("Preview", kbd("p")),
+            icon = shiny::icon(if (show_preview()) "eye" else "eye-slash"),
+            class = "btn-default bf-btn"),
           shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
           if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
       }
@@ -932,9 +1183,9 @@ browse_files <- function(path = getwd()) {
       n  <- length(tg)
       nm <- length(marked())
       on <- reader()
-      # Reader only wraps files read_files() can open. Folders and unreadable
-      # files are excluded, so the button and shape follow the readable count,
-      # and the note names what is being left out.
+      # Reader only wraps files of a known type. Folders and unreadable files
+      # are excluded, so the button and shape follow the readable count, and the
+      # note names what is being left out.
       files   <- if (on && n > 0) tg[!dir.exists(tg)] else character()
       n_dirs  <- if (on && n > 0) n - length(files) else 0L
       read_ok <- if (length(files)) files[.bf_readable(files)] else character()
@@ -943,20 +1194,24 @@ browse_files <- function(path = getwd()) {
       active  <- on && n_read > 0
       warn    <- on && n_bad > 0
 
-      label <- if (active) "Inds\u00e6t read_files()" else {
+      label <- if (active) "Inds\u00e6t l\u00e6sekald" else {
         paste("Inds\u00e6t", if (n <= 1) "sti" else paste(n, "stier"))
       }
       ex <- character()
-      if (n_bad > 0)  ex <- c(ex, paste0(n_bad, if (n_bad == 1) " fil" else " filer", " read_files ikke kan l\u00e6se"))
+      if (n_bad > 0)  ex <- c(ex, paste0(n_bad, if (n_bad == 1) " fil" else " filer", " med ukendt format"))
       if (n_dirs > 0) ex <- c(ex, paste0(n_dirs, if (n_dirs == 1) " mappe" else " mapper"))
       info <- if (!on) NULL else if (!active) {
-        if (warn) "Reader til \u2014 read_files() kan ikke l\u00e6se det valgte, inds\u00e6tter sti"
+        if (warn) "Reader til \u2014 ukendt format, inds\u00e6tter sti"
         else "Reader til \u2014 mapper kan ikke l\u00e6ses, inds\u00e6tter sti"
       } else {
+        readers <- .bf_reader_for(read_ok)
+        snippet <- if (n_read == 1) paste0(readers, "(...)")
+                   else if (length(unique(readers)) == 1) {
+                     binder <- if (identical(map_mode(), "purrr")) "purrr::map" else "lapply"
+                     paste0(binder, "(my_paths, ", readers[1], ")")
+                   } else "\u00e9t kald pr. fil"
         paste0(
-          "Reader til \u2014 inds\u00e6tter <code>",
-          if (n_read <= 1) "daos::read_files(...)" else "daos::read_files(my_paths)",
-          "</code>",
+          "Reader til \u2014 inds\u00e6tter <code>", snippet, "</code>",
           if (length(ex)) paste0(" \u00b7 udelader ", paste(ex, collapse = " og ")) else "")
       }
       shiny::div(
@@ -973,6 +1228,22 @@ browse_files <- function(path = getwd()) {
         shiny::actionButton(
           "do_openfile", shiny::tagList("\u00c5bn fil", kbd("a")),
           icon = shiny::icon("external-link-alt"), class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_reader", shiny::tagList("Reader", kbd("r")),
+          icon = shiny::icon(if (reader()) "book-open" else "book"),
+          class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_preview", shiny::tagList("Preview", kbd("p")),
+          icon = shiny::icon(if (show_preview()) "eye" else "eye-slash"),
+          class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_base", shiny::tagList("base_dir", kbd("b")),
+          icon = shiny::icon(if (base_on()) "link" else "link-slash"),
+          class = "btn-default bf-btn"),
+        shiny::actionButton(
+          "do_names", shiny::tagList("navne", kbd("n")),
+          icon = shiny::icon(if (names_on()) "tags" else "tag"),
+          class = "btn-default bf-btn"),
         if (!is.null(info))
           shiny::span(class = if (warn) "bf-info bf-info-warn" else "bf-info",
                       shiny::icon(if (warn) "exclamation-triangle" else "info-circle"),

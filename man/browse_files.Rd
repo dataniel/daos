@@ -4,11 +4,39 @@
 \alias{browse_files}
 \title{Browse the filesystem and copy paths to R}
 \usage{
-browse_files(path = getwd())
+browse_files(
+  path = getwd(),
+  root = NULL,
+  map = c("lapply", "purrr"),
+  preview = TRUE,
+  base_dir = FALSE,
+  names = FALSE
+)
 }
 \arguments{
 \item{path}{Directory to start in. Default: the working directory
 (\code{\link[=getwd]{getwd()}}).}
+
+\item{root}{Optional directory that caps how far up you can navigate: the
+browser never climbs above it (no parent column, no drive chooser at that
+level). Default \code{NULL} allows climbing all the way to the filesystem root.
+A \code{path} outside \code{root} is pulled back to \code{root}.}
+
+\item{map}{Initial iterator for a reader-mode snippet when several files of
+the same type are marked: \code{"lapply"} (default, base R) or \code{"purrr"} for
+\code{purrr::map()}. Toggle it live in the app with \code{m}. Only affects the
+generated text, not the browser itself.}
+
+\item{preview}{Whether the content preview starts on (\code{TRUE}, default) -- the
+text peek for scripts/text and the cell peek for Excel sheets. The preview
+column (file metadata, folder contents) is always shown. Toggle the content
+preview live in the app with \code{p}.}
+
+\item{base_dir}{Whether to start with a shared \code{base_dir} factored out of
+multi-file snippets (\code{FALSE}, default). Toggle it live in the app with \code{b}.}
+
+\item{names}{Whether multi-file output starts keyed by file name (\code{FALSE},
+default), so a mapped read returns a named list. Toggle live with \code{n}.}
 }
 \value{
 The target paths, invisibly -- a single string when one path
@@ -32,18 +60,21 @@ editor or console as an R expression and closes the app -- a quoted
 string for one path, a multi-line \code{c(...)} (one path per line) for
 several, with forward slashes. Outside RStudio it falls back to the
 clipboard.
-\item \code{r} toggles \emph{reader mode}: when on, \code{Enter} and \code{y} read the target with
-\code{\link[=read_files]{read_files()}} instead of inserting the bare path. A single file is
-read inline (\code{daos::read_files("data/x.tsv")}); several paths are bound to a
-\code{my_paths} object first, then read after a blank line
-(\code{my_paths <- c(...)} then \code{daos::read_files(my_paths)}). Only files
-\code{\link[=read_files]{read_files()}} can open are wrapped; folders and files of an
-unsupported type are left out (with a warning), since wrapping them
-would only produce a call that errors. Readable files are flagged with a
-green icon in the browser. Toggle it off to go back to plain paths.
+\item \code{r} toggles \emph{reader mode}: when on, \code{Enter} and \code{y} insert a call that
+reads the target with the native reader for its type (e.g.
+\code{arrow::read_parquet()} for \code{.parquet}, \code{readxl::read_xlsx()} for \code{.xlsx},
+\code{readr::read_csv2()} for \code{.csv}) instead of the bare path -- so the pasted
+line is self-contained and needs no \code{daos}. A single file is read inline
+(\code{arrow::read_parquet("data/x.parquet")}); several files of the same type
+are bound to a \code{my_paths} object and the reader is mapped over them
+(\code{lapply(my_paths, arrow::read_parquet)}, or \code{purrr::map(...)} when
+\code{map = "purrr"}); a mix of types gets one named read per file. Only files
+of a known type are wrapped; folders and unknown types are left out (with a
+warning). Readable files are flagged with a green icon in the browser.
+Toggle it off to go back to plain paths.
 \item On an Excel file (\code{.xlsx}/\code{.xls}), \code{l}/Enter steps \emph{into} the workbook
 and lists its sheets; mark sheets with \code{Space} and the inserted code
-reads exactly those -- one \code{\link[=read_files]{read_files()}} call per sheet (a single
+reads exactly those -- one \code{readxl::read_excel()} call per sheet (a single
 sheet reads inline). The preview shows the first rows of the sheet under
 the cursor. \code{h} leaves the workbook. Needs \code{readxl}.
 \item \code{y} copies that same expression to the clipboard without closing.
@@ -51,10 +82,28 @@ the cursor. \code{h} leaves the workbook. Needs \code{readxl}.
 \code{\link[=open_in_explorer]{open_in_explorer()}} (a folder opens, a file is revealed).
 \item \code{a} opens the file itself in its default application (the workbook when
 inside one).
-\item \code{l}/\verb{->} enters a folder; \code{h}/\verb{<-} goes up, all the way to the drive
-chooser at the root. The cursor remembers its place in each folder,
-so going back up lands on the folder you came from. \code{g} jumps back to
-the directory the browser opened in.
+\item \code{l}/\verb{->} enters a folder; \code{h}/\verb{<-} goes up. Without \code{root} you can climb
+all the way to the drive chooser; with \code{root} set, climbing stops there --
+that directory becomes the top, with no parent column above it. The cursor
+remembers its place in each folder, so going back up lands on the folder
+you came from. \code{g} jumps back to the directory the browser opened in.
+\item The filter box above the browser narrows the current folder to matching
+files: a glob when the pattern has \code{*}/\verb{?} (e.g. \verb{*_2026*.tsv}), otherwise a
+case-insensitive substring. Folders always stay visible so you can keep
+navigating, and the filter clears when you move to another folder.
+\item \code{m} toggles how a multi-file reader snippet iterates -- \code{lapply()} or
+\code{purrr::map()} (see \code{map}). \code{p} toggles the content preview: when off, the
+preview column still shows file metadata (size, dates, sheet names) but no
+longer reads into files for the text peek or the Excel cell peek.
+\item \code{b} toggles a shared \code{base_dir}: the files' common directory is pulled into
+a \code{base_dir <- "..."} line and each path becomes \code{paste0(base_dir, "/...")},
+so the folder lives in one place. For one file that is its own directory;
+it only has no effect when the files share no directory (different drives).
+\item \code{n} toggles names: with several files marked, the path vector is keyed by
+file name (\code{c(iris2 = "...", iris3 = "...")}), so the mapped read returns a
+named list. No effect on a single file.
+\item Reader (\code{r}), preview (\code{p}), base_dir (\code{b}) and names (\code{n}) are also buttons
+in the action bar; their icon reflects whether each is on.
 \item \code{Q} closes the app without inserting.
 }
 }
@@ -62,6 +111,7 @@ the directory the browser opened in.
 \dontrun{
 p <- browse_files()          # navigate, mark, press Q
 files <- browse_files("data") # start in data/, return marked files
+browse_files("data", root = "data") # cannot climb above data/
 }
 
 }
