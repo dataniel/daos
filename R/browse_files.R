@@ -284,7 +284,7 @@
 #'
 #' - `Space` marks/unmarks the item under the cursor (files or folders).
 #'   The *target* is the marked paths, or the cursor path when none are
-#'   marked.
+#'   marked. `c` or the *Ryd markering* button unmarks everything.
 #' - `Enter` (or the button) inserts the target into the active RStudio
 #'   editor or console as an R expression and closes the app -- a quoted
 #'   string for one path, a multi-line `c(...)` (one path per line) for
@@ -318,9 +318,10 @@
 #'   remembers its place in each folder, so going back up lands on the folder
 #'   you came from. `g` jumps back to the directory the browser opened in.
 #' - The filter box above the browser narrows the current folder to matching
-#'   files: a glob when the pattern has `*`/`?` (e.g. `*_2026*.tsv`), otherwise a
-#'   case-insensitive substring. Folders always stay visible so you can keep
-#'   navigating, and the filter clears when you move to another folder.
+#'   entries (files *and* folders): a glob when the pattern has `*`/`?` (e.g.
+#'   `*_2026*.tsv`), otherwise a case-insensitive substring. `f` or the *Filter*
+#'   button jumps into the box. Each folder keeps its own filter, restored when
+#'   you return to it; `x` or the *Ryd* button clears the current folder's.
 #' - `m` toggles how a multi-file reader snippet iterates -- `lapply()` or
 #'   `purrr::map()` (see `map`). `p` toggles the content preview: when off, the
 #'   preview column still shows file metadata (size, dates, sheet names) but no
@@ -433,6 +434,13 @@ browse_files <- function(path = getwd(), root = NULL,
     .bf-crumbs a:hover { text-decoration: underline; }
     .bf-crumbs .bf-sep { color: #94a3b8; margin: 0 5px; }
     .bf-filter { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; }
+    .bf-filter-toggle {
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      color: #64748b; font-size: 13px; font-weight: 600; text-decoration: none;
+      border: 1px solid #d6dee8; border-radius: 8px; padding: 6px 12px; background: #fff;
+      white-space: nowrap;
+    }
+    .bf-filter-toggle:hover { color: #1d62a8; border-color: #1d62a8; text-decoration: none; }
     .bf-filter .bf-filter-ico { color: #94a3b8; }
     .bf-filter .form-group { margin: 0; flex: 1; }
     .bf-filter input {
@@ -573,6 +581,9 @@ browse_files <- function(path = getwd(), root = NULL,
       if (key === 'p') { e.preventDefault(); Shiny.setInputValue('toggle_preview', Date.now()); return; }
       if (key === 'b') { e.preventDefault(); Shiny.setInputValue('toggle_base', Date.now()); return; }
       if (key === 'n') { e.preventDefault(); Shiny.setInputValue('toggle_names', Date.now()); return; }
+      if (key === 'x') { e.preventDefault(); Shiny.setInputValue('clear_filter', Date.now()); return; }
+      if (key === 'c') { e.preventDefault(); Shiny.setInputValue('clear_marks', Date.now()); return; }
+      if (key === 'f') { e.preventDefault(); var fel = document.getElementById('filter'); if (fel) { fel.focus(); fel.select(); } return; }
 
       var down = (key === 'j' || key === 'ArrowDown');
       var up   = (key === 'k' || key === 'ArrowUp');
@@ -657,6 +668,8 @@ browse_files <- function(path = getwd(), root = NULL,
     kbd_html("r"), " reader ", kbd_html("m"), " lapply/purrr ",
     kbd_html("p"), " preview ", kbd_html("b"), " base_dir ",
     kbd_html("n"), " navne ",
+    kbd_html("f"), " filter ", kbd_html("x"), " ryd filter ",
+    kbd_html("c"), " ryd markering ",
     kbd_html("o"), " stifinder ", kbd_html("a"), " \u00e5bn fil ",
     kbd_html("g"), " start ", kbd_html("Q"), " luk",
     "<br>", kbd_html("l"), " p\u00e5 en Excel-fil g\u00e5r ind i arkene"
@@ -680,9 +693,18 @@ browse_files <- function(path = getwd(), root = NULL,
       shiny::div(class = "bf-crumbs", shiny::uiOutput("crumbs", inline = TRUE)),
       shiny::div(
         class = "bf-filter",
-        shiny::span(class = "bf-filter-ico", shiny::icon("filter")),
+        # Click (or press f) to jump straight into the always-visible filter box.
+        shiny::tags$a(
+          class = "bf-filter-toggle", href = "#",
+          onclick = "var el=document.getElementById('filter'); if(el){el.focus();el.select();} return false;",
+          shiny::span(class = "bf-filter-ico", shiny::icon("filter")),
+          shiny::tagList("Filter", shiny::tags$span(class = "bf-kbd", "f"))),
         shiny::textInput("filter", label = NULL, width = "100%",
-                         placeholder = "Filtrer filer i mappen, fx *_2026*.tsv")),
+                         placeholder = "Filtrer, fx *.tsv"),
+        shiny::actionButton(
+          "do_clear_filter",
+          shiny::tagList("Ryd", shiny::tags$span(class = "bf-kbd", "x")),
+          icon = shiny::icon("xmark"), class = "btn-default bf-btn")),
       shiny::uiOutput("browser"),
       shiny::div(
         class = "bf-bar",
@@ -764,8 +786,9 @@ browse_files <- function(path = getwd(), root = NULL,
     # directory we just left, so going up lands on the folder we came
     # from -- both consulted by initial_cursor().
     nav <- new.env(parent = emptyenv())
-    nav$mem  <- list()
-    nav$prev <- NULL
+    nav$mem    <- list()
+    nav$prev   <- NULL
+    nav$filter <- list()   # remembered filter pattern per directory
 
     initial_cursor <- function(dir) {
       nodes <- listing(dir)
@@ -833,10 +856,29 @@ browse_files <- function(path = getwd(), root = NULL,
     shiny::observe({
       cursor(initial_cursor(cur_path()))
     })
-    # A filter belongs to the folder you typed it in -- clear it on every move.
-    shiny::observeEvent(cur_path(),
-      shiny::updateTextInput(session, "filter", value = ""),
-      ignoreInit = TRUE)
+    # A filter belongs to the folder you typed it in: remember it per directory
+    # and restore it on arrival, opening the box only when that folder has one.
+    shiny::observeEvent(input$filter, {
+      nav$filter[[cur_path()]] <- input$filter
+    }, ignoreNULL = FALSE)
+    shiny::observeEvent(cur_path(), {
+      remembered <- nav$filter[[cur_path()]]
+      shiny::updateTextInput(session, "filter",
+                             value = if (is.null(remembered)) "" else remembered)
+    }, ignoreInit = TRUE)
+    # x or the Ryd button clears the current folder's filter (its memory too).
+    clear_filter <- function() {
+      nav$filter[[cur_path()]] <- ""
+      shiny::updateTextInput(session, "filter", value = "")
+    }
+    shiny::observeEvent(input$clear_filter, clear_filter())
+    shiny::observeEvent(input$do_clear_filter, clear_filter())
+    # c or the button unmarks everything (sheets when inside a workbook).
+    clear_marks <- function() {
+      if (!is.null(sheet_file())) sheet_marked(character()) else marked(character())
+    }
+    shiny::observeEvent(input$clear_marks, clear_marks())
+    shiny::observeEvent(input$do_clear_marks, clear_marks())
     shiny::observeEvent(input$bf_cursor, {
       if (!is.null(sheet_file()) && identical(input$bf_cursor$type, "x")) {
         sheet_cursor(input$bf_cursor$full)
@@ -995,10 +1037,9 @@ browse_files <- function(path = getwd(), root = NULL,
       path <- cur_path()
       nodes <- listing(path)
 
-      # In-folder filter: always keep directories (so you can still navigate),
-      # keep files whose name matches the pattern. Empty pattern keeps all.
-      fnodes <- nodes[nodes$type == "d" | .bf_match(nodes$name, input$filter), ,
-                      drop = FALSE]
+      # In-folder filter: keep entries (files and folders) whose name matches
+      # the pattern. Empty pattern keeps all; x or leaving the folder clears it.
+      fnodes <- nodes[.bf_match(nodes$name, input$filter), , drop = FALSE]
 
       init <- initial_cursor(path)
       # If the remembered cursor was filtered out, fall back to the first row.
@@ -1020,7 +1061,7 @@ browse_files <- function(path = getwd(), root = NULL,
             class = "bf-empty",
             shiny::div(class = "bf-empty-ico", "\U0001F50D"),
             shiny::p(shiny::strong("Intet match")),
-            shiny::p(class = "bf-hint", "Ingen filer matcher filteret.")
+            shiny::p(class = "bf-hint", "Intet matcher filteret \u2014 tryk x for at rydde.")
           )
         else lapply(seq_len(nrow(fnodes)), function(i) {
           item_row(fnodes[i, ], cursor_on = !is.null(init) && fnodes$full[i] == init$full)
@@ -1177,6 +1218,9 @@ browse_files <- function(path = getwd(), root = NULL,
             icon = shiny::icon(if (show_preview()) "eye" else "eye-slash"),
             class = "btn-default bf-btn"),
           shiny::span(class = "bf-info", shiny::icon("table"), shiny::HTML(info_txt)),
+          if (nmk > 0) shiny::actionButton(
+            "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
+            icon = shiny::icon("xmark"), class = "btn-default bf-btn"),
           if (nmk > 0) shiny::span(class = "bf-chip", paste(nmk, "ark markeret"))))
       }
       tg <- target()
@@ -1248,6 +1292,10 @@ browse_files <- function(path = getwd(), root = NULL,
           shiny::span(class = if (warn) "bf-info bf-info-warn" else "bf-info",
                       shiny::icon(if (warn) "exclamation-triangle" else "info-circle"),
                       shiny::HTML(info)),
+        if (nm > 0)
+          shiny::actionButton(
+            "do_clear_marks", shiny::tagList("Ryd markering", kbd("c")),
+            icon = shiny::icon("xmark"), class = "btn-default bf-btn"),
         if (nm > 0)
           shiny::span(class = "bf-chip",
                       paste(nm, if (nm == 1) "markeret" else "markerede"))

@@ -54,7 +54,7 @@ one or more files or folders and copy them, or return them to R.
 \itemize{
 \item \code{Space} marks/unmarks the item under the cursor (files or folders).
 The \emph{target} is the marked paths, or the cursor path when none are
-marked.
+marked. \code{c} or the \emph{Ryd markering} button unmarks everything.
 \item \code{Enter} (or the button) inserts the target into the active RStudio
 editor or console as an R expression and closes the app -- a quoted
 string for one path, a multi-line \code{c(...)} (one path per line) for
@@ -88,9 +88,10 @@ that directory becomes the top, with no parent column above it. The cursor
 remembers its place in each folder, so going back up lands on the folder
 you came from. \code{g} jumps back to the directory the browser opened in.
 \item The filter box above the browser narrows the current folder to matching
-files: a glob when the pattern has \code{*}/\verb{?} (e.g. \verb{*_2026*.tsv}), otherwise a
-case-insensitive substring. Folders always stay visible so you can keep
-navigating, and the filter clears when you move to another folder.
+entries (files \emph{and} folders): a glob when the pattern has \code{*}/\verb{?} (e.g.
+\verb{*_2026*.tsv}), otherwise a case-insensitive substring. \code{f} or the \emph{Filter}
+button jumps into the box. Each folder keeps its own filter, restored when
+you return to it; \code{x} or the \emph{Ryd} button clears the current folder's.
 \item \code{m} toggles how a multi-file reader snippet iterates -- \code{lapply()} or
 \code{purrr::map()} (see \code{map}). \code{p} toggles the content preview: when off, the
 preview column still shows file metadata (size, dates, sheet names) but no
