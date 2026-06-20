@@ -13,7 +13,7 @@ browse_files(
   path = getwd(),
   root = NULL,
   map = c("lapply", "purrr"),
-  preview = TRUE,
+  preview = FALSE,
   base_dir = FALSE,
   names = FALSE
 )
@@ -43,7 +43,7 @@ browse_files(
 
 - preview:
 
-  Whether the content preview starts on (`TRUE`, default) – the text
+  Whether the content preview starts on (`FALSE`, default) – the text
   peek for scripts/text and the cell peek for Excel sheets. The preview
   column (file metadata, folder contents) is always shown. Toggle the
   content preview live in the app with `p`.
@@ -68,7 +68,7 @@ the cursor path is used, a character vector when several are marked.
 
 - `Space` marks/unmarks the item under the cursor (files or folders).
   The *target* is the marked paths, or the cursor path when none are
-  marked.
+  marked. `c` or the *Ryd markering* button unmarks everything.
 
 - `Enter` (or the button) inserts the target into the active RStudio
   editor or console as an R expression and closes the app – a quoted
@@ -118,10 +118,11 @@ the cursor path is used, a character vector when several are marked.
   the browser opened in.
 
 - The filter box above the browser narrows the current folder to
-  matching files: a glob when the pattern has `*`/`?` (e.g.
-  `*_2026*.tsv`), otherwise a case-insensitive substring. Folders always
-  stay visible so you can keep navigating, and the filter clears when
-  you move to another folder.
+  matching entries (files *and* folders): a glob when the pattern has
+  `*`/`?` (e.g. `*_2026*.tsv`), otherwise a case-insensitive substring.
+  `f` or the *Filter* button jumps into the box. Each folder keeps its
+  own filter, restored when you return to it; `x` or the *Ryd* button
+  clears the current folder's.
 
 - `m` toggles how a multi-file reader snippet iterates –
   [`lapply()`](https://rdrr.io/r/base/lapply.html) or

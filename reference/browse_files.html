@@ -65,7 +65,7 @@ one or more files or folders and copy them, or return them to R.</p>
 <span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  root <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lapply"</span>, <span class="st">"purrr"</span><span class="op">)</span>,</span>
-<span>  preview <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  preview <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  base_dir <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  names <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -95,7 +95,7 @@ generated text, not the browser itself.</p></dd>
 
 
 <dt id="arg-preview">preview<a class="anchor" aria-label="anchor" href="#arg-preview"></a></dt>
-<dd><p>Whether the content preview starts on (<code>TRUE</code>, default) – the
+<dd><p>Whether the content preview starts on (<code>FALSE</code>, default) – the
 text peek for scripts/text and the cell peek for Excel sheets. The preview
 column (file metadata, folder contents) is always shown. Toggle the content
 preview live in the app with <code>p</code>.</p></dd>
@@ -122,7 +122,7 @@ several are marked. <code>character(0)</code> if nothing is resolved.</p>
 
 <ul><li><p><code>Space</code> marks/unmarks the item under the cursor (files or folders).
 The <em>target</em> is the marked paths, or the cursor path when none are
-marked.</p></li>
+marked. <code>c</code> or the <em>Ryd markering</em> button unmarks everything.</p></li>
 <li><p><code>Enter</code> (or the button) inserts the target into the active RStudio
 editor or console as an R expression and closes the app – a quoted
 string for one path, a multi-line <code>c(...)</code> (one path per line) for
@@ -156,9 +156,10 @@ that directory becomes the top, with no parent column above it. The cursor
 remembers its place in each folder, so going back up lands on the folder
 you came from. <code>g</code> jumps back to the directory the browser opened in.</p></li>
 <li><p>The filter box above the browser narrows the current folder to matching
-files: a glob when the pattern has <code>*</code>/<code>?</code> (e.g. <code>*_2026*.tsv</code>), otherwise a
-case-insensitive substring. Folders always stay visible so you can keep
-navigating, and the filter clears when you move to another folder.</p></li>
+entries (files <em>and</em> folders): a glob when the pattern has <code>*</code>/<code>?</code> (e.g.
+<code>*_2026*.tsv</code>), otherwise a case-insensitive substring. <code>f</code> or the <em>Filter</em>
+button jumps into the box. Each folder keeps its own filter, restored when
+you return to it; <code>x</code> or the <em>Ryd</em> button clears the current folder's.</p></li>
 <li><p><code>m</code> toggles how a multi-file reader snippet iterates – <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> or
 <code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code> (see <code>map</code>). <code>p</code> toggles the content preview: when off, the
 preview column still shows file metadata (size, dates, sheet names) but no
