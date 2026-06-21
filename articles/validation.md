@@ -21,7 +21,6 @@ succeeds when the data frame it receives has zero rows. Filter for the
 rows that *should not exist*, and pipe them in:
 
 ``` r
-
 starwars |>
   filter(height < 0) |>
   expect_empty(success_msg = "No negative heights")
@@ -32,7 +31,6 @@ When violations exist you choose the severity. The default is a warning,
 which lets the pipeline continue but leaves a visible trace:
 
 ``` r
-
 mtcars |>
   filter(mpg > 30) |>
   expect_empty(warn_msg = "Suspiciously fuel-efficient cars found")
@@ -43,7 +41,6 @@ For assumptions the rest of the pipeline depends on, escalate to a hard
 stop with `abort_msg`:
 
 ``` r
-
 df |>
   filter(is.na(id)) |>
   expect_empty(abort_msg = "Rows without an id, cannot continue")
@@ -62,7 +59,6 @@ The strength of the pattern is that the rule language is just dplyr.
 Some checkpoints from real pipelines:
 
 ``` r
-
 # Identifiers must look right (%like% preserves NA, unlike grepl)
 df |>
   filter(!cvr %like% "^\\d{8}$") |>
@@ -93,7 +89,6 @@ prepends `isdup`/`dupid` columns; filtering on `isdup` turns it into a
 violation set:
 
 ``` r
-
 df <- tibble(
   cvr  = c("11111111", "22222222", "11111111"),
   year = c(2024, 2024, 2024)
@@ -120,7 +115,6 @@ gives a quick overview before a join, and an `NA` in the listing also
 reveals a column that is missing from one of the frames:
 
 ``` r
-
 df_a <- tibble(cvr = "11111111", amount = 100,   year = 2024L)
 df_b <- tibble(cvr = 22222222,  amount = "100", note = "ok")
 
@@ -139,7 +133,6 @@ frames produce an *empty* result. The output is a violation set like any
 other, ready for a checkpoint:
 
 ``` r
-
 view_types(df_a, df_b, diff = TRUE) |>
   expect_empty(warn_msg = "Column types differ between df_a and df_b")
 #> Warning: Column types differ between df_a and df_b
@@ -157,7 +150,6 @@ takes a `log` argument and appends one timestamped line per check. That
 gives a minimal audit trail without any logging framework:
 
 ``` r
-
 log_path <- f("log/{nowf()}_checks.log")
 check    <- \(data, ...) expect_empty(data, ..., log = log_path)
 
