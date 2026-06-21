@@ -47,11 +47,8 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
   if (!requireNamespace("odbc", quietly = TRUE))
     cli::cli_abort("Package {.pkg odbc} is required to use {.fn read_access}.")
 
-  drivers <- odbc::odbcListDrivers()
-  access_driver <- drivers$name |>
-    unique() |>
-    (\(x) x[grepl("Access", x, ignore.case = TRUE)])() |>
-    head(1)
+  driver_names  <- unique(odbc::odbcListDrivers()$name)
+  access_driver <- head(driver_names[grepl("Access", driver_names, ignore.case = TRUE)], 1)
 
   if (length(access_driver) == 0) {
     cli::cli_abort(c(
@@ -62,6 +59,15 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
   }
 
   conn_str <- glue::glue("Driver={{{access_driver}}};DBQ={normalizePath(path, winslash = '/')};")
+
+  # Open, run the query, and close again -- the shared path for the quiet
+  # and compact modes. The full mode times connect and query separately,
+  # so it keeps its own explicit steps below.
+  run_query <- function() {
+    con <- DBI::dbConnect(odbc::odbc(), .connection_string = conn_str)
+    on.exit(DBI::dbDisconnect(con))
+    tibble::as_tibble(DBI::dbGetQuery(con, sql))
+  }
 
   if (verbosity == "full") {
     cli::cli_h1("Reading Access database")
@@ -88,16 +94,11 @@ read_access <- function(path, sql, verbosity = c("compact", "full", "quiet")) {
     return(data)
   }
 
-  if (verbosity == "quiet") {
-    con <- DBI::dbConnect(odbc::odbc(), .connection_string = conn_str)
-    on.exit(DBI::dbDisconnect(con), add = TRUE)
-    return(DBI::dbGetQuery(con, sql) |> tibble::as_tibble())
-  }
+  if (verbosity == "quiet") return(run_query())
 
+  # compact (the default): a single summary line per file.
   t_start <- Sys.time()
-  con <- DBI::dbConnect(odbc::odbc(), .connection_string = conn_str)
-  on.exit(DBI::dbDisconnect(con), add = TRUE)
-  data <- DBI::dbGetQuery(con, sql) |> tibble::as_tibble()
+  data <- run_query()
 
   cli::cli_alert_success(
     "{.file {basename(path)}}: {.strong {format(nrow(data), big.mark = ',')}} \u00d7 {ncol(data)} {.timestamp {format_elapsed(Sys.time() - t_start)}}"

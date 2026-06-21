@@ -169,8 +169,10 @@ find_signs <- function(df, label_col, value_col, total_label = "total",
     return(find_signs_group(df) |> tibble::as_tibble())
   }
 
-  grupper     <- df |> dplyr::group_by(dplyr::across(dplyr::all_of(by_cols_nm))) |> dplyr::group_split()
-  gruppe_keys <- df |> dplyr::group_by(dplyr::across(dplyr::all_of(by_cols_nm))) |> dplyr::group_keys()
+  # Group once and reuse it for both the splits and their key rows.
+  grouped     <- dplyr::group_by(df, dplyr::across(dplyr::all_of(by_cols_nm)))
+  grupper     <- dplyr::group_split(grouped)
+  gruppe_keys <- dplyr::group_keys(grouped)
 
   results <- vector("list", length(grupper))
   cli::cli_progress_bar("Finding signs", total = length(grupper))
