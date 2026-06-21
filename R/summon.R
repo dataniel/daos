@@ -20,22 +20,18 @@
 #' @seealso [daos::read_files()], [daos::split_by()]
 #'
 #' @importFrom cli cli_abort
-#' @importFrom rlang set_names
 #' @export
 summon <- function(pattern, .envir = parent.frame()) {
-
-  if (!is.character(pattern) || length(pattern) != 1) {
+  if (!is.character(pattern) || length(pattern) != 1)
     cli::cli_abort("{.arg pattern} must be a single string.")
-  }
 
   nms <- ls(envir = .envir, pattern = pattern)
-
-  if (length(nms) == 0) {
+  if (length(nms) == 0)
     cli::cli_abort(c(
       "No objects matching {.val {pattern}} found.",
       "i" = "Searched in {.envir {environmentName(.envir)}}."
     ))
-  }
 
-  rlang::set_names(mget(nms, envir = .envir), nms)
+  # mget() already returns a list named by `nms`.
+  mget(nms, envir = .envir)
 }

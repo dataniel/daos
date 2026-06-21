@@ -38,11 +38,7 @@ flag_duplicates <- function(data, ...) {
     cli::cli_abort("{.arg data} must be a data frame or tibble, not {.cls {class(data)}}.")
   }
 
-  cols <- if (...length() == 0) {
-    base::names(data)
-  } else {
-    base::names(dplyr::select(data, ...))
-  }
+  cols <- if (...length() == 0) names(data) else names(dplyr::select(data, ...))
 
   non_atomic <- cols[!vapply(data[cols], is.atomic, logical(1))]
   if (length(non_atomic) > 0) {

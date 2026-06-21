@@ -27,6 +27,11 @@ read_xbrl <- function(path, encoding = "UTF-8") {
   unit_nodes    <- xml2::xml_find_all(doc, ".//*[local-name()='unit']")
 
   strip_prefix <- function(x) sub("^[^:]+:", "", x)
+  # Trimmed text of a namespace-agnostic child element, e.g. <…:startDate>.
+  child_text <- function(node, name)
+    xml2::xml_text(
+      xml2::xml_find_first(node, sprintf(".//*[local-name()='%s']", name)),
+      trim = TRUE)
 
   facts <- data.table::rbindlist(
     lapply(fact_nodes, function(node) {
@@ -45,10 +50,10 @@ read_xbrl <- function(path, encoding = "UTF-8") {
     lapply(context_nodes, function(node) {
       data.table::data.table(
         contextid       = xml2::xml_attr(node, "id"),
-        startdate       = xml2::xml_text(xml2::xml_find_first(node, ".//*[local-name()='startDate']"),      trim = TRUE),
-        enddate         = xml2::xml_text(xml2::xml_find_first(node, ".//*[local-name()='endDate']"),        trim = TRUE),
-        instant         = xml2::xml_text(xml2::xml_find_first(node, ".//*[local-name()='instant']"),        trim = TRUE),
-        explicit_member = xml2::xml_text(xml2::xml_find_first(node, ".//*[local-name()='explicitMember']"), trim = TRUE)
+        startdate       = child_text(node, "startDate"),
+        enddate         = child_text(node, "endDate"),
+        instant         = child_text(node, "instant"),
+        explicit_member = child_text(node, "explicitMember")
       )
     }),
     fill = TRUE
@@ -58,7 +63,7 @@ read_xbrl <- function(path, encoding = "UTF-8") {
     lapply(unit_nodes, function(node) {
       data.table::data.table(
         unitid = xml2::xml_attr(node, "id"),
-        unit   = xml2::xml_text(xml2::xml_find_first(node, ".//*[local-name()='measure']"), trim = TRUE)
+        unit   = child_text(node, "measure")
       )
     }),
     fill = TRUE

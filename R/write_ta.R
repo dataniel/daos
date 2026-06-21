@@ -47,19 +47,13 @@ write_ta <- function(x, path) {
     )
   }
 
-  lines <- vapply(seq_len(nrow(x)), function(i) {
-    paste0(
-      fmt_str(x$nrnr[i],   5), " ",
-      fmt_str(x$trans[i],  6), " ",
-      fmt_str(x$brch[i],   4), " ",
-      fmt_num(x$bas[i],   13), " ",
-      fmt_num(x$eng[i],   11), " ",
-      fmt_num(x$det[i],   11), " ",
-      fmt_num(x$afg[i],   11), " ",
-      fmt_num(x$moms[i],  11), " ",
-      fmt_num(x$kbx[i],   11)
-    )
-  }, character(1))
+  # Each field formatter is vectorised, so one paste() builds every line at
+  # once; the single-space separators are the fixed gaps between fields.
+  lines <- paste(
+    fmt_str(x$nrnr,   5), fmt_str(x$trans,  6), fmt_str(x$brch,  4),
+    fmt_num(x$bas,   13), fmt_num(x$eng,   11), fmt_num(x$det,  11),
+    fmt_num(x$afg,   11), fmt_num(x$moms,  11), fmt_num(x$kbx,  11)
+  )
 
   writeLines(lines, path)
   invisible(path)

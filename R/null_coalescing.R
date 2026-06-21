@@ -23,10 +23,5 @@
 #'
 #' @export
 `%??%` <- function(x, default) {
-  if (is.null(x) || length(x) == 0 || all(is.na(x)) ||
-      (is.character(x) && all(x == ""))) {
-    default
-  } else {
-    x
-  }
+  if (is_blank(x)) default else x
 }

@@ -23,8 +23,8 @@
 #' @importFrom dplyr group_keys group_by group_split
 #' @export
 split_by <- function(data, ..., .sep = "_") {
-  keys   <- dplyr::group_keys(dplyr::group_by(data, ...))
-  splits <- dplyr::group_split(data, ...)
-  names(splits) <- do.call(paste, c(keys, sep = .sep))
+  grouped       <- dplyr::group_by(data, ...)
+  splits        <- dplyr::group_split(grouped)
+  names(splits) <- do.call(paste, c(dplyr::group_keys(grouped), sep = .sep))
   splits
 }
