@@ -48,7 +48,7 @@ the final step.
 \examples{
 \dontrun{
 task_cycle(db, "RS-2026",
-  steps = c("Hent kilder", "Valid\u00e9r", "Kompil\u00e9r", "Public\u00e9r"),
+  steps = c("Hent kilder", "Validér", "Kompilér", "Publicér"),
   keys  = c("hent", "valider", "kompiler", "publicer"),
   assignee = "pipeline", due = "2026-07-15", recur = "monthly")
 }

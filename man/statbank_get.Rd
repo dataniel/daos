@@ -67,7 +67,7 @@ the variable codes \emph{and} their display texts, and values against both
 value codes and value texts, so
 \code{statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, art = "Antal")} works
 without knowing the internal codes. Matching ignores case and folds
-Danish letters (\code{foedested} matches \verb{f\\u00f8dested}). Use \code{"*"} to select
+Danish letters (\code{foedested} matches \code{fødested}). Use \code{"*"} to select
 all values; variables that are not mentioned default to all values.
 
 Built as a programming aid, the defaults favour codes: columns are

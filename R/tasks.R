@@ -21,6 +21,15 @@
   list(con = con, close = TRUE)
 }
 
+# Run `fn(con)` against `db`, disconnecting afterwards only if we opened the
+# connection -- a passed-in DBIConnection is left open for its owner. This is
+# the open/work/close lifecycle every task_* function shares.
+.task_with_con <- function(db, fn) {
+  h <- .task_con(db)
+  on.exit(if (h$close) DBI::dbDisconnect(h$con))
+  fn(h$con)
+}
+
 # Create the schema only if it is missing, and add the assignee column to
 # older databases. In steady state this is a single read (PRAGMA), so
 # concurrent connections do not contend on DDL write locks.
@@ -93,15 +102,15 @@
 # deletions, purges, and new notes -- so an unchanged database yields the
 # same string and the UI can skip a redraw.
 .task_fingerprint <- function(db) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  r <- DBI::dbGetQuery(con,
-    "SELECT (SELECT COUNT(*) FROM tasks)                    AS nt,
-            (SELECT IFNULL(MAX(modified), '') FROM tasks)   AS mt,
-            (SELECT COUNT(*) FROM annotations)              AS na,
-            (SELECT IFNULL(MAX(entry), '') FROM annotations) AS ma,
-            (SELECT COUNT(*) FROM dependencies)             AS nd")
-  paste(r$nt, r$mt, r$na, r$ma, r$nd, sep = "|")
+  .task_with_con(db, function(con) {
+    r <- DBI::dbGetQuery(con,
+      "SELECT (SELECT COUNT(*) FROM tasks)                    AS nt,
+              (SELECT IFNULL(MAX(modified), '') FROM tasks)   AS mt,
+              (SELECT COUNT(*) FROM annotations)              AS na,
+              (SELECT IFNULL(MAX(entry), '') FROM annotations) AS ma,
+              (SELECT COUNT(*) FROM dependencies)             AS nd")
+    paste(r$nt, r$mt, r$na, r$ma, r$nd, sep = "|")
+  })
 }
 
 .or_na <- function(x) if (is.null(x) || length(x) == 0) NA else x
@@ -296,28 +305,27 @@ task_add <- function(db, description, key = NULL, project = NULL, assignee = NUL
   priority <- .task_check_priority(priority)
   due      <- .task_norm_date(due)
 
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  uuid <- .task_uuid(); now <- .task_now()
-
-  DBI::dbWithTransaction(con, {
-    if (!is.null(key) && nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ?", list(key))) > 0)
-      cli::cli_abort("Key {.val {key}} is already in use.")
-    DBI::dbExecute(con,
-      "INSERT INTO tasks (uuid, key, description, project, assignee, priority, status, due, entry, modified, recur)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
-      params = list(uuid, .or_na(key), description, .or_na(project), .or_na(assignee),
-                    .or_na(priority), .or_na(due), now, now, .or_na(recur)))
-    for (tg in unique(tags))
-      DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
-                     params = list(uuid, tg))
-    if (length(depends) > 0) {
-      for (du in .task_ids_to_uuids(con, depends))
-        DBI::dbExecute(con, "INSERT OR IGNORE INTO dependencies (task_uuid, depends_on_uuid) VALUES (?, ?)",
-                       params = list(uuid, du))
-    }
+  .task_with_con(db, function(con) {
+    uuid <- .task_uuid(); now <- .task_now()
+    DBI::dbWithTransaction(con, {
+      if (!is.null(key) && nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ?", list(key))) > 0)
+        cli::cli_abort("Key {.val {key}} is already in use.")
+      DBI::dbExecute(con,
+        "INSERT INTO tasks (uuid, key, description, project, assignee, priority, status, due, entry, modified, recur)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
+        params = list(uuid, .or_na(key), description, .or_na(project), .or_na(assignee),
+                      .or_na(priority), .or_na(due), now, now, .or_na(recur)))
+      for (tg in unique(tags))
+        DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
+                       params = list(uuid, tg))
+      if (length(depends) > 0) {
+        for (du in .task_ids_to_uuids(con, depends))
+          DBI::dbExecute(con, "INSERT OR IGNORE INTO dependencies (task_uuid, depends_on_uuid) VALUES (?, ?)",
+                         params = list(uuid, du))
+      }
+    })
+    invisible(task_list(con, status = "all", .only_uuid = uuid))
   })
-  invisible(task_list(con, status = "all", .only_uuid = uuid))
 }
 
 #' List tasks
@@ -357,60 +365,59 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
                       tag = NULL, sort = c("urgency", "due", "entry", "project"),
                       desc = FALSE, .only_uuid = NULL) {
   sort <- match.arg(sort)
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
+  .task_with_con(db, function(con) {
+    where <- character(); params <- list()
+    if (identical(status, "active")) {
+      # everything that is not soft-deleted -- pending plus completed
+      where <- c(where, "t.status IN ('pending','completed')")
+    } else if (!identical(status, "all")) {
+      where <- c(where, "t.status = ?"); params <- c(params, list(status))
+    }
+    if (!is.null(project))         { where <- c(where, "t.project = ?");  params <- c(params, list(project)) }
+    if (!is.null(assignee))        { where <- c(where, "t.assignee = ?"); params <- c(params, list(assignee)) }
+    if (!is.null(.only_uuid))      { where <- c(where, "t.uuid = ?");     params <- c(params, list(.only_uuid)) }
 
-  where <- character(); params <- list()
-  if (identical(status, "active")) {
-    # everything that is not soft-deleted -- pending plus completed
-    where <- c(where, "t.status IN ('pending','completed')")
-  } else if (!identical(status, "all")) {
-    where <- c(where, "t.status = ?"); params <- c(params, list(status))
-  }
-  if (!is.null(project))         { where <- c(where, "t.project = ?");  params <- c(params, list(project)) }
-  if (!is.null(assignee))        { where <- c(where, "t.assignee = ?"); params <- c(params, list(assignee)) }
-  if (!is.null(.only_uuid))      { where <- c(where, "t.uuid = ?");     params <- c(params, list(.only_uuid)) }
+    sql <- paste(
+      "SELECT t.id, t.uuid, t.key, t.description, t.project, t.assignee, t.priority, t.status,",
+      "       t.due, t.entry, t.modified, t.start, t.end, t.recur,",
+      "       (SELECT GROUP_CONCAT(tag, ',') FROM task_tags g WHERE g.task_uuid = t.uuid) AS tags,",
+      "       (SELECT COUNT(*) FROM annotations a WHERE a.task_uuid = t.uuid) AS annotations",
+      "FROM tasks t")
+    if (length(where)) sql <- paste(sql, "WHERE", paste(where, collapse = " AND "))
+    df <- if (length(params)) DBI::dbGetQuery(con, sql, params = params)
+          else DBI::dbGetQuery(con, sql)
 
-  sql <- paste(
-    "SELECT t.id, t.uuid, t.key, t.description, t.project, t.assignee, t.priority, t.status,",
-    "       t.due, t.entry, t.modified, t.start, t.end, t.recur,",
-    "       (SELECT GROUP_CONCAT(tag, ',') FROM task_tags g WHERE g.task_uuid = t.uuid) AS tags,",
-    "       (SELECT COUNT(*) FROM annotations a WHERE a.task_uuid = t.uuid) AS annotations",
-    "FROM tasks t")
-  if (length(where)) sql <- paste(sql, "WHERE", paste(where, collapse = " AND "))
-  df <- if (length(params)) DBI::dbGetQuery(con, sql, params = params)
-        else DBI::dbGetQuery(con, sql)
+    sm <- DBI::dbGetQuery(con, "SELECT uuid, status FROM tasks")
+    status_map <- stats::setNames(sm$status, sm$uuid)
+    deps <- DBI::dbGetQuery(con, "SELECT task_uuid, depends_on_uuid FROM dependencies")
+    blocked_uuid <- if (nrow(deps) == 0) character(0) else unique(
+      deps$task_uuid[!is.na(status_map[deps$depends_on_uuid]) &
+                       status_map[deps$depends_on_uuid] == "pending"])
+    df$blocked <- df$uuid %in% blocked_uuid
+    # In progress: a pending task someone has started (non-NULL start).
+    df$started <- !is.na(df$start) & df$status == "pending"
+    df$tags[is.na(df$tags)] <- ""
+    df$urgency <- .task_urgency(df)
 
-  sm <- DBI::dbGetQuery(con, "SELECT uuid, status FROM tasks")
-  status_map <- stats::setNames(sm$status, sm$uuid)
-  deps <- DBI::dbGetQuery(con, "SELECT task_uuid, depends_on_uuid FROM dependencies")
-  blocked_uuid <- if (nrow(deps) == 0) character(0) else unique(
-    deps$task_uuid[!is.na(status_map[deps$depends_on_uuid]) &
-                     status_map[deps$depends_on_uuid] == "pending"])
-  df$blocked <- df$uuid %in% blocked_uuid
-  # In progress: a pending task someone has started (non-NULL start).
-  df$started <- !is.na(df$start) & df$status == "pending"
-  df$tags[is.na(df$tags)] <- ""
-  df$urgency <- .task_urgency(df)
+    if (!is.null(tag)) {
+      keep <- vapply(strsplit(df$tags, ",", fixed = TRUE),
+                     function(ts) tag %in% ts, logical(1))
+      df <- df[keep, ]
+    }
 
-  if (!is.null(tag)) {
-    keep <- vapply(strsplit(df$tags, ",", fixed = TRUE),
-                   function(ts) tag %in% ts, logical(1))
-    df <- df[keep, ]
-  }
-
-  # `desc` flips the chosen key (dir applied via xtfrm so it works for the
-  # date/text columns too). The is.na() lead term is left ascending, so empty
-  # due dates / projects stay grouped at the bottom in both directions rather
-  # than jumping to the top when reversed.
-  dir <- if (desc) -1 else 1
-  due_num <- suppressWarnings(as.numeric(as.Date(df$due)))
-  ord <- switch(sort,
-    urgency = order(dir * -df$urgency, due_num),
-    due     = order(is.na(due_num), dir * due_num, -df$urgency),
-    entry   = order(dir * xtfrm(df$entry)),
-    project = order(is.na(df$project), dir * xtfrm(df$project), -df$urgency))
-  tibble::as_tibble(df[ord, ])
+    # `desc` flips the chosen key (dir applied via xtfrm so it works for the
+    # date/text columns too). The is.na() lead term is left ascending, so empty
+    # due dates / projects stay grouped at the bottom in both directions rather
+    # than jumping to the top when reversed.
+    dir <- if (desc) -1 else 1
+    due_num <- suppressWarnings(as.numeric(as.Date(df$due)))
+    ord <- switch(sort,
+      urgency = order(dir * -df$urgency, due_num),
+      due     = order(is.na(due_num), dir * due_num, -df$urgency),
+      entry   = order(dir * xtfrm(df$entry)),
+      project = order(is.na(df$project), dir * xtfrm(df$project), -df$urgency))
+    tibble::as_tibble(df[ord, ])
+  })
 }
 
 #' Get one or more tasks by id
@@ -489,14 +496,14 @@ task_require <- function(db, id, status = "completed") {
 #' @importFrom cli cli_abort
 #' @export
 task_blockers <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  tibble::as_tibble(DBI::dbGetQuery(con,
-    "SELECT t.id, t.uuid, t.description, t.status
-       FROM dependencies d JOIN tasks t ON t.uuid = d.depends_on_uuid
-      WHERE d.task_uuid = ? AND t.status = 'pending'
-      ORDER BY t.id", params = list(row$uuid)))
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    tibble::as_tibble(DBI::dbGetQuery(con,
+      "SELECT t.id, t.uuid, t.description, t.status
+         FROM dependencies d JOIN tasks t ON t.uuid = d.depends_on_uuid
+        WHERE d.task_uuid = ? AND t.status = 'pending'
+        ORDER BY t.id", params = list(row$uuid)))
+  })
 }
 
 #' Run a production step under a task
@@ -569,7 +576,7 @@ task_step <- function(db, id, expr, note = NULL) {
 #' @examples
 #' \dontrun{
 #' task_cycle(db, "RS-2026",
-#'   steps = c("Hent kilder", "Valid\u00e9r", "Kompil\u00e9r", "Public\u00e9r"),
+#'   steps = c("Hent kilder", "Validér", "Kompilér", "Publicér"),
 #'   keys  = c("hent", "valider", "kompiler", "publicer"),
 #'   assignee = "pipeline", due = "2026-07-15", recur = "monthly")
 #' }
@@ -582,21 +589,20 @@ task_cycle <- function(db, project, steps, keys = NULL, assignee = NULL,
     cli::cli_abort("{.arg steps} must be a non-empty character vector of step descriptions.")
   if (!is.null(keys) && length(keys) != length(steps))
     cli::cli_abort("{.arg keys} must have one entry per step ({length(steps)}).")
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-
-  ids  <- integer(length(steps))
-  prev <- NULL
-  for (i in seq_along(steps)) {
-    last <- i == length(steps)
-    t <- task_add(con, steps[i], key = if (!is.null(keys)) keys[i] else NULL,
-                  project = project, assignee = assignee, priority = priority,
-                  due = if (last) due else NULL, recur = if (last) recur else NULL,
-                  depends = prev)
-    ids[i] <- t$id[1]
-    prev   <- t$id[1]
-  }
-  task_get(con, ids)
+  .task_with_con(db, function(con) {
+    ids  <- integer(length(steps))
+    prev <- NULL
+    for (i in seq_along(steps)) {
+      last <- i == length(steps)
+      t <- task_add(con, steps[i], key = if (!is.null(keys)) keys[i] else NULL,
+                    project = project, assignee = assignee, priority = priority,
+                    due = if (last) due else NULL, recur = if (last) recur else NULL,
+                    depends = prev)
+      ids[i] <- t$id[1]
+      prev   <- t$id[1]
+    }
+    task_get(con, ids)
+  })
 }
 
 #' Complete a task
@@ -621,29 +627,29 @@ task_cycle <- function(db, project, steps, keys = NULL, assignee = NULL,
 task_done <- function(db, id, note = NULL) {
   if (!is.null(note) && (!is.character(note) || length(note) != 1 || !nzchar(note)))
     cli::cli_abort("{.arg note} must be a single non-empty string.")
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id); now <- .task_now()
-  DBI::dbWithTransaction(con, {
-    DBI::dbExecute(con, "UPDATE tasks SET status='completed', end=?, modified=? WHERE id=?",
-                   params = list(now, now, row$id))
-    if (!is.null(note))
-      DBI::dbExecute(con, "INSERT INTO annotations (task_uuid, entry, text) VALUES (?, ?, ?)",
-                     params = list(row$uuid, now, note))
-    if (!is.na(row$recur) && nzchar(row$recur) && !is.na(row$due)) {
-      nuuid <- .task_uuid()
-      DBI::dbExecute(con,
-        "INSERT INTO tasks (uuid, description, project, priority, status, due, entry, modified, recur)
-         VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
-        params = list(nuuid, row$description, .or_na(row$project), .or_na(row$priority),
-                      .task_advance(row$due, row$recur), now, now, row$recur))
-      for (tg in DBI::dbGetQuery(con, "SELECT tag FROM task_tags WHERE task_uuid=?",
-                                 params = list(row$uuid))$tag)
-        DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
-                       params = list(nuuid, tg))
-    }
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id); now <- .task_now()
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, "UPDATE tasks SET status='completed', end=?, modified=? WHERE id=?",
+                     params = list(now, now, row$id))
+      if (!is.null(note))
+        DBI::dbExecute(con, "INSERT INTO annotations (task_uuid, entry, text) VALUES (?, ?, ?)",
+                       params = list(row$uuid, now, note))
+      if (!is.na(row$recur) && nzchar(row$recur) && !is.na(row$due)) {
+        nuuid <- .task_uuid()
+        DBI::dbExecute(con,
+          "INSERT INTO tasks (uuid, description, project, priority, status, due, entry, modified, recur)
+           VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)",
+          params = list(nuuid, row$description, .or_na(row$project), .or_na(row$priority),
+                        .task_advance(row$due, row$recur), now, now, row$recur))
+        for (tg in DBI::dbGetQuery(con, "SELECT tag FROM task_tags WHERE task_uuid=?",
+                                   params = list(row$uuid))$tag)
+          DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
+                         params = list(nuuid, tg))
+      }
+    })
+    invisible(TRUE)
   })
-  invisible(TRUE)
 }
 
 #' Reopen a task
@@ -658,12 +664,12 @@ task_done <- function(db, id, note = NULL) {
 #' @importFrom cli cli_abort
 #' @export
 task_reopen <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  DBI::dbExecute(con, "UPDATE tasks SET status='pending', end=NULL, start=NULL, modified=? WHERE id=?",
-                 params = list(.task_now(), row$id))
-  invisible(TRUE)
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    DBI::dbExecute(con, "UPDATE tasks SET status='pending', end=NULL, start=NULL, modified=? WHERE id=?",
+                   params = list(.task_now(), row$id))
+    invisible(TRUE)
+  })
 }
 
 #' Start or stop work on a task
@@ -692,26 +698,26 @@ task_reopen <- function(db, id) {
 #' @importFrom cli cli_abort
 #' @export
 task_start <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  if (!identical(row$status, "pending"))
-    cli::cli_abort("Only a pending task can be started (task {.val {id}} is {row$status}).")
-  now <- .task_now()
-  DBI::dbExecute(con, "UPDATE tasks SET start=?, modified=? WHERE id=?",
-                 params = list(now, now, row$id))
-  invisible(TRUE)
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    if (!identical(row$status, "pending"))
+      cli::cli_abort("Only a pending task can be started (task {.val {id}} is {row$status}).")
+    now <- .task_now()
+    DBI::dbExecute(con, "UPDATE tasks SET start=?, modified=? WHERE id=?",
+                   params = list(now, now, row$id))
+    invisible(TRUE)
+  })
 }
 
 #' @rdname task_start
 #' @export
 task_stop <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  DBI::dbExecute(con, "UPDATE tasks SET start=NULL, modified=? WHERE id=?",
-                 params = list(.task_now(), row$id))
-  invisible(TRUE)
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    DBI::dbExecute(con, "UPDATE tasks SET start=NULL, modified=? WHERE id=?",
+                   params = list(.task_now(), row$id))
+    invisible(TRUE)
+  })
 }
 
 #' Delete a task
@@ -725,12 +731,12 @@ task_stop <- function(db, id) {
 #' @importFrom cli cli_abort
 #' @export
 task_delete <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id); now <- .task_now()
-  DBI::dbExecute(con, "UPDATE tasks SET status='deleted', end=?, modified=? WHERE id=?",
-                 params = list(now, now, row$id))
-  invisible(TRUE)
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id); now <- .task_now()
+    DBI::dbExecute(con, "UPDATE tasks SET status='deleted', end=?, modified=? WHERE id=?",
+                   params = list(now, now, row$id))
+    invisible(TRUE)
+  })
 }
 
 #' Permanently delete tasks
@@ -751,25 +757,25 @@ task_delete <- function(db, id) {
 #' @importFrom cli cli_abort
 #' @export
 task_purge <- function(db, id = NULL) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  uuids <- if (is.null(id)) {
-    DBI::dbGetQuery(con, "SELECT uuid FROM tasks WHERE status='deleted'")$uuid
-  } else {
-    vapply(id, function(i) .task_row(con, i)$uuid, character(1))
-  }
-  uuids <- unname(uuids)                 # vapply over a character id names the result
-  if (length(uuids) == 0) return(invisible(0L))
-  ph <- paste(rep("?", length(uuids)), collapse = ",")
-  u  <- as.list(uuids)
-  DBI::dbWithTransaction(con, {
-    DBI::dbExecute(con, paste0("DELETE FROM task_tags WHERE task_uuid IN (", ph, ")"), params = u)
-    DBI::dbExecute(con, paste0("DELETE FROM annotations WHERE task_uuid IN (", ph, ")"), params = u)
-    DBI::dbExecute(con, paste0("DELETE FROM dependencies WHERE task_uuid IN (", ph,
-                               ") OR depends_on_uuid IN (", ph, ")"), params = c(u, u))
-    DBI::dbExecute(con, paste0("DELETE FROM tasks WHERE uuid IN (", ph, ")"), params = u)
+  .task_with_con(db, function(con) {
+    uuids <- if (is.null(id)) {
+      DBI::dbGetQuery(con, "SELECT uuid FROM tasks WHERE status='deleted'")$uuid
+    } else {
+      vapply(id, function(i) .task_row(con, i)$uuid, character(1))
+    }
+    uuids <- unname(uuids)                 # vapply over a character id names the result
+    if (length(uuids) == 0) return(invisible(0L))
+    ph <- paste(rep("?", length(uuids)), collapse = ",")
+    u  <- as.list(uuids)
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, paste0("DELETE FROM task_tags WHERE task_uuid IN (", ph, ")"), params = u)
+      DBI::dbExecute(con, paste0("DELETE FROM annotations WHERE task_uuid IN (", ph, ")"), params = u)
+      DBI::dbExecute(con, paste0("DELETE FROM dependencies WHERE task_uuid IN (", ph,
+                                 ") OR depends_on_uuid IN (", ph, ")"), params = c(u, u))
+      DBI::dbExecute(con, paste0("DELETE FROM tasks WHERE uuid IN (", ph, ")"), params = u)
+    })
+    invisible(length(uuids))
   })
-  invisible(length(uuids))
 }
 
 #' Modify a task
@@ -791,50 +797,50 @@ task_purge <- function(db, id = NULL) {
 task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
                         assignee = NULL, tags = NULL, priority = NULL, due = NULL,
                         recur = NULL, depends = NULL) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id); now <- .task_now()
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id); now <- .task_now()
 
-  sets <- character(); params <- list()
-  if (!is.null(description)) { sets <- c(sets, "description=?"); params <- c(params, list(description)) }
-  if (!is.null(key)) {
-    if (is.character(key) && length(key) == 1 && !nzchar(trimws(key))) {
-      sets <- c(sets, "key=?"); params <- c(params, list(NA))      # "" clears it
-    } else {
-      k <- .task_check_key(key)
-      if (nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ? AND id <> ?", list(k, row$id))) > 0)
-        cli::cli_abort("Key {.val {k}} is already in use.")
-      sets <- c(sets, "key=?"); params <- c(params, list(k))
+    sets <- character(); params <- list()
+    if (!is.null(description)) { sets <- c(sets, "description=?"); params <- c(params, list(description)) }
+    if (!is.null(key)) {
+      if (is.character(key) && length(key) == 1 && !nzchar(trimws(key))) {
+        sets <- c(sets, "key=?"); params <- c(params, list(NA))      # "" clears it
+      } else {
+        k <- .task_check_key(key)
+        if (nrow(DBI::dbGetQuery(con, "SELECT 1 FROM tasks WHERE key = ? AND id <> ?", list(k, row$id))) > 0)
+          cli::cli_abort("Key {.val {k}} is already in use.")
+        sets <- c(sets, "key=?"); params <- c(params, list(k))
+      }
     }
-  }
-  if (!is.null(project))     { sets <- c(sets, "project=?");     params <- c(params, list(.or_na(project))) }
-  if (!is.null(assignee))    { sets <- c(sets, "assignee=?");    params <- c(params, list(.or_na(assignee))) }
-  if (!is.null(priority))    { sets <- c(sets, "priority=?");    params <- c(params, list(.task_check_priority(priority))) }
-  if (!is.null(due))         { sets <- c(sets, "due=?");         params <- c(params, list(.task_norm_date(due))) }
-  if (!is.null(recur))       { sets <- c(sets, "recur=?");       params <- c(params, list(if (nzchar(recur)) recur else NA)) }
+    if (!is.null(project))     { sets <- c(sets, "project=?");     params <- c(params, list(.or_na(project))) }
+    if (!is.null(assignee))    { sets <- c(sets, "assignee=?");    params <- c(params, list(.or_na(assignee))) }
+    if (!is.null(priority))    { sets <- c(sets, "priority=?");    params <- c(params, list(.task_check_priority(priority))) }
+    if (!is.null(due))         { sets <- c(sets, "due=?");         params <- c(params, list(.task_norm_date(due))) }
+    if (!is.null(recur))       { sets <- c(sets, "recur=?");       params <- c(params, list(if (nzchar(recur)) recur else NA)) }
 
-  DBI::dbWithTransaction(con, {
-    if (length(sets) > 0) {
-      sets <- c(sets, "modified=?"); params <- c(params, list(now), list(row$id))
-      DBI::dbExecute(con, paste0("UPDATE tasks SET ", paste(sets, collapse = ", "), " WHERE id=?"),
-                     params = params)
-    }
-    if (!is.null(tags)) {
-      DBI::dbExecute(con, "DELETE FROM task_tags WHERE task_uuid=?", params = list(row$uuid))
-      for (tg in unique(tags))
-        DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
-                       params = list(row$uuid, tg))
-    }
-    # Replace the task's dependencies. character(0) just clears them. A task
-    # may not depend on itself.
-    if (!is.null(depends)) {
-      DBI::dbExecute(con, "DELETE FROM dependencies WHERE task_uuid=?", params = list(row$uuid))
-      for (du in setdiff(.task_ids_to_uuids(con, depends), row$uuid))
-        DBI::dbExecute(con, "INSERT OR IGNORE INTO dependencies (task_uuid, depends_on_uuid) VALUES (?, ?)",
-                       params = list(row$uuid, du))
-    }
+    DBI::dbWithTransaction(con, {
+      if (length(sets) > 0) {
+        sets <- c(sets, "modified=?"); params <- c(params, list(now), list(row$id))
+        DBI::dbExecute(con, paste0("UPDATE tasks SET ", paste(sets, collapse = ", "), " WHERE id=?"),
+                       params = params)
+      }
+      if (!is.null(tags)) {
+        DBI::dbExecute(con, "DELETE FROM task_tags WHERE task_uuid=?", params = list(row$uuid))
+        for (tg in unique(tags))
+          DBI::dbExecute(con, "INSERT OR IGNORE INTO task_tags (task_uuid, tag) VALUES (?, ?)",
+                         params = list(row$uuid, tg))
+      }
+      # Replace the task's dependencies. character(0) just clears them. A task
+      # may not depend on itself.
+      if (!is.null(depends)) {
+        DBI::dbExecute(con, "DELETE FROM dependencies WHERE task_uuid=?", params = list(row$uuid))
+        for (du in setdiff(.task_ids_to_uuids(con, depends), row$uuid))
+          DBI::dbExecute(con, "INSERT OR IGNORE INTO dependencies (task_uuid, depends_on_uuid) VALUES (?, ?)",
+                         params = list(row$uuid, du))
+      }
+    })
+    invisible(TRUE)
   })
-  invisible(TRUE)
 }
 
 #' Annotate a task
@@ -851,12 +857,12 @@ task_modify <- function(db, id, description = NULL, key = NULL, project = NULL,
 task_annotate <- function(db, id, text) {
   if (!is.character(text) || length(text) != 1 || !nzchar(text))
     cli::cli_abort("{.arg text} must be a single non-empty string.")
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  DBI::dbExecute(con, "INSERT INTO annotations (task_uuid, entry, text) VALUES (?, ?, ?)",
-                 params = list(row$uuid, .task_now(), text))
-  invisible(TRUE)
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    DBI::dbExecute(con, "INSERT INTO annotations (task_uuid, entry, text) VALUES (?, ?, ?)",
+                   params = list(row$uuid, .task_now(), text))
+    invisible(TRUE)
+  })
 }
 
 #' Annotations of a task
@@ -868,11 +874,11 @@ task_annotate <- function(db, id, text) {
 #' @importFrom tibble as_tibble
 #' @export
 task_annotations <- function(db, id) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  row <- .task_row(con, id)
-  tibble::as_tibble(DBI::dbGetQuery(con,
-    "SELECT entry, text FROM annotations WHERE task_uuid=? ORDER BY entry", params = list(row$uuid)))
+  .task_with_con(db, function(con) {
+    row <- .task_row(con, id)
+    tibble::as_tibble(DBI::dbGetQuery(con,
+      "SELECT entry, text FROM annotations WHERE task_uuid=? ORDER BY entry", params = list(row$uuid)))
+  })
 }
 
 # Per-group counts: sum a logical mask over a grouping factor, aligned to
@@ -1022,17 +1028,17 @@ task_people <- function(db) {
 #' @importFrom tibble as_tibble
 #' @export
 task_bottlenecks <- function(db) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  tibble::as_tibble(DBI::dbGetQuery(con,
-    "SELECT t.id, t.key, t.description, t.project, t.assignee,
-            COUNT(*) AS blocking
-       FROM dependencies d
-       JOIN tasks t  ON t.uuid = d.depends_on_uuid
-       JOIN tasks bt ON bt.uuid = d.task_uuid
-      WHERE t.status = 'pending' AND bt.status = 'pending'
-      GROUP BY t.uuid
-      ORDER BY blocking DESC, t.id"))
+  .task_with_con(db, function(con) {
+    tibble::as_tibble(DBI::dbGetQuery(con,
+      "SELECT t.id, t.key, t.description, t.project, t.assignee,
+              COUNT(*) AS blocking
+         FROM dependencies d
+         JOIN tasks t  ON t.uuid = d.depends_on_uuid
+         JOIN tasks bt ON bt.uuid = d.task_uuid
+        WHERE t.status = 'pending' AND bt.status = 'pending'
+        GROUP BY t.uuid
+        ORDER BY blocking DESC, t.id"))
+  })
 }
 
 #' Recent activity across the database
@@ -1053,18 +1059,18 @@ task_bottlenecks <- function(db) {
 #' @importFrom tibble as_tibble
 #' @export
 task_activity <- function(db, n = 20) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  q <- DBI::dbGetQuery(con,
-    "SELECT a.entry AS ts, 'note' AS kind, t.id, t.description, t.project, a.text
-       FROM annotations a JOIN tasks t ON t.uuid = a.task_uuid
-     UNION ALL
-     SELECT t.end AS ts, 'done' AS kind, t.id, t.description, t.project, NULL AS text
-       FROM tasks t WHERE t.status = 'completed' AND t.end IS NOT NULL
-     UNION ALL
-     SELECT t.entry AS ts, 'added' AS kind, t.id, t.description, t.project, NULL AS text
-       FROM tasks t
-     ORDER BY ts DESC")
-  if (nrow(q) > n) q <- q[seq_len(n), , drop = FALSE]
-  tibble::as_tibble(q)
+  .task_with_con(db, function(con) {
+    q <- DBI::dbGetQuery(con,
+      "SELECT a.entry AS ts, 'note' AS kind, t.id, t.description, t.project, a.text
+         FROM annotations a JOIN tasks t ON t.uuid = a.task_uuid
+       UNION ALL
+       SELECT t.end AS ts, 'done' AS kind, t.id, t.description, t.project, NULL AS text
+         FROM tasks t WHERE t.status = 'completed' AND t.end IS NOT NULL
+       UNION ALL
+       SELECT t.entry AS ts, 'added' AS kind, t.id, t.description, t.project, NULL AS text
+         FROM tasks t
+       ORDER BY ts DESC")
+    if (nrow(q) > n) q <- q[seq_len(n), , drop = FALSE]
+    tibble::as_tibble(q)
+  })
 }

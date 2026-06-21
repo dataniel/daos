@@ -54,7 +54,7 @@ Before download, a pivot chooser can spread one variable across the
 columns -- typically time, the layout spreadsheet users want -- with
 the preview updating to match. The R code -- prefixed \verb{daos::} so it
 runs without \code{library(daos)} -- can be inserted into the active RStudio
-document with "Inds\u00e6t og luk" (which closes the app) or copied; a toggle
+document with "Indsæt og luk" (which closes the app) or copied; a toggle
 lifts the variable selections into a spliced \code{my_query} list
 (\code{!!!my_query}). The graph is interactive when \code{plotly} is installed:
 with many series only the largest are highlighted and the rest greyed,
