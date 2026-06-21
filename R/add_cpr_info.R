@@ -199,9 +199,8 @@ add_cpr_info <- function(
   ref_md   <- (ref$mon + 1L) * 100L + ref$mday
   alder    <- as.integer(ref$year + 1900L - aar - (ref_md < maaned * 100 + dag))
 
-  na_int <- NA_integer_
-  koen[!gyldig]  <- na_int
-  alder[!gyldig] <- na_int
+  koen[!gyldig]  <- NA_integer_
+  alder[!gyldig] <- NA_integer_
 
   alle <- list(
     bday  = foedselsdato,

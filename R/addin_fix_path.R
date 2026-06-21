@@ -7,6 +7,12 @@
   text
 }
 
+# Every addin needs rstudioapi; abort with one shared message if it is missing.
+.need_rstudio <- function() {
+  if (!requireNamespace("rstudioapi", quietly = TRUE))
+    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+}
+
 #' RStudio addin: convert lines to R character vector
 #'
 #' Converts the selected text (one item per line) to an R character vector
@@ -15,8 +21,7 @@
 #' @keywords internal
 #' @export
 addin_text_to_vector <- function() {
-  if (!requireNamespace("rstudioapi", quietly = TRUE))
-    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+  .need_rstudio()
 
   ctx <- rstudioapi::getActiveDocumentContext()
   sel <- ctx$selection[[1]]
@@ -41,8 +46,7 @@ addin_text_to_vector <- function() {
 #' @keywords internal
 #' @export
 addin_paste_path <- function() {
-  if (!requireNamespace("rstudioapi", quietly = TRUE))
-    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+  .need_rstudio()
 
   raw <- utils::readClipboard()
   if (length(raw) == 0)
@@ -157,8 +161,7 @@ open_in_explorer <- function(path = getwd()) {
 #' @keywords internal
 #' @export
 addin_open_in_explorer <- function() {
-  if (!requireNamespace("rstudioapi", quietly = TRUE))
-    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+  .need_rstudio()
 
   ctx <- rstudioapi::getActiveDocumentContext()
   sel <- ctx$selection[[1]]
@@ -183,8 +186,7 @@ addin_open_in_explorer <- function() {
 #' @keywords internal
 #' @export
 addin_flip_backslash <- function() {
-  if (!requireNamespace("rstudioapi", quietly = TRUE))
-    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+  .need_rstudio()
 
   ctx <- rstudioapi::getActiveDocumentContext()
   sel <- ctx$selection[[1]]
@@ -205,8 +207,7 @@ addin_flip_backslash <- function() {
 #' @keywords internal
 #' @export
 addin_fix_path <- function() {
-  if (!requireNamespace("rstudioapi", quietly = TRUE))
-    cli::cli_abort("Package {.pkg rstudioapi} is required to use this addin.")
+  .need_rstudio()
 
   ctx <- rstudioapi::getActiveDocumentContext()
   sel <- ctx$selection[[1]]
