@@ -37,7 +37,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20260621"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-21 00:01"
+#> [1] "2026-06-21 12:47"
 ```
 
 A typical use is timestamping an export file:

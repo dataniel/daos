@@ -60,7 +60,7 @@ chooser can spread one variable across the columns – typically time, the
 layout spreadsheet users want – with the preview updating to match. The
 R code – prefixed `daos::` so it runs without
 [`library(daos)`](https://dataniel.github.io/daos) – can be inserted
-into the active RStudio document with "Inds og luk" (which closes the
+into the active RStudio document with "Indsæt og luk" (which closes the
 app) or copied; a toggle lifts the variable selections into a spliced
 `my_query` list (`!!!my_query`). The graph is interactive when `plotly`
 is installed: with many series only the largest are highlighted and the

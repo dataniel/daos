@@ -221,18 +221,61 @@ would show for one task, when you want to branch on its `status` or
 prerequisites holding it up, which is also what the app shows in a
 blocked task’s detail panel.
 
+## One call for a whole cycle, and what is in progress
+
+A production with a fixed sequence of steps can be set up in one call.
+[`task_cycle()`](https://dataniel.github.io/daos/reference/task_cycle.md)
+adds the steps for a project and wires each to depend on the previous,
+with the deadline – and an optional recurrence, so the release date
+rolls forward each cycle – on the last:
+
+``` r
+
+task_cycle(db, "RS-2026",
+  steps = c("Hent kilder", "Valider", "Kompiler", "Publicer"),
+  keys  = c("hent", "valider", "kompiler", "publicer"),
+  assignee = "pipeline", due = "2026-07-15", recur = "monthly")
+```
+
+Only the first step is unblocked; each later one becomes ready as its
+predecessor is done.
+[`task_step()`](https://dataniel.github.io/daos/reference/task_step.md)
+then runs one step and records it in a single call – it marks the task
+started, evaluates the expression, and on success annotates and
+completes it (on failure it notes the error, un-starts the task, and
+re-raises), so the whole `run_step()` wrapper above collapses to:
+
+``` r
+
+task_step(db, "kompiler", {
+  stats <- compile(sources)
+  stats
+})
+```
+
+[`task_start()`](https://dataniel.github.io/daos/reference/task_start.md)
+and
+[`task_stop()`](https://dataniel.github.io/daos/reference/task_start.md)
+toggle the in-progress flag by hand, so the overview shows what is being
+*worked on right now*, not just what is pending.
+
 ## Reading the state back
 
 Everything written from scripts is queryable from scripts.
 [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
-filters by status, project, assignee, and tag;
+filters by status, project, assignee, and tag, and flags what is
+`blocked` and `started`;
 [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md)
-gives a per-project overview (pending, completed, overdue, progress,
-creation and last-activity dates);
+gives a manager overview per project (a health signal, in-progress,
+blocked, overdue and stalled counts, progress, and the next deadline);
 [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md)
-does the same per assignee. A production dashboard, an email summary, or
-a check that nothing is overdue is then a few lines of R against the
-same shared file the app reads:
+does the same per assignee (load, overdue, recently done).
+[`task_bottlenecks()`](https://dataniel.github.io/daos/reference/task_bottlenecks.md)
+ranks the tasks blocking the most others, and
+[`task_activity()`](https://dataniel.github.io/daos/reference/task_activity.md)
+is a newest-first feed of what has moved. A production dashboard, an
+email summary, or a check that nothing is overdue is then a few lines of
+R against the same shared file the app reads:
 
 ``` r
 
@@ -255,11 +298,14 @@ only ever one file.
 task_app("//server/share/production/tasks.sqlite")
 ```
 
-The app is keyboard-driven – `j`/`k` to move, `f` done, `e` edit, `n`
-note, `g` reopen, `x` delete, `r` reset filters, `o`/`p` to switch
-between the tasks and projects pages, `q` to quit – and re-reads the
-database on a timer, so changes a script makes appear without a manual
-refresh.
+The app is keyboard-driven – `j`/`k` to move, `f` done, `s` start/stop
+(in progress), `e` edit, `n` note, `g` reopen, `x` delete, `r` reset
+filters, `o`/`p` to switch between the tasks and projects pages, `q` to
+quit – and re-reads the database on a timer, so changes a script makes
+appear without a manual refresh. The Projekter page is a manager
+dashboard: per-project health (on track / at risk / behind), what is in
+progress, blocked, overdue and stalled, the bottleneck tasks blocking
+the most others, and a recent-activity feed.
 
 Deleting is a soft delete:
 [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md)

@@ -1,6 +1,9 @@
 # People overview
 
-Distinct assignees with their pending task counts.
+One row per assignee with their current load: pending, in progress,
+blocked and overdue tasks, how many they have completed in the last 30
+days, and across how many projects – enough to spot who is overloaded or
+where a person has become a bottleneck.
 
 ## Usage
 
@@ -16,4 +19,10 @@ task_people(db)
 
 ## Value
 
-A tibble with `assignee` and `pending`.
+A tibble with `assignee`, `pending`, `started`, `blocked`, `overdue`,
+`done30`, and `projects`.
+
+## See also
+
+[`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md),
+[`task_bottlenecks()`](https://dataniel.github.io/daos/reference/task_bottlenecks.md)

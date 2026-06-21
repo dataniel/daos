@@ -111,6 +111,8 @@
   Create or open a shared task database
 - [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md)
   : Add a task
+- [`task_cycle()`](https://dataniel.github.io/daos/reference/task_cycle.md)
+  : Register a production cycle as a chain of steps
 - [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
   : List tasks
 - [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md)
@@ -119,6 +121,11 @@
   : Require tasks to have a given status
 - [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md)
   : Why a task is blocked
+- [`task_start()`](https://dataniel.github.io/daos/reference/task_start.md)
+  [`task_stop()`](https://dataniel.github.io/daos/reference/task_start.md)
+  : Start or stop work on a task
+- [`task_step()`](https://dataniel.github.io/daos/reference/task_step.md)
+  : Run a production step under a task
 - [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md)
   : Complete a task
 - [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md)
@@ -134,9 +141,13 @@
 - [`task_annotations()`](https://dataniel.github.io/daos/reference/task_annotations.md)
   : Annotations of a task
 - [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md)
-  : Project overview
+  : Project overview for managers
 - [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md)
   : People overview
+- [`task_bottlenecks()`](https://dataniel.github.io/daos/reference/task_bottlenecks.md)
+  : Bottlenecks: the tasks blocking the most others
+- [`task_activity()`](https://dataniel.github.io/daos/reference/task_activity.md)
+  : Recent activity across the database
 
 ## Greenland Statbank
 

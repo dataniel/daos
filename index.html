@@ -254,8 +254,12 @@
 <td>Add a task (key, project, assignee, tags, priority, due, recurrence, dependencies)</td>
 </tr>
 <tr>
+<td><code><a href="reference/task_cycle.html">task_cycle()</a></code></td>
+<td>Register a production cycle as a chain of dependent steps</td>
+</tr>
+<tr>
 <td><code><a href="reference/task_list.html">task_list()</a></code></td>
-<td>List tasks with tags, blocked flag, and urgency</td>
+<td>List tasks with tags, blocked flag, started flag, and urgency</td>
 </tr>
 <tr>
 <td>
@@ -264,8 +268,10 @@
 <td>Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task</td>
 </tr>
 <tr>
-<td><code><a href="reference/task_people.html">task_people()</a></code></td>
-<td>Per-person pending task counts</td>
+<td>
+<code><a href="reference/task_start.html">task_start()</a></code> / <code><a href="reference/task_start.html">task_stop()</a></code> / <code><a href="reference/task_step.html">task_step()</a></code>
+</td>
+<td>Mark a task in progress, stop it, or run a production step under it</td>
 </tr>
 <tr>
 <td>
@@ -283,7 +289,17 @@
 </tr>
 <tr>
 <td><code><a href="reference/task_projects.html">task_projects()</a></code></td>
-<td>Per-project progress: counts, completion %, overdue, dates</td>
+<td>Per-project manager overview: health, in-progress, blocked, overdue, stalled, next deadline</td>
+</tr>
+<tr>
+<td><code><a href="reference/task_people.html">task_people()</a></code></td>
+<td>Per-person load: pending, in progress, blocked, overdue, recently done</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/task_bottlenecks.html">task_bottlenecks()</a></code> / <code><a href="reference/task_activity.html">task_activity()</a></code>
+</td>
+<td>The tasks blocking the most others; a newest-first activity feed</td>
 </tr>
 <tr>
 <td><code><a href="reference/task_app.html">task_app()</a></code></td>

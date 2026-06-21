@@ -257,16 +257,49 @@ prerequisites holding it up, which is also what the app shows in a
 blocked task’s detail panel.</p>
 </div>
 <div class="section level2">
+<h2 id="one-call-for-a-whole-cycle-and-what-is-in-progress">One call for a whole cycle, and what is in progress<a class="anchor" aria-label="anchor" href="#one-call-for-a-whole-cycle-and-what-is-in-progress"></a>
+</h2>
+<p>A production with a fixed sequence of steps can be set up in one
+call. <code><a href="../reference/task_cycle.html">task_cycle()</a></code> adds the steps for a project and wires
+each to depend on the previous, with the deadline – and an optional
+recurrence, so the release date rolls forward each cycle – on the
+last:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_cycle.html">task_cycle</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"RS-2026"</span>,</span>
+<span>  steps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Hent kilder"</span>, <span class="st">"Valider"</span>, <span class="st">"Kompiler"</span>, <span class="st">"Publicer"</span><span class="op">)</span>,</span>
+<span>  keys  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hent"</span>, <span class="st">"valider"</span>, <span class="st">"kompiler"</span>, <span class="st">"publicer"</span><span class="op">)</span>,</span>
+<span>  assignee <span class="op">=</span> <span class="st">"pipeline"</span>, due <span class="op">=</span> <span class="st">"2026-07-15"</span>, recur <span class="op">=</span> <span class="st">"monthly"</span><span class="op">)</span></span></code></pre></div>
+<p>Only the first step is unblocked; each later one becomes ready as its
+predecessor is done. <code><a href="../reference/task_step.html">task_step()</a></code> then runs one step and
+records it in a single call – it marks the task started, evaluates the
+expression, and on success annotates and completes it (on failure it
+notes the error, un-starts the task, and re-raises), so the whole
+<code>run_step()</code> wrapper above collapses to:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/task_step.html">task_step</a></span><span class="op">(</span><span class="va">db</span>, <span class="st">"kompiler"</span>, <span class="op">{</span></span>
+<span>  <span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">compile</span><span class="op">(</span><span class="va">sources</span><span class="op">)</span></span>
+<span>  <span class="va">stats</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/task_start.html">task_start()</a></code> and <code><a href="../reference/task_start.html">task_stop()</a></code> toggle the
+in-progress flag by hand, so the overview shows what is being <em>worked
+on right now</em>, not just what is pending.</p>
+</div>
+<div class="section level2">
 <h2 id="reading-the-state-back">Reading the state back<a class="anchor" aria-label="anchor" href="#reading-the-state-back"></a>
 </h2>
 <p>Everything written from scripts is queryable from scripts.
-<code><a href="../reference/task_list.html">task_list()</a></code> filters by status, project, assignee, and tag;
-<code><a href="../reference/task_projects.html">task_projects()</a></code> gives a per-project overview (pending,
-completed, overdue, progress, creation and last-activity dates);
-<code><a href="../reference/task_people.html">task_people()</a></code> does the same per assignee. A production
-dashboard, an email summary, or a check that nothing is overdue is then
-a few lines of R against the same shared file the app reads:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code><a href="../reference/task_list.html">task_list()</a></code> filters by status, project, assignee, and tag,
+and flags what is <code>blocked</code> and <code>started</code>;
+<code><a href="../reference/task_projects.html">task_projects()</a></code> gives a manager overview per project (a
+health signal, in-progress, blocked, overdue and stalled counts,
+progress, and the next deadline); <code><a href="../reference/task_people.html">task_people()</a></code> does the
+same per assignee (load, overdue, recently done).
+<code><a href="../reference/task_bottlenecks.html">task_bottlenecks()</a></code> ranks the tasks blocking the most
+others, and <code><a href="../reference/task_activity.html">task_activity()</a></code> is a newest-first feed of what
+has moved. A production dashboard, an email summary, or a check that
+nothing is overdue is then a few lines of R against the same shared file
+the app reads:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">overview</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_projects.html">task_projects</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/task_list.html">task_list</a></span><span class="op">(</span><span class="va">db</span>, status <span class="op">=</span> <span class="st">"pending"</span><span class="op">)</span></span>
 <span><span class="va">overdue</span>  <span class="op">&lt;-</span> <span class="va">overdue</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">overdue</span><span class="op">$</span><span class="va">due</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">overdue</span><span class="op">$</span><span class="va">due</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
@@ -280,14 +313,19 @@ projects, people, due dates, and overviews, run
 <code>task_*</code> code. The point of the article is that the same
 database supports both: the team clicks, the pipeline writes, and the
 two views agree because there is only ever one file.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/task_app.html">task_app</a></span><span class="op">(</span><span class="st">"//server/share/production/tasks.sqlite"</span><span class="op">)</span></span></code></pre></div>
 <p>The app is keyboard-driven – <code>j</code>/<code>k</code> to move,
-<code>f</code> done, <code>e</code> edit, <code>n</code> note,
-<code>g</code> reopen, <code>x</code> delete, <code>r</code> reset
-filters, <code>o</code>/<code>p</code> to switch between the tasks and
-projects pages, <code>q</code> to quit – and re-reads the database on a
-timer, so changes a script makes appear without a manual refresh.</p>
+<code>f</code> done, <code>s</code> start/stop (in progress),
+<code>e</code> edit, <code>n</code> note, <code>g</code> reopen,
+<code>x</code> delete, <code>r</code> reset filters,
+<code>o</code>/<code>p</code> to switch between the tasks and projects
+pages, <code>q</code> to quit – and re-reads the database on a timer, so
+changes a script makes appear without a manual refresh. The Projekter
+page is a manager dashboard: per-project health (on track / at risk /
+behind), what is in progress, blocked, overdue and stalled, the
+bottleneck tasks blocking the most others, and a recent-activity
+feed.</p>
 <p>Deleting is a soft delete: <code><a href="../reference/task_delete.html">task_delete()</a></code> (and
 <code>x</code> in the app) only marks a task <code>deleted</code> so it
 can be reopened, which is why it disappears from the default

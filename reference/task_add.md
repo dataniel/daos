@@ -62,7 +62,8 @@ task_add(
 
   Optional recurrence applied when the task is completed: an integer
   number of days, or one of `"daily"`, `"weekly"`, `"biweekly"`,
-  `"monthly"`, `"quarterly"`, `"yearly"`. Needs a `due`.
+  `"monthly"`, `"quarterly"`, `"semiannual"`, `"yearly"` – the cadences
+  statistics production runs on. Needs a `due`.
 
 - depends:
 

@@ -55,11 +55,14 @@
 <url><loc>https://dataniel.github.io/daos/reference/statbank_search.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/statbank_tables.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/summon.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/task_activity.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_add.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_annotate.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_annotations.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_app.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_blockers.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/task_bottlenecks.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/task_cycle.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_db.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_delete.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_done.html</loc></url>
@@ -71,6 +74,8 @@
 <url><loc>https://dataniel.github.io/daos/reference/task_purge.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_reopen.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/task_require.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/task_start.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/task_step.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/view_types.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/write_excel.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/write_ta.html</loc></url>

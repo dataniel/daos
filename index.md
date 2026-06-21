@@ -66,13 +66,16 @@ pak::pak("dataniel/daos")
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md) | Retrieve objects matching a regex pattern from an environment |
 | [`task_db()`](https://dataniel.github.io/daos/reference/task_db.md) | Create/open a shared SQLite task database (WAL, multi-user) |
 | [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md) | Add a task (key, project, assignee, tags, priority, due, recurrence, dependencies) |
-| [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md) | List tasks with tags, blocked flag, and urgency |
+| [`task_cycle()`](https://dataniel.github.io/daos/reference/task_cycle.md) | Register a production cycle as a chain of dependent steps |
+| [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md) | List tasks with tags, blocked flag, started flag, and urgency |
 | [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md) / [`task_require()`](https://dataniel.github.io/daos/reference/task_require.md) / [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md) | Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task |
-| [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md) | Per-person pending task counts |
+| [`task_start()`](https://dataniel.github.io/daos/reference/task_start.md) / [`task_stop()`](https://dataniel.github.io/daos/reference/task_start.md) / [`task_step()`](https://dataniel.github.io/daos/reference/task_step.md) | Mark a task in progress, stop it, or run a production step under it |
 | [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md) / [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md) / [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md) / [`task_modify()`](https://dataniel.github.io/daos/reference/task_modify.md) | Complete, reopen, soft-delete, or edit a task |
 | [`task_purge()`](https://dataniel.github.io/daos/reference/task_purge.md) | Permanently remove soft-deleted tasks (empty the trash) |
 | [`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md) | Add a timestamped note to a task |
-| [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md) | Per-project progress: counts, completion %, overdue, dates |
+| [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md) | Per-project manager overview: health, in-progress, blocked, overdue, stalled, next deadline |
+| [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md) | Per-person load: pending, in progress, blocked, overdue, recently done |
+| [`task_bottlenecks()`](https://dataniel.github.io/daos/reference/task_bottlenecks.md) / [`task_activity()`](https://dataniel.github.io/daos/reference/task_activity.md) | The tasks blocking the most others; a newest-first activity feed |
 | [`task_app()`](https://dataniel.github.io/daos/reference/task_app.md) | Shiny task manager over a shared task database |
 | [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md) | Compare column types across multiple data frames |
 | [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md) | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |
