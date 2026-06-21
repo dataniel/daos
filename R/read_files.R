@@ -102,7 +102,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   }
 
   # Expand paths (glue each element individually to support named vectors)
-  input_names <- base::names(paths)
+  input_names <- names(paths)
   files <- unlist(lapply(unname(paths), function(p) {
     as.character(glue::glue(p, .envir = .envir))
   }))
@@ -138,17 +138,17 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     function(path) reader(path, ...)
   }
   maybe_lower <- if (.lowercase) {
-    function(x) { if (is.data.frame(x)) base::names(x) <- tolower(base::names(x)); x }
+    function(x) { if (is.data.frame(x)) names(x) <- tolower(names(x)); x }
   } else {
     identity
   }
 
   # Read into named list
   if (length(files) == 1) {
-    result <- stats::setNames(list(maybe_lower(read_one(files[[1]]))), base::names(files))
+    result <- stats::setNames(list(maybe_lower(read_one(files[[1]]))), names(files))
   } else {
     result <- vector("list", length(files))
-    base::names(result) <- base::names(files)
+    names(result) <- names(files)
     cli::cli_progress_bar("Reading files", total = length(files))
     for (i in seq_along(files)) {
       cli::cli_progress_update(status = basename(files[[i]]))
@@ -189,7 +189,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
 
   if (out == "unpack") {
     if (!.overwrite) {
-      existing <- intersect(base::names(result), ls(envir = .envir))
+      existing <- intersect(names(result), ls(envir = .envir))
       if (length(existing) > 0) {
         cli::cli_abort(c(
           "{length(existing)} object{?s} already exist{?s/} in target environment.",
@@ -220,92 +220,55 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
   read_fn(path, ...)
 }
 
+# Build a reader that lives in a Suggested package: check the package is
+# installed (a clear error naming the format if not), then fetch and call the
+# function. getExportedValue() defers the lookup to call time, so the package
+# is only needed when a file of that format is actually read.
+.reader_from_pkg <- function(pkg, fn, what) {
+  function(...) {
+    if (!requireNamespace(pkg, quietly = TRUE))
+      cli::cli_abort("Package {.pkg {pkg}} is required to read {what} files.")
+    getExportedValue(pkg, fn)(...)
+  }
+}
+
 .read_files_readers <- function() {
+  # readxl needs the sheet-aware wrapper (.read_excel), so it stays explicit;
+  # the rest follow the one "needs a package" shape via .reader_from_pkg().
+  readxl_reader <- function(fn) function(path, ...) {
+    if (!requireNamespace("readxl", quietly = TRUE))
+      cli::cli_abort("Package {.pkg readxl} is required to read Excel files.")
+    .read_excel(path, getExportedValue("readxl", fn), ...)
+  }
   list(
     csv      = readr::read_csv2,
     tsv      = readr::read_tsv,
-    parquet  = function(...) {
-      if (!requireNamespace("arrow", quietly = TRUE))
-        cli::cli_abort("Package {.pkg arrow} is required to read parquet files.")
-      arrow::read_parquet(...)
-    },
-    xlsx     = function(path, ...) {
-      if (!requireNamespace("readxl", quietly = TRUE))
-        cli::cli_abort("Package {.pkg readxl} is required to read xlsx files.")
-      .read_excel(path, readxl::read_xlsx, ...)
-    },
-    xls      = function(path, ...) {
-      if (!requireNamespace("readxl", quietly = TRUE))
-        cli::cli_abort("Package {.pkg readxl} is required to read xls files.")
-      .read_excel(path, readxl::read_xls, ...)
-    },
-    feather  = function(...) {
-      if (!requireNamespace("arrow", quietly = TRUE))
-        cli::cli_abort("Package {.pkg arrow} is required to read feather files.")
-      arrow::read_feather(...)
-    },
+    txt      = readr::read_lines,
     rds      = readRDS,
-    sas7bdat = function(...) {
-      if (!requireNamespace("haven", quietly = TRUE))
-        cli::cli_abort("Package {.pkg haven} is required to read SAS files.")
-      haven::read_sas(...)
-    },
-    sav      = function(...) {
-      if (!requireNamespace("haven", quietly = TRUE))
-        cli::cli_abort("Package {.pkg haven} is required to read SPSS files.")
-      haven::read_sav(...)
-    },
-    por      = function(...) {
-      if (!requireNamespace("haven", quietly = TRUE))
-        cli::cli_abort("Package {.pkg haven} is required to read SPSS portable files.")
-      haven::read_por(...)
-    },
-    xpt      = function(...) {
-      if (!requireNamespace("haven", quietly = TRUE))
-        cli::cli_abort("Package {.pkg haven} is required to read SAS transport files.")
-      haven::read_xpt(...)
-    },
-    dta      = function(...) {
-      if (!requireNamespace("haven", quietly = TRUE))
-        cli::cli_abort("Package {.pkg haven} is required to read Stata files.")
-      haven::read_dta(...)
-    },
-    json     = function(...) {
-      if (!requireNamespace("jsonlite", quietly = TRUE))
-        cli::cli_abort("Package {.pkg jsonlite} is required to read JSON files.")
-      jsonlite::read_json(...)
-    },
-    ndjson   = function(...) {
-      if (!requireNamespace("jsonlite", quietly = TRUE))
-        cli::cli_abort("Package {.pkg jsonlite} is required to read NDJSON files.")
-      jsonlite::stream_in(...)
-    },
-    jsonl    = function(...) {
-      if (!requireNamespace("jsonlite", quietly = TRUE))
-        cli::cli_abort("Package {.pkg jsonlite} is required to read JSONL files.")
-      jsonlite::stream_in(...)
-    },
-    yaml     = function(...) {
-      if (!requireNamespace("yaml", quietly = TRUE))
-        cli::cli_abort("Package {.pkg yaml} is required to read YAML files.")
-      yaml::read_yaml(...)
-    },
-    yml      = function(...) {
-      if (!requireNamespace("yaml", quietly = TRUE))
-        cli::cli_abort("Package {.pkg yaml} is required to read YAML files.")
-      yaml::read_yaml(...)
-    },
-    txt      = readr::read_lines
+    xlsx     = readxl_reader("read_xlsx"),
+    xls      = readxl_reader("read_xls"),
+    parquet  = .reader_from_pkg("arrow",    "read_parquet", "parquet"),
+    feather  = .reader_from_pkg("arrow",    "read_feather", "feather"),
+    sas7bdat = .reader_from_pkg("haven",    "read_sas",     "SAS"),
+    sav      = .reader_from_pkg("haven",    "read_sav",     "SPSS"),
+    por      = .reader_from_pkg("haven",    "read_por",     "SPSS portable"),
+    xpt      = .reader_from_pkg("haven",    "read_xpt",     "SAS transport"),
+    dta      = .reader_from_pkg("haven",    "read_dta",     "Stata"),
+    json     = .reader_from_pkg("jsonlite", "read_json",    "JSON"),
+    ndjson   = .reader_from_pkg("jsonlite", "stream_in",    "NDJSON"),
+    jsonl    = .reader_from_pkg("jsonlite", "stream_in",    "JSONL"),
+    yaml     = .reader_from_pkg("yaml",     "read_yaml",    "YAML"),
+    yml      = .reader_from_pkg("yaml",     "read_yaml",    "YAML")
   )
 }
 
 .read_files_auto <- function(path) {
   readers <- .read_files_readers()
   ext <- tolower(tools::file_ext(path))
-  if (!ext %in% base::names(readers)) {
+  if (!ext %in% names(readers)) {
     cli::cli_abort(c(
       "No reader for {.field .{ext}} files.",
-      "i" = "Supported: {.field {base::names(readers)}}.",
+      "i" = "Supported: {.field {names(readers)}}.",
       "i" = "Use {.arg reader} to supply a custom reader function."
     ))
   }
