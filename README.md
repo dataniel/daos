@@ -65,13 +65,16 @@ pak::pak("dataniel/daos")
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `task_db()` | Create/open a shared SQLite task database (WAL, multi-user) |
 | `task_add()` | Add a task (key, project, assignee, tags, priority, due, recurrence, dependencies) |
-| `task_list()` | List tasks with tags, blocked flag, and urgency |
+| `task_cycle()` | Register a production cycle as a chain of dependent steps |
+| `task_list()` | List tasks with tags, blocked flag, started flag, and urgency |
 | `task_get()` / `task_require()` / `task_blockers()` | Fetch a task by id, uuid, or key; gate a script on upstream tasks; see what blocks a task |
-| `task_people()` | Per-person pending task counts |
+| `task_start()` / `task_stop()` / `task_step()` | Mark a task in progress, stop it, or run a production step under it |
 | `task_done()` / `task_reopen()` / `task_delete()` / `task_modify()` | Complete, reopen, soft-delete, or edit a task |
 | `task_purge()` | Permanently remove soft-deleted tasks (empty the trash) |
 | `task_annotate()` | Add a timestamped note to a task |
-| `task_projects()` | Per-project progress: counts, completion %, overdue, dates |
+| `task_projects()` | Per-project manager overview: health, in-progress, blocked, overdue, stalled, next deadline |
+| `task_people()` | Per-person load: pending, in progress, blocked, overdue, recently done |
+| `task_bottlenecks()` / `task_activity()` | The tasks blocking the most others; a newest-first activity feed |
 | `task_app()` | Shiny task manager over a shared task database |
 | `view_types()` | Compare column types across multiple data frames |
 | `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |

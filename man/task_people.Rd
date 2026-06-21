@@ -10,8 +10,15 @@ task_people(db)
 \item{db}{Path to the task database, or an open DBI connection.}
 }
 \value{
-A tibble with \code{assignee} and \code{pending}.
+A tibble with \code{assignee}, \code{pending}, \code{started}, \code{blocked},
+\code{overdue}, \code{done30}, and \code{projects}.
 }
 \description{
-Distinct assignees with their pending task counts.
+One row per assignee with their current load: pending, in progress,
+blocked and overdue tasks, how many they have completed in the last 30
+days, and across how many projects -- enough to spot who is overloaded
+or where a person has become a bottleneck.
+}
+\seealso{
+\code{\link[=task_projects]{task_projects()}}, \code{\link[=task_bottlenecks]{task_bottlenecks()}}
 }

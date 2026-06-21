@@ -2,19 +2,32 @@
 % Please edit documentation in R/tasks.R
 \name{task_projects}
 \alias{task_projects}
-\title{Project overview}
+\title{Project overview for managers}
 \usage{
-task_projects(db)
+task_projects(db, stale_days = 14)
 }
 \arguments{
 \item{db}{Path to the task database, or an open DBI connection.}
+
+\item{stale_days}{A pending task untouched for more than this many days
+(and neither started nor blocked) counts as stalled. Default 14.}
 }
 \value{
-A tibble with \code{project}, \code{pending}, \code{completed}, \code{total},
-\code{pct_done}, \code{overdue}, \code{created}, \code{last_activity}.
+A tibble, one row per project, with \code{project}, \code{health}
+(\code{"green"}, \code{"amber"}, \code{"red"}, or \code{"done"}), \code{pending}, \code{started},
+\code{blocked}, \code{completed}, \code{total}, \code{pct_done}, \code{overdue}, \code{stalled},
+\code{next_due} (a \code{Date}), \code{days_to_due}, \code{created}, and \code{last_activity}.
+Health is \code{red} with any overdue task, \code{amber} with a blocker, a
+stalled task or a deadline within a week, \code{green} otherwise, and
+\code{done} when nothing is pending.
 }
 \description{
-One row per project with pending/completed/total counts, completion
-percentage, the number of overdue pending tasks, the project's start
-(earliest task creation) and the most recent activity.
+One row per project, built for a quick read of where each production
+stands: a health signal, how much is pending, in progress, blocked,
+done and overdue, how much has stalled, the next deadline, and the
+first/last activity. Designed so a lead can scan it and see what is on
+track and where the bottlenecks are.
+}
+\seealso{
+\code{\link[=task_bottlenecks]{task_bottlenecks()}}, \code{\link[=task_people]{task_people()}}, \code{\link[=task_activity]{task_activity()}}
 }

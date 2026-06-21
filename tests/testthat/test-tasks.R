@@ -387,3 +387,96 @@ test_that("a pre-key database is migrated and then accepts keys", {
   expect_true("key" %in% names(task_list(db)))
   expect_equal(task_get(db, "leg")$description, "legacy")
 })
+
+test_that("task_start/task_stop flip the started flag", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A", key = "a")
+  expect_false(task_list(db)$started[1])
+  task_start(db, "a")
+  expect_true(task_get(db, "a")$started)
+  task_stop(db, "a")
+  expect_false(task_get(db, "a")$started)
+  task_done(db, "a")                       # cannot start a completed task
+  expect_error(task_start(db, "a"), "pending")
+})
+
+test_that("semiannual recurrence advances by six months", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Halvaarlig", recur = "semiannual", due = "2026-01-15")
+  task_done(db, task_list(db)$id[1])
+  expect_equal(task_list(db, status = "pending")$due, "2026-07-15")
+})
+
+test_that("task_step runs, annotates, and completes on success", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Compile", key = "compile")
+  out <- task_step(db, "compile", 1 + 1)
+  expect_equal(out, 2)
+  expect_equal(task_get(db, "compile")$status, "completed")
+  expect_true(any(grepl("ok:", task_annotations(db, "compile")$text)))
+})
+
+test_that("task_step records the error and leaves the task open on failure", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Boom", key = "boom")
+  expect_error(task_step(db, "boom", stop("kaboom")))
+  expect_equal(task_get(db, "boom")$status, "pending")
+  expect_false(task_get(db, "boom")$started)
+  expect_true(any(grepl("FAILED:", task_annotations(db, "boom")$text)))
+})
+
+test_that("task_cycle chains steps with dependencies", {
+  db <- tmp_db(); on.exit(unlink(db))
+  cy <- task_cycle(db, "RS", steps = c("Hent", "Validér", "Publicér"),
+                   keys = c("hent", "valider", "publicer"), due = "2026-07-15")
+  expect_equal(nrow(cy), 3)
+  ready <- task_list(db, status = "pending")
+  expect_equal(ready$description[!ready$blocked], "Hent")     # only first is ready
+  expect_equal(task_get(db, "publicer")$due, "2026-07-15")     # deadline on the last
+  task_done(db, "hent")
+  ready2 <- task_list(db, status = "pending")
+  expect_true("Validér" %in% ready2$description[!ready2$blocked])
+})
+
+test_that("task_projects reports health, bottleneck and cadence columns", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Overdue", project = "P", due = "2000-01-01")
+  task_add(db, "Future", project = "Q", due = format(Sys.Date() + 30, "%Y-%m-%d"))
+  pr <- task_projects(db)
+  expect_true(all(c("health", "started", "blocked", "stalled",
+                    "next_due", "days_to_due") %in% names(pr)))
+  expect_equal(pr$health[pr$project == "P"], "red")           # has an overdue task
+  expect_equal(pr$health[pr$project == "Q"], "green")
+})
+
+test_that("task_people summarises load per assignee", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A", assignee = "Anna", due = "2000-01-01")   # overdue
+  task_add(db, "B", assignee = "Anna", key = "b")
+  task_start(db, "b")
+  ppl <- task_people(db)
+  row <- ppl[ppl$assignee == "Anna", ]
+  expect_equal(row$pending, 2)
+  expect_equal(row$started, 1)
+  expect_equal(row$overdue, 1)
+})
+
+test_that("task_bottlenecks ranks the tasks blocking the most others", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "Gate", key = "gate")
+  task_add(db, "X", depends = "gate")
+  task_add(db, "Y", depends = "gate")
+  bn <- task_bottlenecks(db)
+  expect_equal(bn$key[1], "gate")
+  expect_equal(bn$blocking[1], 2)
+})
+
+test_that("task_activity returns a merged newest-first feed", {
+  db <- tmp_db(); on.exit(unlink(db))
+  task_add(db, "A", key = "a")
+  task_annotate(db, "a", "a note")
+  task_done(db, "a", note = "done note")
+  act <- task_activity(db, n = 10)
+  expect_true(all(c("ts", "kind", "id", "description") %in% names(act)))
+  expect_true(all(c("added", "note", "done") %in% act$kind))
+})

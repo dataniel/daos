@@ -41,7 +41,8 @@ by a stable, readable name instead of a brittle integer. The numeric
 
 \item{recur}{Optional recurrence applied when the task is completed: an
 integer number of days, or one of \code{"daily"}, \code{"weekly"},
-\code{"biweekly"}, \code{"monthly"}, \code{"quarterly"}, \code{"yearly"}. Needs a \code{due}.}
+\code{"biweekly"}, \code{"monthly"}, \code{"quarterly"}, \code{"semiannual"}, \code{"yearly"}
+-- the cadences statistics production runs on. Needs a \code{due}.}
 
 \item{depends}{Optional ids (integer, uuid, or key) this task depends on.}
 }

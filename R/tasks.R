@@ -37,6 +37,12 @@
     DBI::dbExecute(con, "ALTER TABLE tasks ADD COLUMN key TEXT")
     DBI::dbExecute(con, "CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_key ON tasks(key)")
   }
+  # `start` marks a task as in progress: a pending task with a non-NULL
+  # start is being worked on right now (the taskwarrior "active" idea),
+  # which is what lets the overview show what is happening rather than only
+  # what is pending. Added to older databases here.
+  if (!"start" %in% cols)
+    DBI::dbExecute(con, "ALTER TABLE tasks ADD COLUMN start TEXT")
   invisible(TRUE)
 }
 
@@ -53,6 +59,7 @@
     due TEXT,
     entry TEXT NOT NULL,
     modified TEXT NOT NULL,
+    start TEXT,
     end TEXT,
     recur TEXT
   );")
@@ -140,7 +147,8 @@
 }
 
 # Advance a due date by a recurrence: an integer number of days, or one of
-# daily/weekly/biweekly/monthly/quarterly/yearly.
+# daily/weekly/biweekly/monthly/quarterly/semiannual/yearly -- the
+# cadences statistics production runs on.
 .task_advance <- function(due, recur) {
   d <- as.Date(due)
   r <- tolower(trimws(recur))
@@ -150,6 +158,8 @@
     daily = d + 1, weekly = d + 7, biweekly = d + 14,
     monthly = seq(d, by = "month", length.out = 2)[2],
     quarterly = seq(d, by = "3 months", length.out = 2)[2],
+    semiannual = , semiannually = , biannual = , halfyearly =
+      seq(d, by = "6 months", length.out = 2)[2],
     yearly = , annually = seq(d, by = "year", length.out = 2)[2],
     d + 7
   )
@@ -257,7 +267,8 @@ task_db <- function(path) {
 #' @param due Optional due date (`Date` or `"YYYY-MM-DD"`).
 #' @param recur Optional recurrence applied when the task is completed: an
 #'   integer number of days, or one of `"daily"`, `"weekly"`,
-#'   `"biweekly"`, `"monthly"`, `"quarterly"`, `"yearly"`. Needs a `due`.
+#'   `"biweekly"`, `"monthly"`, `"quarterly"`, `"semiannual"`, `"yearly"`
+#'   -- the cadences statistics production runs on. Needs a `due`.
 #' @param depends Optional ids (integer, uuid, or key) this task depends on.
 #'
 #' @return The new task as a one-row tibble, invisibly.
@@ -362,7 +373,7 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
 
   sql <- paste(
     "SELECT t.id, t.uuid, t.key, t.description, t.project, t.assignee, t.priority, t.status,",
-    "       t.due, t.entry, t.modified, t.end, t.recur,",
+    "       t.due, t.entry, t.modified, t.start, t.end, t.recur,",
     "       (SELECT GROUP_CONCAT(tag, ',') FROM task_tags g WHERE g.task_uuid = t.uuid) AS tags,",
     "       (SELECT COUNT(*) FROM annotations a WHERE a.task_uuid = t.uuid) AS annotations",
     "FROM tasks t")
@@ -377,6 +388,8 @@ task_list <- function(db, status = "pending", project = NULL, assignee = NULL,
     deps$task_uuid[!is.na(status_map[deps$depends_on_uuid]) &
                      status_map[deps$depends_on_uuid] == "pending"])
   df$blocked <- df$uuid %in% blocked_uuid
+  # In progress: a pending task someone has started (non-NULL start).
+  df$started <- !is.na(df$start) & df$status == "pending"
   df$tags[is.na(df$tags)] <- ""
   df$urgency <- .task_urgency(df)
 
@@ -486,6 +499,106 @@ task_blockers <- function(db, id) {
       ORDER BY t.id", params = list(row$uuid)))
 }
 
+#' Run a production step under a task
+#'
+#' Wraps one step of a production script so it both runs and records
+#' itself: the task is marked started, `expr` is evaluated, and then -- on
+#' success -- annotated and completed; on failure it is annotated with the
+#' error, un-started, and the error re-raised. This turns the hand-rolled
+#' `run_step()` pattern into one call, so a pipeline leaves a trace of what
+#' happened without status code creeping into the analysis.
+#'
+#' Keep it *beside* the work: `expr` should be the step that produces the
+#' result, with the task call wrapping it, not task code woven into a data
+#' pipeline.
+#'
+#' @inheritParams task_done
+#' @param expr The step to run. Evaluated once; its value is returned.
+#' @param note Optional success note. Defaults to a timestamped `"ok: ..."`.
+#'
+#' @return The value of `expr`, invisibly. On error, the error is re-raised
+#'   after the task is annotated and un-started.
+#'
+#' @seealso [task_start()], [task_require()], [task_cycle()]
+#'
+#' @examples
+#' \dontrun{
+#' task_step(db, "compile-accounts", {
+#'   stats <- compile(sources)
+#'   stats
+#' })
+#' }
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_step <- function(db, id, expr, note = NULL) {
+  task_start(db, id)
+  out <- tryCatch(force(expr), error = function(e) e)
+  if (inherits(out, "error")) {
+    task_annotate(db, id, paste("FAILED:", conditionMessage(out)))
+    task_stop(db, id)
+    stop(out)
+  }
+  task_annotate(db, id, if (is.null(note)) paste("ok:", .task_now()) else note)
+  task_done(db, id)
+  invisible(out)
+}
+
+#' Register a production cycle as a chain of steps
+#'
+#' Adds a sequence of tasks for one statistics production, wired up so each
+#' step depends on the one before it. The result is a ready-to-run cycle:
+#' [task_list()] reports only the first step as unblocked, and each later
+#' step becomes ready as its predecessor is completed. A deadline (and an
+#' optional recurrence, so the cycle's release date rolls forward) lands on
+#' the final step.
+#'
+#' @inheritParams task_add
+#' @param project The production this cycle belongs to.
+#' @param steps Character vector of step descriptions, in order.
+#' @param keys Optional character vector of keys, one per step, so the
+#'   steps can be referenced by name from scripts.
+#' @param due Optional deadline for the *final* step (the release).
+#' @param recur Optional recurrence for the final step, so completing the
+#'   cycle spawns the next release. See [task_add()] for the cadences.
+#'
+#' @return A tibble of the created tasks, in order.
+#'
+#' @seealso [task_step()], [task_require()], [task_add()]
+#'
+#' @examples
+#' \dontrun{
+#' task_cycle(db, "RS-2026",
+#'   steps = c("Hent kilder", "Valid\u00e9r", "Kompil\u00e9r", "Public\u00e9r"),
+#'   keys  = c("hent", "valider", "kompiler", "publicer"),
+#'   assignee = "pipeline", due = "2026-07-15", recur = "monthly")
+#' }
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_cycle <- function(db, project, steps, keys = NULL, assignee = NULL,
+                       priority = NULL, due = NULL, recur = NULL) {
+  if (!is.character(steps) || length(steps) == 0 || any(!nzchar(steps)))
+    cli::cli_abort("{.arg steps} must be a non-empty character vector of step descriptions.")
+  if (!is.null(keys) && length(keys) != length(steps))
+    cli::cli_abort("{.arg keys} must have one entry per step ({length(steps)}).")
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+
+  ids  <- integer(length(steps))
+  prev <- NULL
+  for (i in seq_along(steps)) {
+    last <- i == length(steps)
+    t <- task_add(con, steps[i], key = if (!is.null(keys)) keys[i] else NULL,
+                  project = project, assignee = assignee, priority = priority,
+                  due = if (last) due else NULL, recur = if (last) recur else NULL,
+                  depends = prev)
+    ids[i] <- t$id[1]
+    prev   <- t$id[1]
+  }
+  task_get(con, ids)
+}
+
 #' Complete a task
 #'
 #' Marks the task completed. If it has a recurrence and a due date, the next
@@ -548,7 +661,55 @@ task_reopen <- function(db, id) {
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   row <- .task_row(con, id)
-  DBI::dbExecute(con, "UPDATE tasks SET status='pending', end=NULL, modified=? WHERE id=?",
+  DBI::dbExecute(con, "UPDATE tasks SET status='pending', end=NULL, start=NULL, modified=? WHERE id=?",
+                 params = list(.task_now(), row$id))
+  invisible(TRUE)
+}
+
+#' Start or stop work on a task
+#'
+#' `task_start()` marks a pending task as in progress by stamping it with a
+#' start time; `task_stop()` clears that stamp. A started task stays
+#' `pending` -- "in progress" is a flag, not a separate status -- and
+#' [task_list()] reports it through the `started` column. This is what lets
+#' the overview show *what is being worked on right now*, not just what is
+#' pending, so a production step can announce itself when it begins:
+#' `task_start(db, "compile-accounts")` at the top of the step, beside the
+#' work rather than inside it.
+#'
+#' @inheritParams task_done
+#'
+#' @return `TRUE`, invisibly.
+#'
+#' @seealso [task_step()], [task_done()], [task_list()]
+#'
+#' @examples
+#' \dontrun{
+#' task_start(db, "compile-accounts")   # now shown as in progress
+#' task_stop(db, "compile-accounts")    # back to plain pending
+#' }
+#'
+#' @importFrom cli cli_abort
+#' @export
+task_start <- function(db, id) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  row <- .task_row(con, id)
+  if (!identical(row$status, "pending"))
+    cli::cli_abort("Only a pending task can be started (task {.val {id}} is {row$status}).")
+  now <- .task_now()
+  DBI::dbExecute(con, "UPDATE tasks SET start=?, modified=? WHERE id=?",
+                 params = list(now, now, row$id))
+  invisible(TRUE)
+}
+
+#' @rdname task_start
+#' @export
+task_stop <- function(db, id) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  row <- .task_row(con, id)
+  DBI::dbExecute(con, "UPDATE tasks SET start=NULL, modified=? WHERE id=?",
                  params = list(.task_now(), row$id))
   invisible(TRUE)
 }
@@ -714,60 +875,196 @@ task_annotations <- function(db, id) {
     "SELECT entry, text FROM annotations WHERE task_uuid=? ORDER BY entry", params = list(row$uuid)))
 }
 
-#' Project overview
+# Per-group counts: sum a logical mask over a grouping factor, aligned to
+# `levels`. NA-safe and always integer.
+.task_agg <- function(mask, by, levels) {
+  out <- tapply(as.integer(mask), by, sum)
+  v <- as.integer(out[levels]); v[is.na(v)] <- 0L; v
+}
+
+#' Project overview for managers
 #'
-#' One row per project with pending/completed/total counts, completion
-#' percentage, the number of overdue pending tasks, the project's start
-#' (earliest task creation) and the most recent activity.
+#' One row per project, built for a quick read of where each production
+#' stands: a health signal, how much is pending, in progress, blocked,
+#' done and overdue, how much has stalled, the next deadline, and the
+#' first/last activity. Designed so a lead can scan it and see what is on
+#' track and where the bottlenecks are.
 #'
 #' @inheritParams task_add
+#' @param stale_days A pending task untouched for more than this many days
+#'   (and neither started nor blocked) counts as stalled. Default 14.
 #'
-#' @return A tibble with `project`, `pending`, `completed`, `total`,
-#'   `pct_done`, `overdue`, `created`, `last_activity`.
+#' @return A tibble, one row per project, with `project`, `health`
+#'   (`"green"`, `"amber"`, `"red"`, or `"done"`), `pending`, `started`,
+#'   `blocked`, `completed`, `total`, `pct_done`, `overdue`, `stalled`,
+#'   `next_due` (a `Date`), `days_to_due`, `created`, and `last_activity`.
+#'   Health is `red` with any overdue task, `amber` with a blocker, a
+#'   stalled task or a deadline within a week, `green` otherwise, and
+#'   `done` when nothing is pending.
 #'
-#' @importFrom tibble as_tibble
+#' @seealso [task_bottlenecks()], [task_people()], [task_activity()]
+#'
+#' @importFrom tibble as_tibble tibble
 #' @export
-task_projects <- function(db) {
-  h <- .task_con(db); con <- h$con
-  on.exit(if (h$close) DBI::dbDisconnect(con))
-  df <- DBI::dbGetQuery(con,
-    "SELECT COALESCE(project, '(intet projekt)') AS project,
-            SUM(status = 'pending')   AS pending,
-            SUM(status = 'completed') AS completed,
-            SUM(status = 'pending' AND due IS NOT NULL AND due < date('now')) AS overdue,
-            MIN(entry)    AS created,
-            MAX(modified) AS last_activity
-     FROM tasks WHERE status IN ('pending','completed')
-     GROUP BY COALESCE(project, '(intet projekt)')
-     ORDER BY project")
-  if (nrow(df) == 0)
-    return(tibble::tibble(project = character(), pending = integer(),
-                          completed = integer(), total = integer(),
-                          pct_done = numeric(), overdue = integer(),
-                          created = character(), last_activity = character()))
-  df$total    <- df$pending + df$completed
-  df$pct_done <- ifelse(df$total == 0, 0, round(100 * df$completed / df$total))
-  df$created       <- substr(df$created, 1, 10)
-  df$last_activity <- substr(df$last_activity, 1, 10)
-  tibble::as_tibble(df[, c("project", "pending", "completed", "total",
-                           "pct_done", "overdue", "created", "last_activity")])
+task_projects <- function(db, stale_days = 14) {
+  at    <- task_list(db, status = "active")
+  today <- Sys.Date()
+  empty <- tibble::tibble(
+    project = character(), health = character(), pending = integer(),
+    started = integer(), blocked = integer(), completed = integer(),
+    total = integer(), pct_done = numeric(), overdue = integer(),
+    stalled = integer(), next_due = as.Date(character()),
+    days_to_due = numeric(), created = character(), last_activity = character())
+  if (nrow(at) == 0) return(empty)
+
+  pk   <- ifelse(is.na(at$project) | !nzchar(at$project), "(intet projekt)", at$project)
+  due  <- suppressWarnings(as.Date(at$due))
+  mod  <- suppressWarnings(as.Date(substr(at$modified, 1, 10)))
+  pend <- at$status == "pending"
+  comp <- at$status == "completed"
+  overdue_row <- pend & !is.na(due) & due < today
+  stalled_row <- pend & !at$started & !at$blocked &
+                 !is.na(mod) & as.numeric(today - mod) > stale_days
+  projs <- sort(unique(pk))
+
+  pending_n   <- .task_agg(pend, pk, projs)
+  completed_n <- .task_agg(comp, pk, projs)
+  started_n   <- .task_agg(pend & at$started, pk, projs)
+  blocked_n   <- .task_agg(pend & at$blocked, pk, projs)
+  overdue_n   <- .task_agg(overdue_row, pk, projs)
+  stalled_n   <- .task_agg(stalled_row, pk, projs)
+
+  nd <- tapply(ifelse(pend & !is.na(due), as.numeric(due), NA), pk,
+               function(x) suppressWarnings(min(x, na.rm = TRUE)))[projs]
+  nd[is.infinite(nd)] <- NA
+  next_due <- as.Date(unname(nd), origin = "1970-01-01")
+  days_to  <- as.numeric(next_due - today)
+
+  created  <- unname(tapply(substr(at$entry, 1, 10),   pk, min)[projs])
+  last_act <- unname(tapply(substr(at$modified, 1, 10), pk, max)[projs])
+  total    <- pending_n + completed_n
+  pct      <- ifelse(total == 0, 0, round(100 * completed_n / total))
+  health   <- vapply(seq_along(projs), function(i) {
+    if (pending_n[i] == 0) "done"
+    else if (overdue_n[i] > 0) "red"
+    else if (blocked_n[i] > 0 || stalled_n[i] > 0 ||
+             (!is.na(days_to[i]) && days_to[i] <= 7)) "amber"
+    else "green"
+  }, character(1))
+
+  tibble::tibble(
+    project = projs, health = health, pending = pending_n, started = started_n,
+    blocked = blocked_n, completed = completed_n, total = total, pct_done = pct,
+    overdue = overdue_n, stalled = stalled_n, next_due = next_due,
+    days_to_due = days_to, created = created, last_activity = last_act)
 }
 
 #' People overview
 #'
-#' Distinct assignees with their pending task counts.
+#' One row per assignee with their current load: pending, in progress,
+#' blocked and overdue tasks, how many they have completed in the last 30
+#' days, and across how many projects -- enough to spot who is overloaded
+#' or where a person has become a bottleneck.
 #'
 #' @inheritParams task_add
 #'
-#' @return A tibble with `assignee` and `pending`.
+#' @return A tibble with `assignee`, `pending`, `started`, `blocked`,
+#'   `overdue`, `done30`, and `projects`.
+#'
+#' @seealso [task_projects()], [task_bottlenecks()]
+#'
+#' @importFrom tibble as_tibble tibble
+#' @export
+task_people <- function(db) {
+  at <- task_list(db, status = "active")
+  at <- at[!is.na(at$assignee) & nzchar(at$assignee), ]
+  empty <- tibble::tibble(
+    assignee = character(), pending = integer(), started = integer(),
+    blocked = integer(), overdue = integer(), done30 = integer(),
+    projects = integer())
+  if (nrow(at) == 0) return(empty)
+
+  today  <- Sys.Date()
+  due    <- suppressWarnings(as.Date(at$due))
+  endd   <- suppressWarnings(as.Date(substr(at$end, 1, 10)))
+  pend   <- at$status == "pending"
+  people <- sort(unique(at$assignee))
+
+  tibble::tibble(
+    assignee = people,
+    pending  = .task_agg(pend, at$assignee, people),
+    started  = .task_agg(pend & at$started, at$assignee, people),
+    blocked  = .task_agg(pend & at$blocked, at$assignee, people),
+    overdue  = .task_agg(pend & !is.na(due) & due < today, at$assignee, people),
+    done30   = .task_agg(at$status == "completed" & !is.na(endd) &
+                           as.numeric(today - endd) <= 30, at$assignee, people),
+    projects = vapply(people, function(p) {
+      pr <- at$project[pend & at$assignee == p]
+      length(unique(pr[!is.na(pr) & nzchar(pr)]))
+    }, integer(1)))
+}
+
+#' Bottlenecks: the tasks blocking the most others
+#'
+#' The unfinished prerequisites that hold up the most downstream work --
+#' the real bottlenecks. Each row is a pending task that one or more other
+#' pending tasks depend on, ranked by how many it blocks, so a lead can see
+#' which single task to unblock first.
+#'
+#' @inheritParams task_add
+#'
+#' @return A tibble with `id`, `key`, `description`, `project`, `assignee`,
+#'   and `blocking` (the number of pending tasks waiting on it), most
+#'   blocking first. Empty when nothing is blocked.
+#'
+#' @seealso [task_blockers()], [task_projects()]
 #'
 #' @importFrom tibble as_tibble
 #' @export
-task_people <- function(db) {
+task_bottlenecks <- function(db) {
   h <- .task_con(db); con <- h$con
   on.exit(if (h$close) DBI::dbDisconnect(con))
   tibble::as_tibble(DBI::dbGetQuery(con,
-    "SELECT assignee, COUNT(*) AS pending FROM tasks
-     WHERE status='pending' AND assignee IS NOT NULL AND assignee <> ''
-     GROUP BY assignee ORDER BY assignee"))
+    "SELECT t.id, t.key, t.description, t.project, t.assignee,
+            COUNT(*) AS blocking
+       FROM dependencies d
+       JOIN tasks t  ON t.uuid = d.depends_on_uuid
+       JOIN tasks bt ON bt.uuid = d.task_uuid
+      WHERE t.status = 'pending' AND bt.status = 'pending'
+      GROUP BY t.uuid
+      ORDER BY blocking DESC, t.id"))
+}
+
+#' Recent activity across the database
+#'
+#' A merged, newest-first feed of what has happened: tasks added,
+#' completed, and annotated. Gives a manager a glance at what is moving
+#' without opening individual tasks.
+#'
+#' @inheritParams task_add
+#' @param n Maximum number of events to return. Default 20.
+#'
+#' @return A tibble with `ts` (timestamp), `kind` (`"added"`, `"done"`, or
+#'   `"note"`), `id`, `description`, `project`, and `text` (the note, else
+#'   `NA`), most recent first.
+#'
+#' @seealso [task_projects()], [task_annotations()]
+#'
+#' @importFrom tibble as_tibble
+#' @export
+task_activity <- function(db, n = 20) {
+  h <- .task_con(db); con <- h$con
+  on.exit(if (h$close) DBI::dbDisconnect(con))
+  q <- DBI::dbGetQuery(con,
+    "SELECT a.entry AS ts, 'note' AS kind, t.id, t.description, t.project, a.text
+       FROM annotations a JOIN tasks t ON t.uuid = a.task_uuid
+     UNION ALL
+     SELECT t.end AS ts, 'done' AS kind, t.id, t.description, t.project, NULL AS text
+       FROM tasks t WHERE t.status = 'completed' AND t.end IS NOT NULL
+     UNION ALL
+     SELECT t.entry AS ts, 'added' AS kind, t.id, t.description, t.project, NULL AS text
+       FROM tasks t
+     ORDER BY ts DESC")
+  if (nrow(q) > n) q <- q[seq_len(n), , drop = FALSE]
+  tibble::as_tibble(q)
 }

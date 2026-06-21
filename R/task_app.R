@@ -160,8 +160,61 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-proj-people { margin: 2px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .tk-proj-people .tk-none { font-size: 11.5px; color: #94a3b8; font-style: italic; }
     .tk-people { margin-top: 8px; }
-    .tk-people .tk-p-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 4px; border-bottom: 1px solid #f6f8fb; }
+    .tk-people .tk-p-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13.5px; padding: 7px 4px; border-bottom: 1px solid #f6f8fb; }
+    .tk-people .tk-p-name { font-weight: 600; color: #0f172a; white-space: nowrap; }
+    .tk-people .tk-p-load { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
     .tk-people .tk-p-n { color: #64748b; }
+    .tk-people .tk-p-done { color: #16a34a; font-size: 11.5px; }
+    /* Manager dashboard: KPI strip, health, status chips, bottlenecks, feed. */
+    .tk-kpis { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 16px; }
+    .tk-kpi { flex: 1; min-width: 96px; background: #f8fafc; border: 1px solid #eef2f7;
+      border-radius: 11px; padding: 12px 14px; }
+    .tk-kpi-n { font-size: 23px; font-weight: 700; color: #0f172a; line-height: 1.1; }
+    .tk-kpi-l { font-size: 11.5px; color: #64748b; margin-top: 2px; }
+    .tk-kpi.tk-kpi-go { background: #eef6ff; border-color: #cfe2fb; }
+    .tk-kpi.tk-kpi-go .tk-kpi-n { color: #1d62a8; }
+    .tk-kpi.tk-kpi-amber { background: #fffbeb; border-color: #fde9b8; }
+    .tk-kpi.tk-kpi-amber .tk-kpi-n { color: #b45309; }
+    .tk-kpi.tk-kpi-red { background: #fef2f2; border-color: #fbd5d5; }
+    .tk-kpi.tk-kpi-red .tk-kpi-n { color: #b91c1c; }
+    .tk-proj-row { padding: 13px 4px 13px 14px; border-bottom: 1px solid #f1f5f9;
+      border-left: 4px solid transparent; border-radius: 0 8px 8px 0; }
+    .tk-h-red    { border-left-color: #dc2626; background: #fffafa; }
+    .tk-h-amber  { border-left-color: #f59e0b; background: #fffdf6; }
+    .tk-h-green  { border-left-color: #16a34a; }
+    .tk-h-done   { border-left-color: #cbd5e1; }
+    .tk-health { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 11px; }
+    .tk-health-red   { color: #b91c1c; background: #fee2e2; }
+    .tk-health-amber { color: #92400e; background: #fef3c7; }
+    .tk-health-green { color: #166534; background: #dcfce7; }
+    .tk-health-done  { color: #475569; background: #eef2f7; }
+    .tk-proj-sub { font-size: 12.5px; color: #64748b; margin: 0 0 7px; }
+    .tk-proj-stats { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 2px; }
+    .tk-st-go    { color: #1d62a8; background: #e8f0fa; }
+    .tk-st-block { color: #b91c1c; background: #fee2e2; }
+    .tk-st-over  { color: #b45309; background: #fef3c7; }
+    .tk-st-stall { color: #6b7280; background: #f1f5f9; }
+    .tk-flag-go  { color: #1d62a8; background: #e8f0fa; border: 1px solid #cfe2fb; }
+    .tk-stat.tk-go .tk-n { color: #1d62a8; }
+    .tk-go-btn { color: #1d62a8 !important; border-color: #1d62a8 !important; background: #eef6ff !important; }
+    .tk-sec { margin-top: 20px; padding-top: 14px; border-top: 1px solid #eef2f7; }
+    .tk-bottle-row { display: flex; align-items: center; gap: 9px; padding: 8px 6px; border-radius: 8px;
+      cursor: pointer; border-bottom: 1px solid #f6f8fb; }
+    .tk-bottle-row:hover { background: #f8fafc; }
+    .tk-bottle-n { flex: none; font-size: 11.5px; font-weight: 700; color: #b91c1c;
+      background: #fee2e2; border-radius: 6px; padding: 2px 9px; }
+    .tk-bottle-desc { flex: 1; min-width: 0; color: #0f172a; font-size: 13.5px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tk-feed-row { display: flex; align-items: flex-start; gap: 9px; padding: 7px 6px; border-bottom: 1px solid #f6f8fb; }
+    .tk-feed-ico { flex: none; width: 22px; height: 22px; border-radius: 6px; text-align: center;
+      line-height: 22px; font-size: 12px; font-weight: 700; }
+    .tk-feed-done  { color: #166534; background: #dcfce7; }
+    .tk-feed-note  { color: #475569; background: #eef2f7; }
+    .tk-feed-added { color: #1d62a8; background: #e8f0fa; }
+    .tk-feed-main { flex: 1; min-width: 0; }
+    .tk-feed-desc { font-size: 13px; color: #0f172a; }
+    .tk-feed-text { font-size: 12px; color: #64748b; margin-top: 1px; }
+    .tk-feed-ts { flex: none; font-size: 11px; color: #94a3b8; white-space: nowrap; }
     #reset_filters { margin-top: 4px; }
     .tk-legend { margin-top: 16px; padding-top: 14px; border-top: 1px solid #eef2f7;
       font-size: 11.5px; color: #94a3b8; line-height: 2; }
@@ -209,6 +262,7 @@ task_app <- function(db = "tasks.sqlite") {
       if (k === 'e') { fire('act_edit'); return; }
       if (k === 'n') { fire('act_annotate'); return; }
       if (k === 'g') { fire('act_reopen'); return; }
+      if (k === 's') { fire('act_start'); return; }
       if (k === 'x' || k === 'Delete') { fire('act_delete'); return; }
       if (k === 'j' || k === 'ArrowDown') {
         e.preventDefault();
@@ -371,6 +425,7 @@ task_app <- function(db = "tasks.sqlite") {
           k("e", "rediger opgave"),
           k("n", "tilf\u00f8j note"),
           k("g", "gen\u00e5bn"),
+          k("s", "start / stop (i gang)"),
           k("x", "slet (papirkurv)"),
           k("Enter", "tilf\u00f8j opgave (i formularen)"),
           k("Esc", "forlad tekstfelt"),
@@ -383,6 +438,11 @@ task_app <- function(db = "tasks.sqlite") {
 
     shiny::observeEvent(input$goto_tab,
       shiny::updateTabsetPanel(session, "main_tabs", selected = input$goto_tab))
+    # Clicking a bottleneck jumps to that task on the Opgaver page.
+    shiny::observeEvent(input$goto_task, {
+      selected(as.integer(input$goto_task))
+      shiny::updateTabsetPanel(session, "main_tabs", selected = "Opgaver")
+    })
 
     shiny::observeEvent(input$reset_filters, {
       shiny::updateSelectInput(session, "f_status",   selected = "pending")
@@ -500,11 +560,13 @@ task_app <- function(db = "tasks.sqlite") {
     output$stats <- shiny::renderUI({
       pend <- all_tasks()
       over <- sum(!is.na(pend$due) & as.Date(pend$due) < Sys.Date())
+      ngo  <- sum(pend$started, na.rm = TRUE)
       nproj <- nrow(task_projects(db_path()))
       stat <- function(n, lab, cls = "") shiny::div(class = paste("tk-stat", cls),
         shiny::div(class = "tk-n", n), shiny::div(class = "tk-l", lab))
       shiny::div(class = "tk-stats",
         stat(nrow(pend), "afventer"),
+        stat(ngo, "i gang", if (ngo > 0) "tk-go" else ""),
         stat(over, "forfaldne", if (over > 0) "tk-over" else ""),
         stat(nproj, "projekter"))
     })
@@ -557,6 +619,7 @@ task_app <- function(db = "tasks.sqlite") {
                 shiny::span(class = "tk-chip tk-person", paste0("\U0001F464 ", t$assignee)),
               tagchips,
               if (t$annotations > 0) shiny::span(class = "tk-ann", paste0("\U0001F4DD ", t$annotations)))),
+          if (isTRUE(t$started)) shiny::span(class = "tk-flag tk-flag-go", "i gang"),
           if (isTRUE(t$blocked)) shiny::span(class = "tk-blocked", "blokeret"),
           deadline_flag,
           shiny::span(class = paste("tk-due", due_cls), due_txt)
@@ -615,6 +678,10 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::div(class = "tk-actions",
           if (t$status == "pending")
             shiny::actionButton("act_done", "F\u00e6rdig (F)", class = "btn-primary"),
+          if (t$status == "pending")
+            shiny::actionButton("act_start",
+              if (isTRUE(t$started)) "Stop (S)" else "I gang (S)",
+              class = if (isTRUE(t$started)) "btn-default tk-go-btn" else "btn-default"),
           if (t$status != "pending")
             shiny::actionButton("act_reopen", "Gen\u00e5bn (G)", class = "btn-primary"),
           if (t$status == "pending")
@@ -629,50 +696,121 @@ task_app <- function(db = "tasks.sqlite") {
 
     output$projects <- shiny::renderUI({
       refresh()
-      pr <- task_projects(db_path())
-      ppl <- task_people(db_path())
+      db  <- db_path()
+      pr  <- task_projects(db)
+      bn  <- task_bottlenecks(db)
+      act <- task_activity(db, n = 12)
+      ppl <- task_people(db)
       if (nrow(pr) == 0)
         return(shiny::div(class = "tk-empty",
           shiny::div(class = "tk-empty-ico", "\U0001F4CA"),
           shiny::p(shiny::strong("Ingen projekter endnu")),
           shiny::p(class = "tk-l", "Tilf\u00f8j opgaver med et projekt for at se overblikket.")))
-      # who is on each project: unique assignees per project, from all tasks
-      at      <- task_list(db_path(), status = "all")
-      at_key  <- ifelse(is.na(at$project) | !nzchar(at$project), "(intet projekt)", at$project)
-      who_by  <- tapply(at$assignee, at_key,
-                        function(a) unique(a[!is.na(a) & nzchar(a)]), simplify = FALSE)
+
+      # Top KPI strip across all projects.
+      kpi <- function(n, lab, cls = "") shiny::div(class = paste("tk-kpi", cls),
+        shiny::div(class = "tk-kpi-n", n), shiny::div(class = "tk-kpi-l", lab))
+      n_red <- sum(pr$health == "red")
+      kpis <- shiny::div(class = "tk-kpis",
+        kpi(sum(pr$pending), "afventer"),
+        kpi(sum(pr$started), "i gang", if (sum(pr$started) > 0) "tk-kpi-go" else ""),
+        kpi(sum(pr$overdue), "forfaldne", if (sum(pr$overdue) > 0) "tk-kpi-red" else ""),
+        kpi(sum(pr$blocked), "blokeret", if (sum(pr$blocked) > 0) "tk-kpi-amber" else ""),
+        kpi(n_red, "projekter bagud", if (n_red > 0) "tk-kpi-red" else ""))
+
+      # Who is on each project: unique assignees per project, from all tasks.
+      at     <- task_list(db, status = "all")
+      at_key <- ifelse(is.na(at$project) | !nzchar(at$project), "(intet projekt)", at$project)
+      who_by <- tapply(at$assignee, at_key,
+                       function(a) unique(a[!is.na(a) & nzchar(a)]), simplify = FALSE)
+
+      # Worst first: red, amber, green, done; then by overdue and pending.
+      pr <- pr[order(match(pr$health, c("red", "amber", "green", "done")),
+                     -pr$overdue, -pr$pending), ]
+      hlabel <- c(red = "Bagud", amber = "Risiko", green = "P\u00e5 sporet", done = "Klaret")
+
       rows <- lapply(seq_len(nrow(pr)), function(i) {
-        p <- pr[i, ]
-        done <- p$pending == 0 && p$total > 0
+        p   <- pr[i, ]
         who <- who_by[[p$project]]; if (is.null(who)) who <- character(0)
-        meta <- paste(c(
-          paste0("Oprettet ", ddmm(p$created)),
-          paste0("Sidst aktiv ", ddmm(p$last_activity)),
-          if (p$overdue > 0) paste0(p$overdue, " forfaldne")
-        ), collapse = "  \u00b7  ")
+        nd  <- if (!is.na(p$next_due)) {
+          dd <- p$days_to_due
+          paste0("N\u00e6ste frist ", ddmm(as.character(p$next_due)),
+                 if (!is.na(dd)) paste0(" \u00b7 ",
+                   if (dd < 0) paste0(abs(dd), " dage forsinket")
+                   else if (dd == 0) "i dag" else paste0("om ", dd, " dage")))
+        }
+        stats <- shiny::div(class = "tk-proj-stats",
+          if (p$started > 0) shiny::span(class = "tk-chip tk-st-go", paste0(p$started, " i gang")),
+          if (p$blocked > 0) shiny::span(class = "tk-chip tk-st-block", paste0(p$blocked, " blokeret")),
+          if (p$overdue > 0) shiny::span(class = "tk-chip tk-st-over", paste0(p$overdue, " forfaldne")),
+          if (p$stalled > 0) shiny::span(class = "tk-chip tk-st-stall", paste0(p$stalled, " i stilstand")))
         shiny::div(
-          class = "tk-proj-row",
+          class = paste0("tk-proj-row tk-h-", p$health),
           shiny::div(class = "tk-proj-head",
             shiny::span(class = "tk-proj-name", p$project),
-            if (done) shiny::span(class = "tk-done-badge", "Klaret")
-            else shiny::span(class = "tk-proj-count",
-                             paste0(p$completed, " af ", p$total, " klaret \u00b7 ", p$pending, " mangler"))),
+            shiny::span(class = paste0("tk-health tk-health-", p$health), hlabel[[p$health]])),
+          shiny::div(class = "tk-proj-sub",
+            paste0(p$completed, " af ", p$total, " klaret \u00b7 ", p$pending, " mangler")),
+          shiny::div(class = "tk-bar",
+            shiny::div(class = paste("tk-bar-fill", if (p$health == "done") "tk-full"),
+                       style = sprintf("width:%d%%;", p$pct_done))),
+          stats,
           shiny::div(class = "tk-proj-people",
             if (length(who))
               lapply(who, function(a) shiny::span(class = "tk-chip tk-person", paste0("\U0001F464 ", a)))
             else shiny::span(class = "tk-none", "Ingen tildelt")),
-          shiny::div(class = "tk-bar",
-            shiny::div(class = paste("tk-bar-fill", if (done) "tk-full"),
-                       style = sprintf("width:%d%%;", p$pct_done))),
-          shiny::div(class = paste("tk-proj-meta", if (p$overdue > 0) "tk-has-over"), meta))
+          if (!is.null(nd))
+            shiny::div(class = paste("tk-proj-meta",
+              if (!is.na(p$days_to_due) && p$days_to_due < 0) "tk-has-over"), nd))
       })
+
+      # The tasks blocking the most others -- the bottlenecks to clear first.
+      bottle <- if (nrow(bn) > 0) shiny::tagList(
+        shiny::h4(class = "tk-sec", "Flaskehalse"),
+        shiny::div(class = "tk-bottle",
+          lapply(seq_len(min(nrow(bn), 6)), function(i) {
+            b <- bn[i, ]
+            shiny::div(class = "tk-bottle-row",
+              onclick = sprintf("Shiny.setInputValue('goto_task','%s',{priority:'event'})", b$id),
+              shiny::span(class = "tk-bottle-n", paste0("blokerer ", b$blocking)),
+              shiny::span(class = "tk-bottle-desc", b$description),
+              if (!is.na(b$project)) shiny::span(class = "tk-chip tk-proj", b$project),
+              if (!is.na(b$assignee) && nzchar(b$assignee))
+                shiny::span(class = "tk-chip tk-person", paste0("\U0001F464 ", b$assignee)))
+          })))
+
+      # What has moved lately, across all projects.
+      feed <- if (nrow(act) > 0) shiny::tagList(
+        shiny::h4(class = "tk-sec", "Seneste aktivitet"),
+        shiny::div(class = "tk-feed",
+          lapply(seq_len(nrow(act)), function(i) {
+            a    <- act[i, ]
+            icon <- switch(a$kind, done = "\u2713", note = "\U0001F4DD", added = "+", "\u00b7")
+            shiny::div(class = "tk-feed-row",
+              shiny::span(class = paste0("tk-feed-ico tk-feed-", a$kind), icon),
+              shiny::div(class = "tk-feed-main",
+                shiny::div(class = "tk-feed-desc", a$description),
+                if (!is.na(a$text)) shiny::div(class = "tk-feed-text", a$text)),
+              shiny::span(class = "tk-feed-ts", substr(a$ts, 1, 16)))
+          })))
+
+      # Per-person load.
       people <- if (nrow(ppl) > 0) shiny::tagList(
-        shiny::h4(style = "margin-top: 18px;", "Personer"),
+        shiny::h4(class = "tk-sec", "Personer"),
         shiny::div(class = "tk-people",
-          lapply(seq_len(nrow(ppl)), function(i) shiny::div(class = "tk-p-row",
-            shiny::span(paste0("\U0001F464 ", ppl$assignee[i])),
-            shiny::span(class = "tk-p-n", paste(ppl$pending[i], "afventer"))))))
-      shiny::tagList(shiny::h4("Projektoverblik"), rows, people)
+          lapply(seq_len(nrow(ppl)), function(i) {
+            q <- ppl[i, ]
+            shiny::div(class = "tk-p-row",
+              shiny::span(class = "tk-p-name", paste0("\U0001F464 ", q$assignee)),
+              shiny::div(class = "tk-p-load",
+                shiny::span(class = "tk-p-n", paste0(q$pending, " afventer")),
+                if (q$started > 0) shiny::span(class = "tk-chip tk-st-go", paste0(q$started, " i gang")),
+                if (q$overdue > 0) shiny::span(class = "tk-chip tk-st-over", paste0(q$overdue, " forfaldne")),
+                if (q$blocked > 0) shiny::span(class = "tk-chip tk-st-block", paste0(q$blocked, " blokeret")),
+                shiny::span(class = "tk-p-done", paste0(q$done30, " klaret/30d"))))
+          })))
+
+      shiny::tagList(shiny::h4("Projektoverblik"), kpis, rows, bottle, feed, people)
     })
 
     shiny::observeEvent(input$act_done, {
@@ -682,6 +820,21 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::observeEvent(input$act_reopen, {
       shiny::req(selected()); task_reopen(db_path(), selected()); bump()
       shiny::showNotification("Opgave gen\u00e5bnet.", duration = 2)
+    })
+    # Toggle in-progress: start a pending task, or stop an already-started
+    # one. The same key (s) and button do both.
+    shiny::observeEvent(input$act_start, {
+      shiny::req(selected())
+      row <- task_get(db_path(), selected())
+      if (!identical(row$status[1], "pending")) return()
+      if (isTRUE(row$started[1])) {
+        task_stop(db_path(), selected())
+        shiny::showNotification("Opgave sat p\u00e5 pause.", duration = 2)
+      } else {
+        task_start(db_path(), selected())
+        shiny::showNotification("Opgave sat i gang.", duration = 2)
+      }
+      bump()
     })
     shiny::observeEvent(input$act_delete, {
       shiny::req(selected()); task_delete(db_path(), selected()); selected(NULL); bump(); fbump()

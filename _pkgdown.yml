@@ -76,10 +76,14 @@ reference:
       - task_app
       - task_db
       - task_add
+      - task_cycle
       - task_list
       - task_get
       - task_require
       - task_blockers
+      - task_start
+      - task_stop
+      - task_step
       - task_done
       - task_reopen
       - task_delete
@@ -89,6 +93,8 @@ reference:
       - task_annotations
       - task_projects
       - task_people
+      - task_bottlenecks
+      - task_activity
 
   - title: Greenland Statbank
     contents:
