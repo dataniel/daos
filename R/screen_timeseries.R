@@ -95,6 +95,9 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
 
   by <- rlang::syms(by_names)
 
+  # The Shiny input id for a grouping variable's dropdown, in one place.
+  gid <- function(var) paste0("group_", var)
+
   keys <- data |>
     dplyr::group_by(!!!by) |>
     dplyr::group_keys()
@@ -105,7 +108,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
       class = "field",
       shiny::tags$label(class = "field-label", var),
       shiny::selectInput(
-        inputId = paste0("group_", var),
+        inputId = gid(var),
         label   = NULL,
         choices = as.list(choices),
         width   = "100%"
@@ -269,20 +272,22 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
       ))
     })
 
-    y_min_val <- shiny::reactive({ v <- input$y_min; if (is.null(v) || is.na(v)) NULL else v })
-    y_max_val <- shiny::reactive({ v <- input$y_max; if (is.null(v) || is.na(v)) NULL else v })
+    # Treat an empty/NA axis-limit input as "no bound".
+    nullify   <- function(v) if (is.null(v) || is.na(v)) NULL else v
+    y_min_val <- shiny::reactive(nullify(input$y_min))
+    y_max_val <- shiny::reactive(nullify(input$y_max))
 
     sync_dropdowns <- function(new_idx) {
       current_key <- keys[new_idx, , drop = FALSE]
       for (var in by_names) {
-        shiny::updateSelectInput(session, paste0("group_", var),
+        shiny::updateSelectInput(session, gid(var),
                                  selected = as.character(current_key[[var]]))
       }
     }
 
     find_idx <- function() {
       current_values <- vapply(by_names, \(var) {
-        val <- input[[paste0("group_", var)]]
+        val <- input[[gid(var)]]
         if (is.null(val)) NA_character_ else as.character(val)
       }, character(1))
       matches <- vapply(seq_len(nrow(keys)), \(i) {
@@ -301,7 +306,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     for (var in by_names) {
       local({
         var <- var
-        shiny::observeEvent(input[[paste0("group_", var)]], {
+        shiny::observeEvent(input[[gid(var)]], {
           new_idx <- find_idx()
           if (!is.na(new_idx) && new_idx != idx()) idx(new_idx)
         }, ignoreInit = TRUE)
