@@ -35,9 +35,9 @@ so you can timestamp an export inline without stopping to look up the
 ``` r
 
 nowf()                  # default: YYYYMMDD
-#> [1] "20260620"
+#> [1] "20260621"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-20 19:16"
+#> [1] "2026-06-21 00:01"
 ```
 
 A typical use is timestamping an export file:
@@ -859,13 +859,18 @@ and against both value codes and value texts, so you can write
 Matching also folds Danish letters (`foedested` matches `fødested`).
 Variables you do not mention default to all values.
 
-The result can be shaped with three dot-prefixed options:
-`.col_names = "code"` names the columns by variable codes instead of
-display texts, `.values = "code"` fills the cells with value codes (so a
-sex variable coded 0/1 comes back as 0/1), and `.type_convert = FALSE`
-turns off the automatic
+The result is shaped for programming by default: columns are named by
+the variable codes (snake-cased), and cells hold the value codes (so a
+sex variable coded 0/1 comes back as 0/1) – the shape that joins and
+models cleanly. Dot-prefixed options change it: `.col_names = "text"`
+and/or `.values = "text"` give the display texts instead,
+`.values = "both"` keeps the codes and adds a `<column>_txt` column with
+the labels alongside, `.clean_names = FALSE` keeps the raw names, and
+`.type_convert = FALSE` turns off the automatic
 [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html)
-that otherwise makes e.g. year columns numeric.
+that otherwise makes e.g. year columns numeric. To reach any PXWeb v1
+endpoint, `bank` also accepts a full base URL such as
+`"https://bank.stat.gl/api/v1/da/Greenland"`.
 
 The first call to
 [`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
@@ -893,11 +898,14 @@ and copy the
 [`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
 call that reproduces the selection. The bank switcher sits one level
 above the subject root, so the same app covers both Greenland (the
-default) and the Faroe Islands. The app is meant as the bridge from
-clicking to scripting; the code tab always shows the query you built.
-Data can be downloaded as formatted Excel, and pressing Q closes the app
-and returns the last fetched dataset to R. Requires `shiny` and
-`ggplot2`.
+default) and the Faroe Islands, and a language chooser switches between
+each bank’s languages. The app is meant as the bridge from clicking to
+scripting; its settings default to the code-first shape (with a “both”
+option for `_txt` label columns), and the code tab always shows the
+query you built, prefixed `daos::` so it runs without
+[`library(daos)`](https://dataniel.github.io/daos). Data can be
+downloaded as formatted Excel, and pressing Q closes the app and returns
+the last fetched dataset to R. Requires `shiny` and `ggplot2`.
 
 ``` r
 

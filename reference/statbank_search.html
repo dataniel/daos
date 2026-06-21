@@ -74,7 +74,10 @@ Faroe Islands offer <code>"fo"</code>, <code>"en"</code>.</p></dd>
 
 <dt id="arg-bank">bank<a class="anchor" aria-label="anchor" href="#arg-bank"></a></dt>
 <dd><p>Which statbank: <code>"gl"</code> (Greenland, the default) or <code>"fo"</code>
-(the Faroe Islands).</p></dd>
+(the Faroe Islands). It may also be a full base URL (everything
+before the table path, with language and database node already in
+it, e.g. <code>"https://bank.stat.gl/api/v1/da/Greenland"</code>), to reach any
+PXWeb v1 endpoint; <code>lang</code> is then ignored.</p></dd>
 
 
 <dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>

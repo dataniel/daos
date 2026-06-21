@@ -11,8 +11,9 @@ statbank_get(
   ...,
   lang = NULL,
   bank = "gl",
-  .col_names = c("text", "code"),
-  .values = c("text", "code"),
+  .col_names = c("code", "text"),
+  .values = c("code", "text", "both"),
+  .clean_names = TRUE,
   .type_convert = TRUE
 )
 ```
@@ -44,17 +45,28 @@ statbank_get(
 - bank:
 
   Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
-  Islands).
+  Islands). It may also be a full base URL (everything before the table
+  path, with language and database node already in it, e.g.
+  `"https://bank.stat.gl/api/v1/da/Greenland"`), to reach any PXWeb v1
+  endpoint; `lang` is then ignored.
 
 - .col_names:
 
-  `"text"` (default) names the columns by the variables' display texts;
-  `"code"` uses the variable codes.
+  `"code"` (default) names the columns by the variable codes; `"text"`
+  uses the variables' display texts.
 
 - .values:
 
-  `"text"` (default) fills the cells with value display texts; `"code"`
-  uses the value codes.
+  `"code"` (default) fills the cells with value codes; `"text"` uses the
+  value display texts; `"both"` keeps the codes and adds a
+  `<column>_txt` column with the display texts next to each.
+
+- .clean_names:
+
+  If `TRUE` (default), column names are snake-cased (lower-case, Danish
+  letters folded to ASCII, non-alphanumerics to `_`), so e.g. a
+  `"place of birth"` code becomes `place_of_birth`. Set to `FALSE` to
+  keep the raw codes or labels.
 
 - .type_convert:
 
@@ -80,12 +92,14 @@ Danish letters (`foedested` matches `f\u00f8dested`). Use `"*"` to
 select all values; variables that are not mentioned default to all
 values.
 
-By default, columns are named by the variables' display texts in the
-chosen language, and cells hold the display texts of the values. Set
-`.col_names = "code"` and/or `.values = "code"` to get the internal
-codes instead, e.g. when a coded column (such as sex as 0/1) is wanted
-for joins or modelling. The option arguments are dot-prefixed so they
-can never collide with a variable name in `...`.
+Built as a programming aid, the defaults favour codes: columns are named
+by the variable codes (snake-cased via `.clean_names`) and cells hold
+the value codes – the shape that joins and models cleanly. Set
+`.col_names = "text"` and/or `.values = "text"` for the display texts in
+the chosen language instead, or `.values = "both"` to get the codes
+*and* a `<column>_txt` column with the labels alongside. The option
+arguments are dot-prefixed so they can never collide with a variable
+name in `...`.
 
 ## See also
 
@@ -97,6 +111,7 @@ can never collide with a variable name in `...`.
 
 ``` r
 if (FALSE) { # \dontrun{
+# Default: coded columns and cells, snake-cased names.
 df <- statbank_get(
   "BE/BE01/BEXSAT1.PX",
   tid = c(2023, 2024, 2025),
@@ -104,13 +119,22 @@ df <- statbank_get(
 )
 attr(df, "notes")
 
-# Codes instead of display texts, no type conversion:
+# Codes with the display texts alongside (a <column>_txt per variable):
+df <- statbank_get("BE/BE01/BEXSAT1.PX", tid = 2024, .values = "both")
+
+# Display texts instead of codes, as in the previous default:
 df <- statbank_get(
   "BE/BE01/BEXSAT1.PX",
   tid = 2024,
-  .col_names = "code",
-  .values = "code",
-  .type_convert = FALSE
+  .col_names = "text",
+  .values = "text"
+)
+
+# Point at any PXWeb v1 endpoint by giving bank a full base URL:
+df <- statbank_get(
+  "BE/BE01/BEXSAT1.PX",
+  tid = 2024,
+  bank = "https://bank.stat.gl/api/v1/da/Greenland"
 )
 } # }
 ```

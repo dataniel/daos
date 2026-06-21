@@ -30,7 +30,10 @@ statbank_meta(table, lang = NULL, bank = "gl")
 - bank:
 
   Which statbank: `"gl"` (Greenland, the default) or `"fo"` (the Faroe
-  Islands).
+  Islands). It may also be a full base URL (everything before the table
+  path, with language and database node already in it, e.g.
+  `"https://bank.stat.gl/api/v1/da/Greenland"`), to reach any PXWeb v1
+  endpoint; `lang` is then ignored.
 
 ## Value
 

@@ -130,7 +130,11 @@ can skip the app entirely:</p>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/statbank_get.html">statbank_get</a></span><span class="op">(</span><span class="st">"NR/NR01/NRXxxx.PX"</span>, tid <span class="op">=</span> <span class="fl">2015</span><span class="op">:</span><span class="fl">2024</span>,</span>
 <span>                   enhed <span class="op">=</span> <span class="st">"Kædede værdier"</span><span class="op">)</span></span></code></pre></div>
 <p>Selections are matched against both codes and their display texts, so
-you can write what you see. The full client walkthrough is in
+you can write what you see. By default the result comes back code-first
+– snake-cased code column names and coded cells, ready to join and model
+– with <code>.col_names = "text"</code>, <code>.values = "text"</code>,
+or <code>.values = "both"</code> (codes plus <code>_txt</code> label
+columns) to change that. The full client walkthrough is in
 <code><a href="../articles/daos.html">vignette("daos")</a></code> under <code>statbank_*</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

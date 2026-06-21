@@ -102,9 +102,9 @@ inline without stopping to look up the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20260620"</span></span>
+<span><span class="co">#&gt; [1] "20260621"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-06-20 19:16"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-06-21 00:01"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -808,13 +808,19 @@ without knowing that the internal code is <code>Number</code>. Matching
 also folds Danish letters (<code>foedested</code> matches
 <code>fødested</code>). Variables you do not mention default to all
 values.</p>
-<p>The result can be shaped with three dot-prefixed options:
-<code>.col_names = "code"</code> names the columns by variable codes
-instead of display texts, <code>.values = "code"</code> fills the cells
-with value codes (so a sex variable coded 0/1 comes back as 0/1), and
+<p>The result is shaped for programming by default: columns are named by
+the variable codes (snake-cased), and cells hold the value codes (so a
+sex variable coded 0/1 comes back as 0/1) – the shape that joins and
+models cleanly. Dot-prefixed options change it:
+<code>.col_names = "text"</code> and/or <code>.values = "text"</code>
+give the display texts instead, <code>.values = "both"</code> keeps the
+codes and adds a <code>&lt;column&gt;_txt</code> column with the labels
+alongside, <code>.clean_names = FALSE</code> keeps the raw names, and
 <code>.type_convert = FALSE</code> turns off the automatic
 <code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code> that otherwise makes e.g. year
-columns numeric.</p>
+columns numeric. To reach any PXWeb v1 endpoint, <code>bank</code> also
+accepts a full base URL such as
+<code>"https://bank.stat.gl/api/v1/da/Greenland"</code>.</p>
 <p>The first call to <code><a href="../reference/statbank_search.html">statbank_search()</a></code> or
 <code><a href="../reference/statbank_tables.html">statbank_tables()</a></code> walks the statbank’s table tree (one
 small request per folder) and caches the list for the rest of the
@@ -832,11 +838,14 @@ with keyboard navigation) or searching, pick values in popup checklists,
 preview the data and a plot, and copy the <code><a href="../reference/statbank_get.html">statbank_get()</a></code>
 call that reproduces the selection. The bank switcher sits one level
 above the subject root, so the same app covers both Greenland (the
-default) and the Faroe Islands. The app is meant as the bridge from
-clicking to scripting; the code tab always shows the query you built.
-Data can be downloaded as formatted Excel, and pressing Q closes the app
-and returns the last fetched dataset to R. Requires <code>shiny</code>
-and <code>ggplot2</code>.</p>
+default) and the Faroe Islands, and a language chooser switches between
+each bank’s languages. The app is meant as the bridge from clicking to
+scripting; its settings default to the code-first shape (with a “both”
+option for <code>_txt</code> label columns), and the code tab always
+shows the query you built, prefixed <code>daos::</code> so it runs
+without <code><a href="https://dataniel.github.io/daos">library(daos)</a></code>. Data can be downloaded as formatted
+Excel, and pressing Q closes the app and returns the last fetched
+dataset to R. Requires <code>shiny</code> and <code>ggplot2</code>.</p>
 <div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/statbank_app.html">statbank_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The thinking behind the app – keyboard-driven, guided navigation of a

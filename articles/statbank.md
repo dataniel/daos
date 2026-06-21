@@ -68,6 +68,10 @@ df <- statbank_get("NR/NR01/NRXxxx.PX", tid = 2015:2024,
 ```
 
 Selections are matched against both codes and their display texts, so
-you can write what you see. The full client walkthrough is in
+you can write what you see. By default the result comes back code-first
+– snake-cased code column names and coded cells, ready to join and model
+– with `.col_names = "text"`, `.values = "text"`, or `.values = "both"`
+(codes plus `_txt` label columns) to change that. The full client
+walkthrough is in
 [`vignette("daos")`](https://dataniel.github.io/daos/articles/daos.md)
 under `statbank_*`.
