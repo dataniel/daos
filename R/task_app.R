@@ -27,6 +27,16 @@
 #' @importFrom cli cli_abort
 #' @export
 task_app <- function(db = "tasks.sqlite") {
+  .tk_app_run(db)
+}
+
+# A button/tab label with its keyboard shortcut as a small chip, instead of
+# a bare "(O)" in the text -- shared by the UI and the server's detail
+# actions, so it lives at package scope.
+.tk_kbd <- function(label, key)
+  shiny::tagList(label, shiny::span(class = "tk-kbd", key))
+
+.tk_app_run <- function(db = "tasks.sqlite") {
   for (pkg in c("shiny", "DBI", "RSQLite")) {
     if (!requireNamespace(pkg, quietly = TRUE))
       cli::cli_abort("Package {.pkg {pkg}} is required for the app. Install with {.code install.packages(c('shiny','DBI','RSQLite'))}.")
@@ -40,15 +50,17 @@ task_app <- function(db = "tasks.sqlite") {
   }
 
   css <- "
-    body { background: #eef1f6; font-family: -apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color: #1e293b; }
+    body { background: #f1f5f9; font-family: -apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color: #1e293b; }
     .container-fluid { max-width: 1240px; }
     .tk-hero {
-      position: relative; margin: -15px -15px 22px -15px; padding: 26px 34px 24px;
-      background: radial-gradient(120% 140% at 0% 0%, #1d62a8 0%, #0c3a63 60%, #0a3157 100%);
-      color: #fff; box-shadow: 0 6px 22px rgba(12,58,99,.25);
+      position: relative; margin: -15px -15px 26px -15px; padding: 32px 36px 28px;
+      background: linear-gradient(120deg, #0a2c4f 0%, #14477e 100%);
+      color: #fff; border-bottom: 3px solid #2f7dc0;
     }
-    .tk-hero-text h2 { font-weight: 800; margin: 0 0 4px; color: #fff; font-size: 23px; letter-spacing: -.4px; }
-    .tk-hero .tk-db { color: #b7d0ea; font-size: 12.5px; word-break: break-all; }
+    .tk-kicker { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px;
+      font-weight: 700; color: #98c0e6; margin: 0 0 7px; }
+    .tk-hero-text h2 { font-weight: 700; margin: 0 0 5px; color: #fff; font-size: 26px; letter-spacing: -.4px; }
+    .tk-hero .tk-db { color: #cfe0f1; font-size: 12.5px; word-break: break-all; }
     .tk-hero-actions { position: absolute; top: 22px; right: 30px; display: flex; gap: 8px; }
     .tk-hero .tk-ghost {
       background: rgba(255,255,255,.14) !important; border: 1px solid rgba(255,255,255,.35) !important;
@@ -61,22 +73,39 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-hero .tk-ghost-quit:hover, .tk-hero .tk-ghost-quit:focus {
       background: rgba(248,113,113,.32) !important; border-color: rgba(248,113,113,.6) !important;
     }
-    .tk-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px;
-      box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06); padding: 20px; margin-bottom: 18px; }
+    .tk-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 4px 16px rgba(15,23,42,.05); padding: 22px 24px; margin-bottom: 18px; }
     .tk-card h4 { font-weight: 700; font-size: 14px; margin: 0 0 14px; color: #0f172a;
       display: flex; align-items: center; gap: 8px; }
-    .tk-card h4::before { content: ''; width: 4px; height: 16px; border-radius: 3px; background: #1d62a8; }
+    .tk-card h4::before { content: ''; width: 4px; height: 16px; border-radius: 3px; background: #14477e; }
     label { font-weight: 600; font-size: 12.5px; color: #475569; margin-bottom: 4px; }
     .form-control, .selectize-input, .form-select {
       border-radius: 9px !important; border-color: #dbe1ea !important; font-size: 14px;
     }
     .form-control:focus, .selectize-input.focus, .form-select:focus {
-      border-color: #1d62a8 !important; box-shadow: 0 0 0 3px rgba(29,98,168,.12) !important;
+      border-color: #14477e !important; box-shadow: 0 0 0 3px rgba(20,71,126,.12) !important;
     }
-    .btn { border-radius: 9px; font-weight: 600; }
-    .btn-primary { background: #1d62a8; border-color: #1d62a8; box-shadow: 0 2px 8px rgba(29,98,168,.30); }
-    .btn-primary:hover { background: #174e86; border-color: #174e86; }
-    #add { padding: 9px; font-size: 14.5px; }
+    .btn { border-radius: 9px; font-weight: 600; padding: 8px 16px; display: inline-flex;
+      align-items: center; justify-content: center; transition: background .12s, border-color .12s, color .12s; }
+    .btn:focus-visible { outline: 3px solid rgba(47,125,192,.45); outline-offset: 2px; }
+    .btn-primary { background: #14477e !important; border-color: #14477e !important; color: #fff !important;
+      box-shadow: 0 2px 8px rgba(20,71,126,.28); }
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+      background: #0e3a68 !important; border-color: #0e3a68 !important; color: #fff !important; }
+    .btn-default { border: 1px solid #d6dee8; background: #fff; color: #334155;
+      box-shadow: 0 1px 1px rgba(15,23,42,.04); }
+    .btn-default:hover, .btn-default:focus { border-color: #14477e; color: #14477e; background: #f3f7fc; }
+    .btn-primary.tk-danger { background: #dc2626 !important; border-color: #dc2626 !important; color: #fff !important; }
+    .btn-primary.tk-danger:hover, .btn-primary.tk-danger:focus {
+      background: #b91c1c !important; border-color: #b91c1c !important; color: #fff !important; }
+    #add { width: 100%; padding: 11px; font-size: 14.5px; }
+    /* Keyboard hint chips inside buttons and tabs (like browse_files). */
+    .tk-kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px;
+      font-weight: 700; line-height: 1; padding: 2px 6px; border-radius: 5px; margin-left: 7px;
+      background: rgba(15,23,42,.09); color: #475569; vertical-align: middle; }
+    .btn-primary .tk-kbd { background: rgba(255,255,255,.24); color: #fff; }
+    .tk-ghost .tk-kbd { background: rgba(255,255,255,.2); color: #fff; }
+    .nav-pills .nav-link.active .tk-kbd { background: rgba(255,255,255,.26); color: #fff; }
     .tk-stats { display: flex; gap: 14px; margin-bottom: 18px; }
     .tk-stat { flex: 1; background: #fff; border: 1px solid #e6eaf1; border-radius: 14px; padding: 14px 18px;
       box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 18px rgba(15,23,42,.05); }
@@ -84,7 +113,7 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-stat .tk-l { font-size: 11.5px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; margin-top: 2px; }
     .tk-stat.tk-over { border-color: #fecaca; background: #fff5f5; }
     .tk-stat.tk-over .tk-n { color: #dc2626; }
-    .tk-count { font-size: 12px; color: #94a3b8; font-weight: 600; margin: 0 2px 10px; }
+    .tk-count { font-size: 12px; color: #64748b; font-weight: 600; margin: 0 2px 10px; }
     .tk-help { display: flex; flex-direction: column; gap: 4px; }
     .tk-help-row { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: #334155;
       padding: 4px 2px; border-bottom: 1px solid #f1f5f9; }
@@ -94,7 +123,7 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-row { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid #e8edf3;
       border-radius: 12px; cursor: pointer; background: #fff; transition: border-color .12s, box-shadow .12s, transform .08s; }
     .tk-row:hover { border-color: #b9cde6; box-shadow: 0 2px 10px rgba(15,23,42,.07); }
-    .tk-row.selected { border-color: #1d62a8; box-shadow: 0 0 0 3px rgba(29,98,168,.16); }
+    .tk-row.selected { border-color: #14477e; box-shadow: 0 0 0 3px rgba(20,71,126,.16); }
     .tk-row.done { background: #fbfcfb; border-color: #e2ece4; }
     .tk-row.done .tk-desc { color: #94a3b8; text-decoration: line-through; }
     .tk-row.done .tk-urg { opacity: .45; }
@@ -107,13 +136,13 @@ task_app <- function(db = "tasks.sqlite") {
     .btn.tk-danger { color: #b91c1c; border-color: #f6bcbc; background: #fff; }
     .btn.tk-danger:hover { background: #fee2e2; border-color: #ef9a9a; color: #991b1b; }
     .tk-urg { flex: none; width: 44px; height: 32px; display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 13.5px; color: #1d62a8; background: #eef4fc; border-radius: 8px; }
+      font-weight: 800; font-size: 13.5px; color: #14477e; background: #eef4fc; border-radius: 8px; }
     .tk-main { flex: 1; min-width: 0; }
     .tk-desc { font-weight: 600; color: #0f172a; }
     .tk-meta { margin-top: 3px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .tk-chip { font-size: 11.5px; border-radius: 999px; padding: 2px 10px; background: #eef2f7; color: #475569; font-weight: 500; }
-    .tk-chip.tk-proj { background: #e0ecfb; color: #1d62a8; font-weight: 600; }
-    .tk-chip.tk-person { background: #ede9fe; color: #6d28d9; font-weight: 600; }
+    .tk-chip.tk-proj { background: #e3edfa; color: #14477e; font-weight: 600; }
+    .tk-chip.tk-person { background: #eef1f6; color: #475569; font-weight: 600; }
     .tk-chip.tk-tag { background: #f1f5f9; }
     .tk-chip.tk-tag::before { content: '#'; opacity: .5; }
     .tk-chip.tk-key { background: #e2e8f0; color: #334155; font-weight: 600;
@@ -144,17 +173,17 @@ task_app <- function(db = "tasks.sqlite") {
     .nav-pills { margin-bottom: 14px; gap: 8px; }
     .nav-pills .nav-link { font-weight: 600; color: #334155; background: #fff; border: 1px solid #e6eaf1;
       border-radius: 10px; padding: 7px 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
-    .nav-pills .nav-link:hover { border-color: #b9cde6; color: #1d62a8; }
-    .nav-pills .nav-link.active { background-color: #1d62a8 !important; color: #fff !important; border-color: #1d62a8 !important; }
+    .nav-pills .nav-link:hover { border-color: #b9cde6; color: #14477e; }
+    .nav-pills .nav-link.active { background-color: #14477e !important; color: #fff !important; border-color: #14477e !important; }
     .tk-proj-row { padding: 13px 4px; border-bottom: 1px solid #f1f5f9; }
     .tk-proj-row:last-child { border-bottom: none; }
     .tk-proj-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
     .tk-proj-name { font-weight: 600; color: #0f172a; }
     .tk-proj-count { font-size: 12.5px; color: #64748b; }
     .tk-bar { height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
-    .tk-bar-fill { height: 100%; background: #1d62a8; border-radius: 999px; transition: width .3s; }
+    .tk-bar-fill { height: 100%; background: #14477e; border-radius: 999px; transition: width .3s; }
     .tk-bar-fill.tk-full { background: #16a34a; }
-    .tk-proj-meta { margin-top: 6px; font-size: 11.5px; color: #94a3b8; }
+    .tk-proj-meta { margin-top: 6px; font-size: 12px; color: #64748b; }
     .tk-proj-meta.tk-has-over { color: #b45309; }
     .tk-done-badge { font-size: 11px; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 999px; padding: 2px 11px; }
     .tk-proj-people { margin: 2px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -172,7 +201,7 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-kpi-n { font-size: 23px; font-weight: 700; color: #0f172a; line-height: 1.1; }
     .tk-kpi-l { font-size: 11.5px; color: #64748b; margin-top: 2px; }
     .tk-kpi.tk-kpi-go { background: #eef6ff; border-color: #cfe2fb; }
-    .tk-kpi.tk-kpi-go .tk-kpi-n { color: #1d62a8; }
+    .tk-kpi.tk-kpi-go .tk-kpi-n { color: #14477e; }
     .tk-kpi.tk-kpi-amber { background: #fffbeb; border-color: #fde9b8; }
     .tk-kpi.tk-kpi-amber .tk-kpi-n { color: #b45309; }
     .tk-kpi.tk-kpi-red { background: #fef2f2; border-color: #fbd5d5; }
@@ -190,13 +219,13 @@ task_app <- function(db = "tasks.sqlite") {
     .tk-health-done  { color: #475569; background: #eef2f7; }
     .tk-proj-sub { font-size: 12.5px; color: #64748b; margin: 0 0 7px; }
     .tk-proj-stats { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 2px; }
-    .tk-st-go    { color: #1d62a8; background: #e8f0fa; }
+    .tk-st-go    { color: #14477e; background: #e8f0fa; }
     .tk-st-block { color: #b91c1c; background: #fee2e2; }
     .tk-st-over  { color: #b45309; background: #fef3c7; }
     .tk-st-stall { color: #6b7280; background: #f1f5f9; }
-    .tk-flag-go  { color: #1d62a8; background: #e8f0fa; border: 1px solid #cfe2fb; }
-    .tk-stat.tk-go .tk-n { color: #1d62a8; }
-    .tk-go-btn { color: #1d62a8 !important; border-color: #1d62a8 !important; background: #eef6ff !important; }
+    .tk-flag-go  { color: #14477e; background: #e8f0fa; border: 1px solid #cfe2fb; }
+    .tk-stat.tk-go .tk-n { color: #14477e; }
+    .tk-go-btn { color: #14477e !important; border-color: #14477e !important; background: #eef6ff !important; }
     .tk-sec { margin-top: 20px; padding-top: 14px; border-top: 1px solid #eef2f7; }
     .tk-bottle-row { display: flex; align-items: center; gap: 9px; padding: 8px 6px; border-radius: 8px;
       cursor: pointer; border-bottom: 1px solid #f6f8fb; }
@@ -210,7 +239,7 @@ task_app <- function(db = "tasks.sqlite") {
       line-height: 22px; font-size: 12px; font-weight: 700; }
     .tk-feed-done  { color: #166534; background: #dcfce7; }
     .tk-feed-note  { color: #475569; background: #eef2f7; }
-    .tk-feed-added { color: #1d62a8; background: #e8f0fa; }
+    .tk-feed-added { color: #14477e; background: #e8f0fa; }
     .tk-feed-main { flex: 1; min-width: 0; }
     .tk-feed-desc { font-size: 13px; color: #0f172a; }
     .tk-feed-text { font-size: 12px; color: #64748b; margin-top: 1px; }
@@ -299,11 +328,12 @@ task_app <- function(db = "tasks.sqlite") {
     shiny::div(
       class = "tk-hero",
       shiny::div(class = "tk-hero-actions",
-        shiny::actionButton("show_help", "Genveje (?)", class = "tk-ghost"),
-        shiny::actionButton("refresh", shiny::HTML("&#x21bb; Opdater (U)"), class = "tk-ghost"),
-        shiny::actionButton("quit", "Luk (Q)", class = "tk-ghost tk-ghost-quit")),
+        shiny::actionButton("show_help", .tk_kbd("Genveje", "?"), class = "tk-ghost"),
+        shiny::actionButton("refresh", .tk_kbd(shiny::HTML("&#x21bb; Opdater"), "U"), class = "tk-ghost"),
+        shiny::actionButton("quit", .tk_kbd("Luk", "Q"), class = "tk-ghost tk-ghost-quit")),
       shiny::div(class = "tk-hero-text",
-        shiny::h2(shiny::HTML("&#x2713;&#xFE0E; Opgaver")),
+        shiny::p(class = "tk-kicker", "Produktionsstyring"),
+        shiny::h2("Opgaver & projekter"),
         shiny::div(class = "tk-db", shiny::textOutput("db_label", inline = TRUE)))
     ),
     shiny::sidebarLayout(
@@ -333,7 +363,7 @@ task_app <- function(db = "tasks.sqlite") {
             choices = c("Nej" = "", "Dagligt" = "daily", "Ugentligt" = "weekly",
                         "Hver 14. dag" = "biweekly", "M\u00e5nedligt" = "monthly",
                         "Kvartalsvis" = "quarterly", "\u00c5rligt" = "yearly")),
-          shiny::actionButton("add", "Tilf\u00f8j opgave (Enter)", class = "btn-primary", width = "100%")
+          shiny::actionButton("add", .tk_kbd("Tilf\u00f8j opgave", "Enter"), class = "btn-primary", width = "100%")
         ),
         shiny::div(
           class = "tk-card",
@@ -355,7 +385,7 @@ task_app <- function(db = "tasks.sqlite") {
                           "25" = "25", "50" = "50", "100" = "100", "Alle" = "all"),
               selected = "10"))
           ),
-          shiny::actionButton("reset_filters", "Nulstil filtre (R)",
+          shiny::actionButton("reset_filters", .tk_kbd("Nulstil filtre", "R"),
                               class = "btn-default", width = "100%")
         )
       ),
@@ -364,13 +394,13 @@ task_app <- function(db = "tasks.sqlite") {
         shiny::tabsetPanel(
           id = "main_tabs", type = "pills",
           shiny::tabPanel(
-            "Opgaver (O)", value = "Opgaver",
+            title = .tk_kbd("Opgaver", "O"), value = "Opgaver",
             shiny::div(style = "margin-top: 16px;", shiny::uiOutput("stats")),
             shiny::div(class = "tk-card", shiny::uiOutput("tasklist")),
             shiny::uiOutput("detail")
           ),
           shiny::tabPanel(
-            "Projekter (P)", value = "Projekter",
+            title = .tk_kbd("Projekter", "P"), value = "Projekter",
             shiny::div(style = "margin-top: 16px;", class = "tk-card",
                        shiny::uiOutput("projects"))
           )
@@ -677,18 +707,18 @@ task_app <- function(db = "tasks.sqlite") {
             ann$text[i]))),
         shiny::div(class = "tk-actions",
           if (t$status == "pending")
-            shiny::actionButton("act_done", "F\u00e6rdig (F)", class = "btn-primary"),
+            shiny::actionButton("act_done", .tk_kbd("F\u00e6rdig", "F"), class = "btn-primary"),
           if (t$status == "pending")
             shiny::actionButton("act_start",
-              if (isTRUE(t$started)) "Stop (S)" else "I gang (S)",
+              .tk_kbd(if (isTRUE(t$started)) "Stop" else "I gang", "S"),
               class = if (isTRUE(t$started)) "btn-default tk-go-btn" else "btn-default"),
           if (t$status != "pending")
-            shiny::actionButton("act_reopen", "Gen\u00e5bn (G)", class = "btn-primary"),
+            shiny::actionButton("act_reopen", .tk_kbd("Gen\u00e5bn", "G"), class = "btn-primary"),
           if (t$status == "pending")
-            shiny::actionButton("act_edit", "Rediger (E)", class = "btn-default"),
-          shiny::actionButton("act_annotate", "Tilf\u00f8j note (N)", class = "btn-default"),
+            shiny::actionButton("act_edit", .tk_kbd("Rediger", "E"), class = "btn-default"),
+          shiny::actionButton("act_annotate", .tk_kbd("Tilf\u00f8j note", "N"), class = "btn-default"),
           if (t$status == "pending")
-            shiny::actionButton("act_delete", "Slet (X)", class = "btn-default"),
+            shiny::actionButton("act_delete", .tk_kbd("Slet", "X"), class = "btn-default"),
           if (t$status == "deleted")
             shiny::actionButton("act_purge", "Slet permanent", class = "btn-default tk-danger"))
       )
