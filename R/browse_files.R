@@ -1,7 +1,6 @@
-# A yazi-inspired filesystem browser, built on the same three-column
-# navigation as statbank_app() but over local directories instead of a
-# PXWeb tree. Listing is plain base R, so there is no network and no new
-# dependency. Enter inserts the marked paths into the active RStudio
+# A yazi-inspired filesystem browser: three-column navigation -- parent
+# directory, current directory, live preview -- over local directories.
+# Listing is plain base R, so there is no network and no new dependency. Enter inserts the marked paths into the active RStudio
 # document; Q closes the app and returns them to R.
 
 # List one directory as a tibble: directories first, then files, each

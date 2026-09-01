@@ -28,9 +28,8 @@ reference:
   - title: File workflow
     contents:
       - read_files
+      - read_access
       - summon
-      - read_ta
-      - write_ta
       - write_excel
       - append_excel
 
@@ -47,63 +46,16 @@ reference:
     contents:
       - screen_timeseries
       - browse_files
+      - open_in_explorer
 
-  - title: Domain-specific
+  - title: Danish and Greenlandic data
     contents:
-      - add_cpr_info
       - clean_cpr
+      - add_cpr_info
       - clean_cvr
       - dbdot
       - read_ta
       - write_ta
-
-  - title: File readers
-    contents:
-      - read_access
-      - read_xbrl
-      - accounts_pdf_to_txt
-      - accounts_txt_to_xlsx
-
-  - title: CVR annual reports
-    contents:
-      - cvr_query
-      - cvr_search
-      - cvr_hits
-      - cvr_download
-
-  - title: Task manager
-    contents:
-      - task_app
-      - task_db
-      - task_add
-      - task_cycle
-      - task_list
-      - task_get
-      - task_require
-      - task_blockers
-      - task_start
-      - task_stop
-      - task_step
-      - task_done
-      - task_reopen
-      - task_delete
-      - task_purge
-      - task_modify
-      - task_annotate
-      - task_annotations
-      - task_projects
-      - task_people
-      - task_bottlenecks
-      - task_activity
-
-  - title: Greenland Statbank
-    contents:
-      - statbank_app
-      - statbank_get
-      - statbank_meta
-      - statbank_search
-      - statbank_tables
-      - statbank_nodes
 
   - title: RStudio addins
     contents:
@@ -125,7 +77,3 @@ articles:
       - read-files
       - paths
       - validation
-      - accounts
-      - cvr
-      - statbank
-      - tasks

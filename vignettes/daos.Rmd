@@ -20,6 +20,14 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
+Three bodies of work that started here have since grown into packages of
+their own, and are not covered below:
+[taskr](https://github.com/dataniel/taskr) for task management,
+[statbank](https://github.com/dataniel/statbank) for the Greenland and
+Faroese statbanks, and
+[statregn](https://github.com/dataniel/statregn) for Danish annual
+reports. None of them depends on daos, or daos on them.
+
 ---
 
 ## Convenience shorthands
@@ -231,42 +239,6 @@ df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
 files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
 results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
-
-### `read_xbrl()`: parse an XBRL file
-
-Parses an XBRL XML document and returns a tidy tibble with one row per
-fact, joined to context (dates) and unit information. Requires `xml2`.
-
-```{r, eval = FALSE}
-df <- read_xbrl("report.xml")
-```
-
-The returned tibble has columns: `elementid`, `contextid`, `fact`,
-`unitid`, `decimals`, `startdate`, `enddate`, `instant`,
-`explicit_member`, `unit`.
-
-For non-UTF-8 files, pass `encoding`:
-
-```{r, eval = FALSE}
-df <- read_xbrl("report.xml", encoding = "latin1")
-```
-
-The full path from downloaded annual reports to parsed facts, including
-sign reconciliation with `find_signs()`, is shown in `vignette("cvr")`.
-
-### Accounts and CVR workflows
-
-Two larger workflows have their own articles instead of a walkthrough
-here:
-
-- `vignette("cvr")` covers responsible use of the `cvr_*` pipeline for
-  fetching published annual reports from Erhvervsstyrelsens distribution
-  service: `cvr_query()`, `cvr_search()`, `cvr_hits()`,
-  `cvr_download()`.
-- `vignette("accounts")` covers the manual accounts workflow behind
-  `accounts_pdf_to_txt()` and `accounts_txt_to_xlsx()`: from PDF
-  reports through hand-formatted text files to one validated, tidy
-  Excel file.
 
 ### `write_excel()` / `append_excel()`: write presentable Excel files
 
@@ -620,82 +592,6 @@ A custom reference date shifts the age calculation:
 add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 ```
 
-### `statbank_*`: the Greenland Statbank
-
-The `statbank_*` family is a small client for the Greenland Statbank
-(bank.stat.gl). Search the table list, look up a table's variables, and
-download the data as a tidy tibble:
-
-```{r, eval = FALSE}
-statbank_search("befolkning")
-
-meta <- statbank_meta("BE/BE01/BEXSAT1.PX")
-meta$variables
-
-df <- statbank_get(
-  "BE/BE01/BEXSAT1.PX",
-  tid = c(2023, 2024, 2025),
-  art = "Antal"
-)
-```
-
-Selections in `statbank_get()` are matched against both variable codes
-and their Danish display texts, and against both value codes and value
-texts, so you can write `art = "Antal"` without knowing that the
-internal code is `Number`. Matching also folds Danish letters
-(`foedested` matches `fødested`). Variables you do not mention default
-to all values.
-
-The result is shaped for programming by default: columns are named by
-the variable codes (snake-cased), and cells hold the value codes (so a
-sex variable coded 0/1 comes back as 0/1) -- the shape that joins and
-models cleanly. Dot-prefixed options change it: `.col_names = "text"`
-and/or `.values = "text"` give the display texts instead,
-`.values = "both"` keeps the codes and adds a `<column>_txt` column with
-the labels alongside, `.clean_names = FALSE` keeps the raw names, and
-`.type_convert = FALSE` turns off the automatic `readr::type_convert()`
-that otherwise makes e.g. year columns numeric. To reach any PXWeb v1
-endpoint, `bank` also accepts a full base URL such as
-`"https://bank.stat.gl/api/v1/da/Greenland"`.
-
-The first call to `statbank_search()` or `statbank_tables()` walks the
-statbank's table tree (one small request per folder) and caches the
-list for the rest of the session.
-
-The same functions also reach the Faroese statbank (Hagstova Føroya) via
-`bank = "fo"`. Each bank has its own languages, so `lang` defaults to
-the bank's own default (Danish for Greenland, Faroese for the Faroe
-Islands) rather than a fixed value:
-
-```{r, eval = FALSE}
-statbank_search("wages", bank = "fo")
-df <- statbank_get("IP/IP02/pris_alt.px", bank = "fo")
-```
-
-`statbank_app()` wraps the family in a Shiny app: find a table by
-browsing the subject tree (a three-column, yazi-style browser with
-keyboard navigation) or searching, pick values in popup checklists,
-preview the data and a plot, and copy the `statbank_get()` call that
-reproduces the selection. The bank switcher sits one level above the
-subject root, so the same app covers both Greenland (the default) and
-the Faroe Islands, and a language chooser switches between each bank's
-languages. The app is meant as the bridge from clicking to scripting;
-its settings default to the code-first shape (with a "both" option for
-`_txt` label columns), and the code tab always shows the query you
-built, prefixed `daos::` so it runs without `library(daos)`. Data can be
-downloaded as formatted Excel, and pressing Q closes the app and
-returns the last fetched dataset to R. Requires `shiny` and `ggplot2`.
-
-```{r, eval = FALSE}
-statbank_app()
-```
-
-The thinking behind the app -- keyboard-driven, guided navigation of a
-statbank, and where that idea is heading -- is its own article,
-`vignette("statbank")`.
-
----
-
 ## Interactive tools
 
 ### `screen_timeseries()`: interactive time-series screening
@@ -742,52 +638,12 @@ screen_timeseries(df, year, gdp,
                   .title = "GDP by country")
 ```
 
-### `task_*`: a shared task manager
-
-The `task_*` family is a small taskwarrior-style task manager backed by a
-shared SQLite file. SQLite is free (public domain, bundled by `RSQLite`),
-runs in WAL mode, and needs no server -- so a `.sqlite` file on a network
-drive is enough for a team to work from, several people at once.
-
-```{r, eval = FALSE}
-task_db("tasks.sqlite")                       # create/open the database
-
-task_add("tasks.sqlite", "Write the report",
-         project = "Q3", assignee = "Anna", tags = c("writing", "urgent"),
-         priority = "H", due = "2026-07-01")
-
-task_list("tasks.sqlite")                     # tibble sorted by urgency
-task_list("tasks.sqlite", assignee = "Anna")  # filter by person
-task_done("tasks.sqlite", id = 1)             # complete a task
-```
-
-Tasks carry a project, an assignee (person), tags, priority, due date,
-recurrence, dependencies and annotations; `task_list()` adds a `blocked`
-flag and a simplified urgency score. Every function opens a short-lived
-connection, works in one transaction, and closes, so concurrent users are
-handled safely. The database is just a shared file -- point at a path that
-does not exist yet and a fresh one is created.
-
-`task_app()` is a Shiny front-end over the same database: add and edit
-tasks, filter by person/project/tag/status, see project and people
-overviews, and watch the list update as others change it (it re-reads on
-a timer). Requires `shiny`, `DBI`, and `RSQLite`.
-
-```{r, eval = FALSE}
-task_app("tasks.sqlite")
-```
-
-Because every `task_*` function is a plain call against the shared file,
-task updates can be embedded in production scripts -- so the same database
-the team browses also records how production is going. That way of working
-is covered in `vignette("tasks")`.
-
 ### `browse_files()`: grab filesystem paths without typing them
 
 Typing or hand-fixing long Windows paths is tedious. `browse_files()`
-launches a small Shiny app that walks the filesystem in the same
-three-column, yazi-style browser as `statbank_app()` -- parent
-directory, current directory, and a live preview -- navigated with
+launches a small Shiny app that walks the filesystem in a three-column,
+yazi-style browser -- parent directory, current directory, and a live
+preview -- navigated with
 `h`/`j`/`k`/`l` or the arrow keys. The point is to grab paths: mark one
 or more files or folders with `Space`, then take them into R.
 
