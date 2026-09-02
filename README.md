@@ -31,6 +31,59 @@ own. They are standalone — none of them depends on `daos`, or `daos` on them.
 pak::pak("dataniel/daos")
 ```
 
+## What it looks like
+
+**Reading a set of files.** `read_files()` replaces the usual
+`list.files()` + loop + naming pipeline with one call that expands paths,
+checks they exist, detects the format, and names the results.
+
+```r
+library(daos)
+
+# One file returns the object; several return a named list
+df  <- read_files("data/results.parquet")
+lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
+
+# Or row-bind them, keeping track of where each row came from
+panel <- read_files(
+  "data/dat{2020:2024}.parquet",
+  names = 2020:2024,
+  out   = "bind",
+  .id   = "year"
+)
+```
+
+If it handles a set of files without warnings, the production upstream is
+consistent. When it warns about type mismatches, something changed — and
+`view_types()` shows which column, in which file.
+
+**Checkpoints instead of silent assumptions.** Filter for the rows that
+should not exist and pipe them into `expect_empty()`. If any turn up, you
+get the offending rows and a message in your own words, not a stack trace.
+
+```r
+sales |>
+  dplyr::filter(is.na(customer_id)) |>
+  expect_empty(abort_msg = "Sales rows without a customer id")
+
+sales |>
+  dplyr::filter(amount < 0) |>
+  expect_empty(warn_msg = "Negative amounts", log = "checks.log")
+```
+
+**Danish and Greenlandic identifiers, and a file a colleague can read.**
+
+```r
+customers |>
+  dplyr::mutate(cpr = clean_cpr(cpr)) |>   # restores Excel-lost leading zeros
+  add_cpr_info(cpr) |>                     # birth date, age, sex, validity
+  write_excel(f("customers_{nowf()}.xlsx"))
+```
+
+`write_excel()` writes an xlsx meant to be opened by a person: bold frozen
+header, thousand separators, blank cells for `NA`. `f()` is `glue::glue()`
+under a shorter name, and `nowf()` is a formatted timestamp.
+
 ## Functions
 
 | Function | Description |
