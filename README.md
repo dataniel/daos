@@ -15,14 +15,15 @@
 
 ## Related packages
 
-Three bodies of work grew large enough to leave and become packages of their
+Four bodies of work grew large enough to leave and become packages of their
 own. They are standalone — none of them depends on `daos`, or `daos` on them.
 
 | Package | What it does |
 |---------|--------------|
 | [taskr](https://github.com/dataniel/taskr) | Taskwarrior-style task management backed by a shared SQLite file |
 | [statbank](https://github.com/dataniel/statbank) | Client and keyboard browser for the Greenland and Faroese statbanks |
-| [statregn](https://github.com/dataniel/statregn) | Danish annual reports: CVR distribution service, XBRL, and the PDF-to-Excel route |
+| [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
+| [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
 
 ## Installation
 
@@ -49,7 +50,6 @@ pak::pak("dataniel/daos")
 | `drop_all_na()` | Drop rows and/or columns that are entirely `NA` |
 | `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
-| `find_signs()` | Find sign assignments that reconcile a set of values to a total |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |

@@ -40,7 +40,6 @@ reference:
       - expect_empty
       - drop_all_na
       - split_by
-      - find_signs
 
   - title: Interactive
     contents:

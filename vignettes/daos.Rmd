@@ -20,13 +20,14 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
-Three bodies of work that started here have since grown into packages of
+Four bodies of work that started here have since grown into packages of
 their own, and are not covered below:
 [taskr](https://github.com/dataniel/taskr) for task management,
 [statbank](https://github.com/dataniel/statbank) for the Greenland and
-Faroese statbanks, and
-[statregn](https://github.com/dataniel/statregn) for Danish annual
-reports. None of them depends on daos, or daos on them.
+Faroese statbanks, [cvrr](https://github.com/dataniel/cvrr) for published
+Danish annual reports, and [taxmill](https://github.com/dataniel/taxmill)
+for milling PDF financial statements into data. None of them depends on
+daos, or daos on them.
 
 ---
 
@@ -481,35 +482,6 @@ Multiple grouping columns are joined with `.sep`:
 ```{r}
 parts2 <- split_by(ggplot2::mpg, cyl, drv, .sep = "-")
 names(parts2)[1:4]
-```
-
-### `find_signs()`: reconcile accounting line items
-
-`find_signs()` finds the signs (`+1`, `-1`, or `0`) that make a set of
-values sum to a given total. Useful when importing accounting data where
-the sign conventions are unknown. It uses a *meet-in-the-middle*
-algorithm, so it stays fast even with many line items.
-
-```{r}
-items <- data.frame(
-  label = c("revenue", "costs", "tax", "total"),
-  value = c(1000, 400, 100, 500)
-)
-
-find_signs(items, label, value, total_label = "total")
-```
-
-Pin known signs and allow items to be excluded with `max_zeros`:
-
-```{r, eval = FALSE}
-find_signs(
-  items,
-  label, value,
-  total_label = "total",
-  positive    = "revenue",
-  negative    = c("costs", "tax"),
-  max_zeros   = 1L
-)
 ```
 
 ---
