@@ -26,12 +26,10 @@
 
 - [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
   : Read one or more files
+- [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)
+  : Read data from a Microsoft Access database
 - [`summon()`](https://dataniel.github.io/daos/reference/summon.md) :
   Retrieve objects matching a pattern from an environment
-- [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
-  Read a Greenlandic TA file
-- [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
-  : Write a Greenlandic TA file
 - [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
   : Write data frames to a presentable Excel file
 - [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)
@@ -56,22 +54,21 @@
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
 
-- [`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
-  : Find sign combinations that sum to a target
-
 ## Interactive
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
 - [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
   : Browse the filesystem and copy paths to R
+- [`open_in_explorer()`](https://dataniel.github.io/daos/reference/open_in_explorer.md)
+  : Open a path in the system file explorer
 
-## Domain-specific
+## Danish and Greenlandic data
 
-- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  : Add information derived from Danish CPR numbers
 - [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
   : Standardise CPR numbers
+- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
+  : Add information derived from Danish CPR numbers
 - [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   : Standardise CVR numbers
 - [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) :
@@ -80,89 +77,6 @@
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
   : Write a Greenlandic TA file
-
-## File readers
-
-- [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)
-  : Read data from a Microsoft Access database
-- [`read_xbrl()`](https://dataniel.github.io/daos/reference/read_xbrl.md)
-  : Read an XBRL file
-- [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
-  : Convert PDF files to text files
-- [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
-  : Parse formatted text files and export to Excel
-
-## CVR annual reports
-
-- [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md)
-  : Build an Elasticsearch query for CVR annual reports
-- [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md)
-  : Send a query to the CVR distribution service
-- [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md)
-  : Extract CVR search hits as a tibble
-- [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md)
-  : Download CVR documents
-
-## Task manager
-
-- [`task_app()`](https://dataniel.github.io/daos/reference/task_app.md)
-  : Task manager app
-- [`task_db()`](https://dataniel.github.io/daos/reference/task_db.md) :
-  Create or open a shared task database
-- [`task_add()`](https://dataniel.github.io/daos/reference/task_add.md)
-  : Add a task
-- [`task_cycle()`](https://dataniel.github.io/daos/reference/task_cycle.md)
-  : Register a production cycle as a chain of steps
-- [`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
-  : List tasks
-- [`task_get()`](https://dataniel.github.io/daos/reference/task_get.md)
-  : Get one or more tasks by id
-- [`task_require()`](https://dataniel.github.io/daos/reference/task_require.md)
-  : Require tasks to have a given status
-- [`task_blockers()`](https://dataniel.github.io/daos/reference/task_blockers.md)
-  : Why a task is blocked
-- [`task_start()`](https://dataniel.github.io/daos/reference/task_start.md)
-  [`task_stop()`](https://dataniel.github.io/daos/reference/task_start.md)
-  : Start or stop work on a task
-- [`task_step()`](https://dataniel.github.io/daos/reference/task_step.md)
-  : Run a production step under a task
-- [`task_done()`](https://dataniel.github.io/daos/reference/task_done.md)
-  : Complete a task
-- [`task_reopen()`](https://dataniel.github.io/daos/reference/task_reopen.md)
-  : Reopen a task
-- [`task_delete()`](https://dataniel.github.io/daos/reference/task_delete.md)
-  : Delete a task
-- [`task_purge()`](https://dataniel.github.io/daos/reference/task_purge.md)
-  : Permanently delete tasks
-- [`task_modify()`](https://dataniel.github.io/daos/reference/task_modify.md)
-  : Modify a task
-- [`task_annotate()`](https://dataniel.github.io/daos/reference/task_annotate.md)
-  : Annotate a task
-- [`task_annotations()`](https://dataniel.github.io/daos/reference/task_annotations.md)
-  : Annotations of a task
-- [`task_projects()`](https://dataniel.github.io/daos/reference/task_projects.md)
-  : Project overview for managers
-- [`task_people()`](https://dataniel.github.io/daos/reference/task_people.md)
-  : People overview
-- [`task_bottlenecks()`](https://dataniel.github.io/daos/reference/task_bottlenecks.md)
-  : Bottlenecks: the tasks blocking the most others
-- [`task_activity()`](https://dataniel.github.io/daos/reference/task_activity.md)
-  : Recent activity across the database
-
-## Greenland Statbank
-
-- [`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
-  : Interactive explorer for the Greenland Statbank
-- [`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
-  : Download a table from a statbank
-- [`statbank_meta()`](https://dataniel.github.io/daos/reference/statbank_meta.md)
-  : Get the metadata for a statbank table
-- [`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
-  : Search statbank tables by title
-- [`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md)
-  : List every table in a statbank
-- [`statbank_nodes()`](https://dataniel.github.io/daos/reference/statbank_nodes.md)
-  : List one level of a statbank table tree
 
 ## RStudio addins
 

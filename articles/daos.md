@@ -4,6 +4,15 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
+Four bodies of work that started here have since grown into packages of
+their own, and are not covered below:
+[taskr](https://github.com/dataniel/taskr) for task management,
+[statbank](https://github.com/dataniel/statbank) for the Greenland and
+Faroese statbanks, [cvrr](https://github.com/dataniel/cvrr) for
+published Danish annual reports, and
+[taxmill](https://github.com/dataniel/taxmill) for milling PDF financial
+statements into data. None of them depends on daos, or daos on them.
+
 ------------------------------------------------------------------------
 
 ## Convenience shorthands
@@ -33,9 +42,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20260621"
+#> [1] "20261008"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-06-21 12:48"
+#> [1] "2026-10-08 17:12"
 ```
 
 A typical use is timestamping an export file:
@@ -274,51 +283,6 @@ df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
 files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
 results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
-
-### `read_xbrl()`: parse an XBRL file
-
-Parses an XBRL XML document and returns a tidy tibble with one row per
-fact, joined to context (dates) and unit information. Requires `xml2`.
-
-``` r
-df <- read_xbrl("report.xml")
-```
-
-The returned tibble has columns: `elementid`, `contextid`, `fact`,
-`unitid`, `decimals`, `startdate`, `enddate`, `instant`,
-`explicit_member`, `unit`.
-
-For non-UTF-8 files, pass `encoding`:
-
-``` r
-df <- read_xbrl("report.xml", encoding = "latin1")
-```
-
-The full path from downloaded annual reports to parsed facts, including
-sign reconciliation with
-[`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md),
-is shown in
-[`vignette("cvr")`](https://dataniel.github.io/daos/articles/cvr.md).
-
-### Accounts and CVR workflows
-
-Two larger workflows have their own articles instead of a walkthrough
-here:
-
-- [`vignette("cvr")`](https://dataniel.github.io/daos/articles/cvr.md)
-  covers responsible use of the `cvr_*` pipeline for fetching published
-  annual reports from Erhvervsstyrelsens distribution service:
-  [`cvr_query()`](https://dataniel.github.io/daos/reference/cvr_query.md),
-  [`cvr_search()`](https://dataniel.github.io/daos/reference/cvr_search.md),
-  [`cvr_hits()`](https://dataniel.github.io/daos/reference/cvr_hits.md),
-  [`cvr_download()`](https://dataniel.github.io/daos/reference/cvr_download.md).
-- [`vignette("accounts")`](https://dataniel.github.io/daos/articles/accounts.md)
-  covers the manual accounts workflow behind
-  [`accounts_pdf_to_txt()`](https://dataniel.github.io/daos/reference/accounts_pdf_to_txt.md)
-  and
-  [`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md):
-  from PDF reports through hand-formatted text files to one validated,
-  tidy Excel file.
 
 ### `write_excel()` / `append_excel()`: write presentable Excel files
 
@@ -654,37 +618,6 @@ names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
 ```
 
-### `find_signs()`: reconcile accounting line items
-
-[`find_signs()`](https://dataniel.github.io/daos/reference/find_signs.md)
-finds the signs (`+1`, `-1`, or `0`) that make a set of values sum to a
-given total. Useful when importing accounting data where the sign
-conventions are unknown. It uses a *meet-in-the-middle* algorithm, so it
-stays fast even with many line items.
-
-``` r
-items <- data.frame(
-  label = c("revenue", "costs", "tax", "total"),
-  value = c(1000, 400, 100, 500)
-)
-
-find_signs(items, label, value, total_label = "total")
-#> # A tibble: 0 × 0
-```
-
-Pin known signs and allow items to be excluded with `max_zeros`:
-
-``` r
-find_signs(
-  items,
-  label, value,
-  total_label = "total",
-  positive    = "revenue",
-  negative    = c("costs", "tax"),
-  max_zeros   = 1L
-)
-```
-
 ------------------------------------------------------------------------
 
 ## Domain-specific
@@ -790,90 +723,6 @@ add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 #> 3 0111111118  88
 ```
 
-### `statbank_*`: the Greenland Statbank
-
-The `statbank_*` family is a small client for the Greenland Statbank
-(bank.stat.gl). Search the table list, look up a table’s variables, and
-download the data as a tidy tibble:
-
-``` r
-statbank_search("befolkning")
-
-meta <- statbank_meta("BE/BE01/BEXSAT1.PX")
-meta$variables
-
-df <- statbank_get(
-  "BE/BE01/BEXSAT1.PX",
-  tid = c(2023, 2024, 2025),
-  art = "Antal"
-)
-```
-
-Selections in
-[`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
-are matched against both variable codes and their Danish display texts,
-and against both value codes and value texts, so you can write
-`art = "Antal"` without knowing that the internal code is `Number`.
-Matching also folds Danish letters (`foedested` matches `fødested`).
-Variables you do not mention default to all values.
-
-The result is shaped for programming by default: columns are named by
-the variable codes (snake-cased), and cells hold the value codes (so a
-sex variable coded 0/1 comes back as 0/1) – the shape that joins and
-models cleanly. Dot-prefixed options change it: `.col_names = "text"`
-and/or `.values = "text"` give the display texts instead,
-`.values = "both"` keeps the codes and adds a `<column>_txt` column with
-the labels alongside, `.clean_names = FALSE` keeps the raw names, and
-`.type_convert = FALSE` turns off the automatic
-[`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html)
-that otherwise makes e.g. year columns numeric. To reach any PXWeb v1
-endpoint, `bank` also accepts a full base URL such as
-`"https://bank.stat.gl/api/v1/da/Greenland"`.
-
-The first call to
-[`statbank_search()`](https://dataniel.github.io/daos/reference/statbank_search.md)
-or
-[`statbank_tables()`](https://dataniel.github.io/daos/reference/statbank_tables.md)
-walks the statbank’s table tree (one small request per folder) and
-caches the list for the rest of the session.
-
-The same functions also reach the Faroese statbank (Hagstova Føroya) via
-`bank = "fo"`. Each bank has its own languages, so `lang` defaults to
-the bank’s own default (Danish for Greenland, Faroese for the Faroe
-Islands) rather than a fixed value:
-
-``` r
-statbank_search("wages", bank = "fo")
-df <- statbank_get("IP/IP02/pris_alt.px", bank = "fo")
-```
-
-[`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
-wraps the family in a Shiny app: find a table by browsing the subject
-tree (a three-column, yazi-style browser with keyboard navigation) or
-searching, pick values in popup checklists, preview the data and a plot,
-and copy the
-[`statbank_get()`](https://dataniel.github.io/daos/reference/statbank_get.md)
-call that reproduces the selection. The bank switcher sits one level
-above the subject root, so the same app covers both Greenland (the
-default) and the Faroe Islands, and a language chooser switches between
-each bank’s languages. The app is meant as the bridge from clicking to
-scripting; its settings default to the code-first shape (with a “both”
-option for `_txt` label columns), and the code tab always shows the
-query you built, prefixed `daos::` so it runs without
-[`library(daos)`](https://dataniel.github.io/daos). Data can be
-downloaded as formatted Excel, and pressing Q closes the app and returns
-the last fetched dataset to R. Requires `shiny` and `ggplot2`.
-
-``` r
-statbank_app()
-```
-
-The thinking behind the app – keyboard-driven, guided navigation of a
-statbank, and where that idea is heading – is its own article,
-[`vignette("statbank")`](https://dataniel.github.io/daos/articles/statbank.md).
-
-------------------------------------------------------------------------
-
 ## Interactive tools
 
 ### `screen_timeseries()`: interactive time-series screening
@@ -921,60 +770,15 @@ screen_timeseries(df, year, gdp,
                   .title = "GDP by country")
 ```
 
-### `task_*`: a shared task manager
-
-The `task_*` family is a small taskwarrior-style task manager backed by
-a shared SQLite file. SQLite is free (public domain, bundled by
-`RSQLite`), runs in WAL mode, and needs no server – so a `.sqlite` file
-on a network drive is enough for a team to work from, several people at
-once.
-
-``` r
-task_db("tasks.sqlite")                       # create/open the database
-
-task_add("tasks.sqlite", "Write the report",
-         project = "Q3", assignee = "Anna", tags = c("writing", "urgent"),
-         priority = "H", due = "2026-07-01")
-
-task_list("tasks.sqlite")                     # tibble sorted by urgency
-task_list("tasks.sqlite", assignee = "Anna")  # filter by person
-task_done("tasks.sqlite", id = 1)             # complete a task
-```
-
-Tasks carry a project, an assignee (person), tags, priority, due date,
-recurrence, dependencies and annotations;
-[`task_list()`](https://dataniel.github.io/daos/reference/task_list.md)
-adds a `blocked` flag and a simplified urgency score. Every function
-opens a short-lived connection, works in one transaction, and closes, so
-concurrent users are handled safely. The database is just a shared file
-– point at a path that does not exist yet and a fresh one is created.
-
-[`task_app()`](https://dataniel.github.io/daos/reference/task_app.md) is
-a Shiny front-end over the same database: add and edit tasks, filter by
-person/project/tag/status, see project and people overviews, and watch
-the list update as others change it (it re-reads on a timer). Requires
-`shiny`, `DBI`, and `RSQLite`.
-
-``` r
-task_app("tasks.sqlite")
-```
-
-Because every `task_*` function is a plain call against the shared file,
-task updates can be embedded in production scripts – so the same
-database the team browses also records how production is going. That way
-of working is covered in
-[`vignette("tasks")`](https://dataniel.github.io/daos/articles/tasks.md).
-
 ### `browse_files()`: grab filesystem paths without typing them
 
 Typing or hand-fixing long Windows paths is tedious.
 [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
-launches a small Shiny app that walks the filesystem in the same
-three-column, yazi-style browser as
-[`statbank_app()`](https://dataniel.github.io/daos/reference/statbank_app.md)
-– parent directory, current directory, and a live preview – navigated
-with `h`/`j`/`k`/`l` or the arrow keys. The point is to grab paths: mark
-one or more files or folders with `Space`, then take them into R.
+launches a small Shiny app that walks the filesystem in a three-column,
+yazi-style browser – parent directory, current directory, and a live
+preview – navigated with `h`/`j`/`k`/`l` or the arrow keys. The point is
+to grab paths: mark one or more files or folders with `Space`, then take
+them into R.
 
 ``` r
 p <- browse_files()           # navigate, mark, press Q

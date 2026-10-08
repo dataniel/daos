@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daos</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,10 +40,6 @@
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
     <li><a class="dropdown-item" href="../articles/paths.html">Less fiddling with file paths</a></li>
     <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
-    <li><a class="dropdown-item" href="../articles/accounts.html">From PDF accounts to a tidy dataset</a></li>
-    <li><a class="dropdown-item" href="../articles/cvr.html">Responsible use of the CVR functions</a></li>
-    <li><a class="dropdown-item" href="../articles/statbank.html">Browsing a statbank by keyboard</a></li>
-    <li><a class="dropdown-item" href="../articles/tasks.html">Task management as part of production</a></li>
   </ul>
 </li>
       </ul>
@@ -227,10 +223,10 @@ That gives a minimal audit trail without any logging framework:</p>
 <div class="section level2">
 <h2 id="the-same-idea-inside-the-package">The same idea inside the package<a class="anchor" aria-label="anchor" href="#the-same-idea-inside-the-package"></a>
 </h2>
-<p><code><a href="../reference/accounts_txt_to_xlsx.html">accounts_txt_to_xlsx()</a></code> uses exactly this philosophy
-internally: every parsed company is checked for malformed values, and
-all violations are collected and reported together before anything is
-written. If you adopt one habit from this article, make it that one:
+<p><code><a href="../reference/read_files.html">read_files()</a></code> uses exactly this philosophy internally:
+every path is validated before a single file is opened, and all the
+missing or unreadable ones are reported together rather than one abort
+at a time. If you adopt one habit from this article, make it that one:
 validate <em>before</em> you write output, and make the empty set the
 definition of success.</p>
 </div>
@@ -245,7 +241,7 @@ definition of success.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

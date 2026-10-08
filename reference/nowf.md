@@ -30,11 +30,11 @@ interpolation
 
 ``` r
 nowf()                 # e.g. "20260518"
-#> [1] "20260621"
+#> [1] "20261008"
 nowf("%Y%m%d_%H%M%S")  # e.g. "20260518_143022"
-#> [1] "20260621_124754"
+#> [1] "20261008_171205"
 nowf("%Y%B")           # e.g. "2026May"
-#> [1] "2026June"
+#> [1] "2026October"
 
 # Typical use in file paths:
 if (FALSE) { # \dontrun{

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daos</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,10 +24,6 @@
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
     <li><a class="dropdown-item" href="../articles/paths.html">Less fiddling with file paths</a></li>
     <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
-    <li><a class="dropdown-item" href="../articles/accounts.html">From PDF accounts to a tidy dataset</a></li>
-    <li><a class="dropdown-item" href="../articles/cvr.html">Responsible use of the CVR functions</a></li>
-    <li><a class="dropdown-item" href="../articles/statbank.html">Browsing a statbank by keyboard</a></li>
-    <li><a class="dropdown-item" href="../articles/tasks.html">Task management as part of production</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/dataniel/daos"><span class="fa fab fa-github"></span></a></li>
       </ul></div>
@@ -111,24 +107,17 @@
 
         <dt>
 
+          <code><a href="read_access.html">read_access()</a></code>
+
+        </dt>
+        <dd>Read data from a Microsoft Access database</dd>
+
+        <dt>
+
           <code><a href="summon.html">summon()</a></code>
 
         </dt>
         <dd>Retrieve objects matching a pattern from an environment</dd>
-
-        <dt>
-
-          <code><a href="read_ta.html">read_ta()</a></code>
-
-        </dt>
-        <dd>Read a Greenlandic TA file</dd>
-
-        <dt>
-
-          <code><a href="write_ta.html">write_ta()</a></code>
-
-        </dt>
-        <dd>Write a Greenlandic TA file</dd>
 
         <dt>
 
@@ -187,13 +176,6 @@
 
         </dt>
         <dd>Split a data frame into a named list by grouping columns</dd>
-
-        <dt>
-
-          <code><a href="find_signs.html">find_signs()</a></code>
-
-        </dt>
-        <dd>Find sign combinations that sum to a target</dd>
       </dl></div><div class="section level2">
       <h2 id="interactive">Interactive<a class="anchor" aria-label="anchor" href="#interactive"></a></h2>
 
@@ -217,8 +199,15 @@
 
         </dt>
         <dd>Browse the filesystem and copy paths to R</dd>
+
+        <dt>
+
+          <code><a href="open_in_explorer.html">open_in_explorer()</a></code>
+
+        </dt>
+        <dd>Open a path in the system file explorer</dd>
       </dl></div><div class="section level2">
-      <h2 id="domain-specific">Domain-specific<a class="anchor" aria-label="anchor" href="#domain-specific"></a></h2>
+      <h2 id="danish-and-greenlandic-data">Danish and Greenlandic data<a class="anchor" aria-label="anchor" href="#danish-and-greenlandic-data"></a></h2>
 
 
 
@@ -229,17 +218,17 @@
 
       <dl><dt>
 
-          <code><a href="add_cpr_info.html">add_cpr_info()</a></code>
-
-        </dt>
-        <dd>Add information derived from Danish CPR numbers</dd>
-
-        <dt>
-
           <code><a href="clean_cpr.html">clean_cpr()</a></code>
 
         </dt>
         <dd>Standardise CPR numbers</dd>
+
+        <dt>
+
+          <code><a href="add_cpr_info.html">add_cpr_info()</a></code>
+
+        </dt>
+        <dd>Add information derived from Danish CPR numbers</dd>
 
         <dt>
 
@@ -268,287 +257,6 @@
 
         </dt>
         <dd>Write a Greenlandic TA file</dd>
-      </dl></div><div class="section level2">
-      <h2 id="file-readers">File readers<a class="anchor" aria-label="anchor" href="#file-readers"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="read_access.html">read_access()</a></code>
-
-        </dt>
-        <dd>Read data from a Microsoft Access database</dd>
-
-        <dt>
-
-          <code><a href="read_xbrl.html">read_xbrl()</a></code>
-
-        </dt>
-        <dd>Read an XBRL file</dd>
-
-        <dt>
-
-          <code><a href="accounts_pdf_to_txt.html">accounts_pdf_to_txt()</a></code>
-
-        </dt>
-        <dd>Convert PDF files to text files</dd>
-
-        <dt>
-
-          <code><a href="accounts_txt_to_xlsx.html">accounts_txt_to_xlsx()</a></code>
-
-        </dt>
-        <dd>Parse formatted text files and export to Excel</dd>
-      </dl></div><div class="section level2">
-      <h2 id="cvr-annual-reports">CVR annual reports<a class="anchor" aria-label="anchor" href="#cvr-annual-reports"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="cvr_query.html">cvr_query()</a></code>
-
-        </dt>
-        <dd>Build an Elasticsearch query for CVR annual reports</dd>
-
-        <dt>
-
-          <code><a href="cvr_search.html">cvr_search()</a></code>
-
-        </dt>
-        <dd>Send a query to the CVR distribution service</dd>
-
-        <dt>
-
-          <code><a href="cvr_hits.html">cvr_hits()</a></code>
-
-        </dt>
-        <dd>Extract CVR search hits as a tibble</dd>
-
-        <dt>
-
-          <code><a href="cvr_download.html">cvr_download()</a></code>
-
-        </dt>
-        <dd>Download CVR documents</dd>
-      </dl></div><div class="section level2">
-      <h2 id="task-manager">Task manager<a class="anchor" aria-label="anchor" href="#task-manager"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="task_app.html">task_app()</a></code>
-
-        </dt>
-        <dd>Task manager app</dd>
-
-        <dt>
-
-          <code><a href="task_db.html">task_db()</a></code>
-
-        </dt>
-        <dd>Create or open a shared task database</dd>
-
-        <dt>
-
-          <code><a href="task_add.html">task_add()</a></code>
-
-        </dt>
-        <dd>Add a task</dd>
-
-        <dt>
-
-          <code><a href="task_cycle.html">task_cycle()</a></code>
-
-        </dt>
-        <dd>Register a production cycle as a chain of steps</dd>
-
-        <dt>
-
-          <code><a href="task_list.html">task_list()</a></code>
-
-        </dt>
-        <dd>List tasks</dd>
-
-        <dt>
-
-          <code><a href="task_get.html">task_get()</a></code>
-
-        </dt>
-        <dd>Get one or more tasks by id</dd>
-
-        <dt>
-
-          <code><a href="task_require.html">task_require()</a></code>
-
-        </dt>
-        <dd>Require tasks to have a given status</dd>
-
-        <dt>
-
-          <code><a href="task_blockers.html">task_blockers()</a></code>
-
-        </dt>
-        <dd>Why a task is blocked</dd>
-
-        <dt>
-
-          <code><a href="task_start.html">task_start()</a></code> <code><a href="task_start.html">task_stop()</a></code>
-
-        </dt>
-        <dd>Start or stop work on a task</dd>
-
-        <dt>
-
-          <code><a href="task_step.html">task_step()</a></code>
-
-        </dt>
-        <dd>Run a production step under a task</dd>
-
-        <dt>
-
-          <code><a href="task_done.html">task_done()</a></code>
-
-        </dt>
-        <dd>Complete a task</dd>
-
-        <dt>
-
-          <code><a href="task_reopen.html">task_reopen()</a></code>
-
-        </dt>
-        <dd>Reopen a task</dd>
-
-        <dt>
-
-          <code><a href="task_delete.html">task_delete()</a></code>
-
-        </dt>
-        <dd>Delete a task</dd>
-
-        <dt>
-
-          <code><a href="task_purge.html">task_purge()</a></code>
-
-        </dt>
-        <dd>Permanently delete tasks</dd>
-
-        <dt>
-
-          <code><a href="task_modify.html">task_modify()</a></code>
-
-        </dt>
-        <dd>Modify a task</dd>
-
-        <dt>
-
-          <code><a href="task_annotate.html">task_annotate()</a></code>
-
-        </dt>
-        <dd>Annotate a task</dd>
-
-        <dt>
-
-          <code><a href="task_annotations.html">task_annotations()</a></code>
-
-        </dt>
-        <dd>Annotations of a task</dd>
-
-        <dt>
-
-          <code><a href="task_projects.html">task_projects()</a></code>
-
-        </dt>
-        <dd>Project overview for managers</dd>
-
-        <dt>
-
-          <code><a href="task_people.html">task_people()</a></code>
-
-        </dt>
-        <dd>People overview</dd>
-
-        <dt>
-
-          <code><a href="task_bottlenecks.html">task_bottlenecks()</a></code>
-
-        </dt>
-        <dd>Bottlenecks: the tasks blocking the most others</dd>
-
-        <dt>
-
-          <code><a href="task_activity.html">task_activity()</a></code>
-
-        </dt>
-        <dd>Recent activity across the database</dd>
-      </dl></div><div class="section level2">
-      <h2 id="greenland-statbank">Greenland Statbank<a class="anchor" aria-label="anchor" href="#greenland-statbank"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="statbank_app.html">statbank_app()</a></code>
-
-        </dt>
-        <dd>Interactive explorer for the Greenland Statbank</dd>
-
-        <dt>
-
-          <code><a href="statbank_get.html">statbank_get()</a></code>
-
-        </dt>
-        <dd>Download a table from a statbank</dd>
-
-        <dt>
-
-          <code><a href="statbank_meta.html">statbank_meta()</a></code>
-
-        </dt>
-        <dd>Get the metadata for a statbank table</dd>
-
-        <dt>
-
-          <code><a href="statbank_search.html">statbank_search()</a></code>
-
-        </dt>
-        <dd>Search statbank tables by title</dd>
-
-        <dt>
-
-          <code><a href="statbank_tables.html">statbank_tables()</a></code>
-
-        </dt>
-        <dd>List every table in a statbank</dd>
-
-        <dt>
-
-          <code><a href="statbank_nodes.html">statbank_nodes()</a></code>
-
-        </dt>
-        <dd>List one level of a statbank table tree</dd>
       </dl></div><div class="section level2">
       <h2 id="rstudio-addins">RStudio addins<a class="anchor" aria-label="anchor" href="#rstudio-addins"></a></h2>
 
@@ -603,7 +311,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -178,9 +178,9 @@ place.
 
 ## The same idea inside the package
 
-[`accounts_txt_to_xlsx()`](https://dataniel.github.io/daos/reference/accounts_txt_to_xlsx.md)
-uses exactly this philosophy internally: every parsed company is checked
-for malformed values, and all violations are collected and reported
-together before anything is written. If you adopt one habit from this
-article, make it that one: validate *before* you write output, and make
-the empty set the definition of success.
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+uses exactly this philosophy internally: every path is validated before
+a single file is opened, and all the missing or unreadable ones are
+reported together rather than one abort at a time. If you adopt one
+habit from this article, make it that one: validate *before* you write
+output, and make the empty set the definition of success.
