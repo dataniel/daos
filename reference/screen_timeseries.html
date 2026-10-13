@@ -3,11 +3,13 @@
 group by group. All columns that are not x, y, series, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
 groups with the arrow keys. Press Space to flag the current combination,
-R to reset zoom, and Q to quit."><meta property="og:description" content="Launches a Shiny application for visually reviewing time-series data
+R to reset zoom, and Q to quit. Keys 1 to 6 toggle the diagnostic
+tools in the order shown; shortcuts are displayed beside their controls."><meta property="og:description" content="Launches a Shiny application for visually reviewing time-series data
 group by group. All columns that are not x, y, series, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
 groups with the arrow keys. Press Space to flag the current combination,
-R to reset zoom, and Q to quit."></head><body>
+R to reset zoom, and Q to quit. Keys 1 to 6 toggle the diagnostic
+tools in the order shown; shortcuts are displayed beside their controls."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -52,7 +54,8 @@ R to reset zoom, and Q to quit."></head><body>
 group by group. All columns that are not <code>x</code>, <code>y</code>, <code>series</code>, or excluded
 become grouping dimensions with dropdown selectors. Navigate between
 groups with the arrow keys. Press <code>Space</code> to flag the current combination,
-<code>R</code> to reset zoom, and <code>Q</code> to quit.</p>
+<code>R</code> to reset zoom, and <code>Q</code> to quit. Keys <code>1</code> to <code>6</code> toggle the diagnostic
+tools in the order shown; shortcuts are displayed beside their controls.</p>
     </div>
 
     <div class="section level2">
@@ -65,7 +68,9 @@ groups with the arrow keys. Press <code>Space</code> to flag the current combina
 <span>  .exclude <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .y_min <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .y_max <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  .y_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .period <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .print <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -80,7 +85,7 @@ column, and at least one grouping column.</p></dd>
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>Time (x-axis) variable. Accepts <code>Date</code>, <code>POSIXct</code>, numeric
-years, or any value coercible to a date. (Unquoted.)</p></dd>
+years, or calendar indices such as <code><a href="https://tsibble.tidyverts.org/reference/year-month.html" class="external-link">tsibble::yearmonth</a></code>. (Unquoted.)</p></dd>
 
 
 <dt id="arg-y">y<a class="anchor" aria-label="anchor" href="#arg-y"></a></dt>
@@ -99,7 +104,7 @@ years, or any value coercible to a date. (Unquoted.)</p></dd>
 
 <dt id="arg--title">.title<a class="anchor" aria-label="anchor" href="#arg--title"></a></dt>
 <dd><p>Optional title string shown in the app header and in
-downloaded figures. The group combination (<code>a · b · c</code>) is always shown
+downloaded figures. The group combination (<code>a | b | c</code>) is always shown
 separately and is not affected.</p></dd>
 
 
@@ -114,15 +119,41 @@ automatic scaling. Set to <code>0</code> to replicate the old "start at zero" be
 upper bound of the y-axis globally across all groups. Leave <code>NULL</code> for
 automatic scaling.</p></dd>
 
+
+<dt id="arg--period">.period<a class="anchor" aria-label="anchor" href="#arg--period"></a></dt>
+<dd><p>Optional seasonal period in observations. Pre-fills the
+app's seasonal-period control; <code>NULL</code> infers annual seasonality for
+calendar months/quarters and otherwise uses <code>1</code>. Can be changed in the app.
+See <code><a href="diagnose_timeseries.html">diagnose_timeseries()</a></code> for methods, requirements and limitations.</p></dd>
+
+
+<dt id="arg--print">.print<a class="anchor" aria-label="anchor" href="#arg--print"></a></dt>
+<dd><p>Print pasteable R code for the flagged groups on exit.
+Defaults to <code>TRUE</code>; set <code>FALSE</code> when only the invisible return is wanted.
+Printing also occurs when the function's return value is assigned.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame of flagged group combinations (the key columns only),
-or <code>NULL</code> if nothing was flagged. Returned invisibly when the app exits.</p>
+or <code>NULL</code> if nothing was flagged. Returned invisibly when the app exits.
+Press <code>Q</code>, click Finish, or close the browser session to finish. When
+<code>.print = TRUE</code>, the console also receives a <code>flagged &lt;- tibble::tibble(...)</code>
+expression preserving the grouping columns' types. Closing or reloading
+the browser session ends this local screening app.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Requires the <code>shiny</code>, <code>ggplot2</code>, and <code>plotly</code> packages.</p>
+    <p>Requires the <code>shiny</code> and <code>plotly</code> packages. Diagnostic tools are selected
+inside the app and all start switched off. Selected tools follow the
+current group; results are cached within the session. With multiple lines,
+choose which series to diagnose. Seasonality adds a trend-plus-season layer
+and a seasonal profile; outliers and break dates overlay the main plot.
+Tools live in the side panel. An integrated panel below the plot shows
+findings and results one analysis at a time. Review scope filters select grouping values and
+a time range; navigation and diagnostics use that scope. Existing flags are
+retained, and returned flags still identify whole group combinations.
+The full time range retains missing times; a narrowed range excludes them.</p>
     </div>
 
     <div class="section level2">
@@ -132,7 +163,8 @@ or <code>NULL</code> if nothing was flagged. Returned invisibly when the app exi
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Simple example with economics dataset:</span></span></span>
 <span class="r-in"><span><span class="va">flagged</span> <span class="op">&lt;-</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/economics.html" class="external-link">economics_long</a></span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu">screen_timeseries</span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, series <span class="op">=</span> <span class="va">variable</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>group <span class="op">=</span> <span class="st">"Economics"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">screen_timeseries</span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, series <span class="op">=</span> <span class="va">variable</span>, .exclude <span class="op">=</span> <span class="va">value01</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># With a grouping column:</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>

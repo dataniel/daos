@@ -105,9 +105,9 @@ inline without stopping to look up the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20261008"</span></span>
+<span><span class="co">#&gt; [1] "20261013"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-08 17:12"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-13 12:16"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -401,6 +401,10 @@ Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-write_t
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ta.html">read_ta</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/write_ta.html">write_ta</a></span><span class="op">(</span><span class="va">df</span>, <span class="st">"ta.file"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/write_ta.html">write_ta()</a></code> only writes what <code><a href="../reference/read_ta.html">read_ta()</a></code> reads
+back unchanged. Values that would not fit their fixed-width field, or
+would lose decimals, stop with an error that lists them, so no file with
+shifted fields is written.</p>
 <hr>
 </div>
 </div>
@@ -733,8 +737,9 @@ through the time series group by group, zoom, and flag anomalies –
 without writing any filtering code.</p>
 <p>All columns that are not <code>x</code>, <code>y</code>,
 <code>series</code>, or excluded automatically become dropdown filters.
-Requires <code>shiny</code>, <code>ggplot2</code>, and
-<code>plotly</code>.</p>
+Requires <code>shiny</code> and <code>plotly</code>. Group row indices
+are prepared once, and plots are built directly with Plotly for fast
+navigation.</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  year    <span class="op">=</span> <span class="fl">2010</span><span class="op">:</span><span class="fl">2020</span>,</span>
@@ -746,7 +751,8 @@ Requires <code>shiny</code>, <code>ggplot2</code>, and
 <span></span>
 <span><span class="co"># Multiple lines per group with series:</span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/economics.html" class="external-link">economics_long</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, series <span class="op">=</span> <span class="va">variable</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>group <span class="op">=</span> <span class="st">"Economics"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, series <span class="op">=</span> <span class="va">variable</span>, .exclude <span class="op">=</span> <span class="va">value01</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Keyboard shortcuts</strong></p>
 <table class="table">
 <thead><tr class="header">
@@ -782,6 +788,79 @@ figures:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
+<p>Press <strong>Q</strong>, click <strong>Finish</strong>, or close the
+browser session to end screening. The function returns flagged group
+keys invisibly and also prints pasteable R code such as
+<code>flagged &lt;- tibble::tibble(country = c("DK", "NO"))</code>. This
+preserves the result even if you did not assign the call to an object.
+Use <code>.print = FALSE</code> to suppress the console code when
+desired. Reloading the browser also ends its session, so restart
+<code><a href="../reference/screen_timeseries.html">screen_timeseries()</a></code> to begin again.</p>
+<p><strong>Choose diagnostics inside the app</strong></p>
+<p>All diagnostic tools start switched off. Select any combination of
+<strong>Statistics</strong>, <strong>Seasonality</strong>,
+<strong>Outliers</strong>, <strong>Stationarity</strong>,
+<strong>Autocorrelation</strong>, and <strong>Structural breaks</strong>
+using the checkboxes. Only selected tools run; results are cached within
+the session. Your choices remain active as you navigate through groups.
+With multiple lines, use <strong>Series to diagnose</strong> to choose
+one line for analysis.</p>
+<p>Results share a compact panel inside the main graph card. Switch
+between enabled analyses using the tabs; each shows its conclusion
+alongside the figures or a small diagnostic plot.
+<strong>Overview</strong> gathers the main findings; click a finding to
+open that analysis. Data quality, full outlier tables and method notes
+open in dialogs. On desktop screens, the graph adjusts its height to
+keep the active results in view. Keys <strong>1</strong> to
+<strong>6</strong> toggle tools in sidebar order; arrow keys on a
+focused result tab switch tabs.</p>
+<ul>
+<li>
+<strong>Seasonality</strong> adds a dashed trend-plus-season line to
+the main plot and a seasonal profile alongside it. The profile is in the
+original units.</li>
+<li>
+<strong>Outliers</strong> marks unusual residual observations on the
+main plot.</li>
+<li>
+<strong>Autocorrelation</strong> displays ACF and PACF plots below
+the main plot.</li>
+<li>
+<strong>Stationarity</strong> shows KPSS and Phillips–Perron
+results, including their different null hypotheses and
+interpretations.</li>
+<li>
+<strong>Structural breaks</strong> marks candidate dates on the main
+plot and displays confidence limits. Choose a level or trend model in
+the app.</li>
+</ul>
+<p>The <strong>Seasonal period</strong> control sets observations per
+seasonal cycle, such as 12 for monthly observations with annual
+seasonality. Leave it blank to infer annual seasonality for calendar
+months/quarters; other indices default to 1 (no seasonality).
+<code>.period = 12</code> can pre-fill this control, but does not enable
+any tool. Gaps, duplicate dates and missing/non-finite values are
+reported, and prevent time-dependent analysis without silently modifying
+data.</p>
+<p>Descriptive statistics, decomposition, outlier screening and
+correlations use base R. Stationarity tests additionally need
+<code>feasts</code> and <code>urca</code>; structural breaks need
+<code>strucchange</code>. The app explains unavailable analyses. Break
+searches are limited to 30–2000 observations, use BIC to choose up to
+three breaks, and require segments of at least 15% (and at least 10
+observations). Outlier and break markers are candidates for review, not
+corrections.</p>
+<p>The same diagnostic engine is available outside Shiny. Group
+explicitly by the columns identifying <strong>one</strong> time
+series:</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/diagnose_timeseries.html">diagnose_timeseries</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">gdp</span>, .features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"stationarity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>This returns one row per group with scalar statistics and list
+columns for test results, outliers, break dates, correlations,
+decomposition and notes. See <code><a href="../reference/diagnose_timeseries.html">?diagnose_timeseries</a></code> for
+sample-size requirements and method details.</p>
 </div>
 <div class="section level3">
 <h3 id="browse_files-grab-filesystem-paths-without-typing-them">
@@ -795,7 +874,7 @@ current directory, and a live preview – navigated with
 <code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
 keys. The point is to grab paths: mark one or more files or folders with
 <code>Space</code>, then take them into R.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/browse_files.html">browse_files</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># navigate, mark, press Q</span></span></code></pre></div>
 <p>Pressing <code>Q</code> returns the marked paths – a single string
 for one, a <code>c("a", "b")</code> vector for several – with forward
@@ -841,7 +920,7 @@ expression. Empty lines are ignored.</p>
 <span><span class="fl">87654321</span></span>
 <span><span class="fl">11223344</span></span></code></pre>
 <p>produces:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"12345678"</span>,</span>
 <span>  <span class="st">"87654321"</span>,</span>

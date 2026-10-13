@@ -46,6 +46,9 @@
 - [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
   : Assert that a data frame is empty
 
+- [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
+  : Diagnose time series, optionally within dplyr groups
+
 - [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)
   :
 
