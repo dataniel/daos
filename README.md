@@ -110,7 +110,8 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
 | `read_ta()` | Read Greenlandic TA files |
 | `write_ta()` | Write Greenlandic TA files |
-| `screen_timeseries()` | Interactive Shiny dashboard for screening time-series data group by group |
+| `screen_timeseries()` | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
+| `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |

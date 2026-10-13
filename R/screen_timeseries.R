@@ -4,21 +4,31 @@
 #' group by group. All columns that are not `x`, `y`, `series`, or excluded
 #' become grouping dimensions with dropdown selectors. Navigate between
 #' groups with the arrow keys. Press `Space` to flag the current combination,
-#' `R` to reset zoom, and `Q` to quit.
+#' `R` to reset zoom, and `Q` to quit. Keys `1` to `6` toggle the diagnostic
+#' tools in the order shown; shortcuts are displayed beside their controls.
 #'
-#' Requires the `shiny`, `ggplot2`, and `plotly` packages.
+#' Requires the `shiny` and `plotly` packages. Diagnostic tools are selected
+#' inside the app and all start switched off. Selected tools follow the
+#' current group; results are cached within the session. With multiple lines,
+#' choose which series to diagnose. Seasonality adds a trend-plus-season layer
+#' and a seasonal profile; outliers and break dates overlay the main plot.
+#' Tools live in the side panel. An integrated panel below the plot shows
+#' findings and results one analysis at a time. Review scope filters select grouping values and
+#' a time range; navigation and diagnostics use that scope. Existing flags are
+#' retained, and returned flags still identify whole group combinations.
+#' The full time range retains missing times; a narrowed range excludes them.
 #'
 #' @param data A data frame containing at minimum an x-axis column, a y-axis
 #'   column, and at least one grouping column.
 #' @param x Time (x-axis) variable. Accepts `Date`, `POSIXct`, numeric
-#'   years, or any value coercible to a date. (Unquoted.)
+#'   years, or calendar indices such as `tsibble::yearmonth`. (Unquoted.)
 #' @param y Numeric measurement (y-axis) variable. (Unquoted.)
 #' @param series Optional variable for plotting multiple lines per group
 #'   (e.g. a category). (Unquoted.)
 #' @param .exclude Columns to exclude from becoming grouping dropdowns.
 #'   (Unquoted, tidy-select.)
 #' @param .title Optional title string shown in the app header and in
-#'   downloaded figures. The group combination (`a · b · c`) is always shown
+#'   downloaded figures. The group combination (`a | b | c`) is always shown
 #'   separately and is not affected.
 #' @param .y_min Optional numeric. Pre-fills the Y min input, fixing the
 #'   lower bound of the y-axis globally across all groups. Leave `NULL` for
@@ -26,9 +36,20 @@
 #' @param .y_max Optional numeric. Pre-fills the Y max input, fixing the
 #'   upper bound of the y-axis globally across all groups. Leave `NULL` for
 #'   automatic scaling.
+#' @param .period Optional seasonal period in observations. Pre-fills the
+#'   app's seasonal-period control; `NULL` infers annual seasonality for
+#'   calendar months/quarters and otherwise uses `1`. Can be changed in the app.
+#'   See [daos::diagnose_timeseries()] for methods, requirements and limitations.
+#' @param .print Print pasteable R code for the flagged groups on exit.
+#'   Defaults to `TRUE`; set `FALSE` when only the invisible return is wanted.
+#'   Printing also occurs when the function's return value is assigned.
 #'
 #' @return A data frame of flagged group combinations (the key columns only),
 #'   or `NULL` if nothing was flagged. Returned invisibly when the app exits.
+#'   Press `Q`, click Finish, or close the browser session to finish. When
+#'   `.print = TRUE`, the console also receives a `flagged <- tibble::tibble(...)`
+#'   expression preserving the grouping columns' types. Closing or reloading
+#'   the browser session ends this local screening app.
 #'
 #' @examples
 #' \dontrun{
@@ -36,7 +57,8 @@
 #'
 #' # Simple example with economics dataset:
 #' flagged <- ggplot2::economics_long |>
-#'   screen_timeseries(date, value, series = variable)
+#'   dplyr::mutate(group = "Economics") |>
+#'   screen_timeseries(date, value, series = variable, .exclude = value01)
 #'
 #' # With a grouping column:
 #' df <- data.frame(
@@ -49,10 +71,11 @@
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang enquo quo_is_null as_label syms
-#' @importFrom dplyr select all_of group_by group_keys semi_join arrange pull group_split
+#' @importFrom dplyr select all_of
 #' @export
 screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
-                        .title = NULL, .y_min = NULL, .y_max = NULL) {
+                        .title = NULL, .y_min = NULL, .y_max = NULL,
+                        .period = NULL, .print = TRUE) {
 
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame.")
@@ -93,331 +116,165 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     ))
   }
 
-  by <- rlang::syms(by_names)
+  screen_ts_validate_period(.period)
+  if (!is.logical(.print) || length(.print) != 1L || is.na(.print)) {
+    cli::cli_abort("{.arg .print} must be TRUE or FALSE.")
+  }
+  for (bound in list(.y_min, .y_max)) {
+    if (!is.null(bound) && (length(bound) != 1L || !is.numeric(bound) || !is.finite(bound))) {
+      cli::cli_abort("Axis limits must be NULL or finite numbers.")
+    }
+  }
+  if (!is.null(.y_min) && !is.null(.y_max) && .y_min >= .y_max) {
+    cli::cli_abort("{.arg .y_min} must be smaller than {.arg .y_max}.")
+  }
+  x_col <- rlang::as_name(x_var)
+  y_col <- rlang::as_name(y_var)
+  series_col <- if (has_series) rlang::as_name(series_var) else NULL
+  prepared <- screen_ts_prepare(data, x_col, y_col, by_names, series_col)
+  result <- shiny::runApp(screen_ts_app(prepared, x_col, y_col, series_col,
+                                       .title, .y_min, .y_max, .period))
+  if (.print) cat(paste(screen_ts_result_code(result), collapse = "\n"), "\n")
+  invisible(result)
+}
 
-  # The Shiny input id for a grouping variable's dropdown, in one place.
-  gid <- function(var) paste0("group_", var)
+screen_ts_app <- function(prepared, x_col, y_col, series_col = NULL,
+                          .title = NULL, .y_min = NULL, .y_max = NULL,
+                          .period = NULL) {
+  by_names <- names(prepared$keys)
+  has_series <- !is.null(series_col)
+  gid <- function(var) paste0("group_", match(var, by_names))
+  time_scope <- screen_ts_time_scope(prepared$data[[x_col]])
+  diagnostic_choices <- c("Statistics" = "summary", "Seasonality" = "seasonality",
+    "Outliers" = "outliers", "Stationarity" = "stationarity",
+    "Autocorrelation" = "autocorrelation", "Structural breaks" = "breaks")
+  descriptions <- c("Level & spread", "Repeating patterns", "Unusual observations",
+    "Stability over time", "Dependence across lags", "Changes in level or trend")
+  diagnostic_input <- shiny::checkboxGroupInput("diagnostics", NULL,
+    choiceNames = lapply(seq_along(diagnostic_choices), function(i) shiny::tagList(
+      shiny::span(class = "tool-copy", shiny::span(names(diagnostic_choices)[i]),
+        shiny::span(class = "tool-description", descriptions[i])),
+      shiny::tags$kbd("aria-hidden" = "true", i))),
+    choiceValues = unname(diagnostic_choices), selected = character(), inline = TRUE)
 
-  keys <- data |>
-    dplyr::group_by(!!!by) |>
-    dplyr::group_keys()
-
-  dropdowns <- lapply(by_names, \(var) {
-    choices <- as.character(unique(keys[[var]]))
-    shiny::div(
-      class = "field",
-      shiny::tags$label(class = "field-label", var),
-      shiny::selectInput(
-        inputId = gid(var),
-        label   = NULL,
-        choices = as.list(choices),
-        width   = "100%"
-      )
-    )
-  })
+  dropdowns <- lapply(by_names, function(var) shiny::div(class = "field",
+    shiny::tags$label(class = "field-label", "for" = paste0(gid(var), "-selectized"), var),
+    shiny::selectizeInput(gid(var), label = NULL, choices = NULL, width = "100%")
+  ))
+  axis_input <- function(id, label, value) shiny::div(class = "field",
+    shiny::tags$label(class = "field-label", "for" = id, label),
+    shiny::tagAppendAttributes(
+      shiny::numericInput(id, label = NULL, value = value, width = "100%"),
+      .cssSelector = "input", placeholder = "Auto"))
+  analysis <- function(feature, detail, metrics = NULL) shiny::div(class = "analysis-layout",
+    shiny::div(class = "analysis-finding", shiny::uiOutput(paste0(feature, "_finding")), metrics),
+    shiny::div(class = "analysis-detail", detail))
+  chart <- function(id) shiny::div(class = "analysis-chart", plotly::plotlyOutput(id, height = "100%"))
 
   ui <- shiny::fluidPage(
-    shiny::tags$head(
-      shiny::tags$link(
-        rel  = "stylesheet",
-        href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      ),
-      shiny::tags$style(shiny::HTML("
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-               background: #f7f7f8; color: #18181b; margin: 0;
-               -webkit-font-smoothing: antialiased; }
-        .container-fluid { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
-        .header { margin-bottom: 24px; display: flex; align-items: center;
-                  justify-content: space-between; }
-        .header-title { font-size: 13px; font-weight: 600; color: #71717a;
-                        text-transform: uppercase; letter-spacing: 0.08em; }
-        .header-hint { font-size: 12px; color: #a1a1aa; font-weight: 500; }
-        .header-hint kbd { font-family: 'Inter', sans-serif; font-size: 11px;
-                           font-weight: 600; padding: 2px 6px; background: white;
-                           border: 1px solid #e4e4e7; border-radius: 4px;
-                           color: #52525b; margin: 0 2px; }
-        .control-bar { display: flex; align-items: flex-end; gap: 16px;
-                       padding: 20px; background: white; border: 1px solid #e4e4e7;
-                       border-radius: 12px; margin-bottom: 24px; flex-wrap: wrap;
-                       box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-        .nav-group { display: flex; align-items: center; gap: 8px; height: 38px; }
-        .nav-btn { width: 38px; height: 38px; border: 1px solid #e4e4e7;
-                   background: white; border-radius: 8px; font-size: 14px;
-                   color: #52525b; cursor: pointer; transition: all 0.15s ease;
-                   padding: 0; display: flex; align-items: center;
-                   justify-content: center; }
-        .nav-btn:hover { background: #fafafa; border-color: #d4d4d8; color: #18181b; }
-        .nav-btn:active { transform: scale(0.96); }
-        .nav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
-        .counter { font-size: 13px; font-weight: 500; color: #71717a;
-                   min-width: 56px; text-align: center;
-                   font-variant-numeric: tabular-nums; }
-        .field { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
-        .field-label { font-size: 11px; font-weight: 600; color: #71717a;
-                       text-transform: uppercase; letter-spacing: 0.06em;
-                       margin: 0; line-height: 1; }
-        .field .form-group { margin: 0; }
-        .field .form-control { background: white; border-radius: 8px;
-                                border: 1px solid #e4e4e7; height: 38px;
-                                font-size: 14px; color: #18181b; padding: 0 12px;
-                                font-family: inherit; font-weight: 500; }
-        .field .form-control:focus { border-color: #a1a1aa;
-                                      box-shadow: 0 0 0 3px rgba(161,161,170,0.15);
-                                      outline: none; }
-        .plot-container { background: white; border: 1px solid #e4e4e7;
-                          border-radius: 12px; padding: 28px 28px 20px;
-                          box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-        .plot-meta { display: flex; align-items: center; gap: 12px;
-                     margin-bottom: 20px; padding-bottom: 16px;
-                     border-bottom: 1px solid #f4f4f5; }
-        .plot-meta-left { flex: 1; display: flex; align-items: center; gap: 12px; }
-        .plot-title { font-size: 16px; font-weight: 600; color: #18181b; margin: 0; }
-        .plot-subtitle { font-size: 13px; color: #71717a; font-weight: 500; }
-        .y-axis-controls { display: flex; align-items: flex-end; gap: 8px;
-                           margin-left: auto; flex-shrink: 0; }
-        .y-axis-controls .field { min-width: 72px; max-width: 88px; }
-        .y-axis-controls .field-label { font-size: 10px; }
-        .y-axis-controls .form-group { margin: 0; }
-        .y-axis-controls .form-control { height: 30px; font-size: 13px;
-                                          padding: 0 8px; border-radius: 6px; }
-      ")),
-      shiny::tags$script(shiny::HTML("
-        $(document).keydown(function(e) {
-          if (e.key === 'Escape') {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
-                || e.target.tagName === 'SELECT') { e.target.blur(); }
-            return;
-          }
-          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
-              || e.target.tagName === 'SELECT') return;
-          if (e.key === 'ArrowLeft')  $('#prev').click();
-          if (e.key === 'ArrowRight') $('#next_btn').click();
-          if (e.key === ' ') { e.preventDefault(); $('#flag_btn').click(); }
-          if (e.key === 'r' || e.key === 'R') Shiny.setInputValue('reset_zoom', Math.random(), {priority: 'event'});
-          if (e.key === 'q' || e.key === 'Q') Shiny.setInputValue('exit_key',   Math.random());
-        });
-        Shiny.addCustomMessageHandler('toggle_class', function(msg) {
-          if (msg.active) { $(msg.selector).addClass(msg.cls); }
-          else            { $(msg.selector).removeClass(msg.cls); }
-        });
-      "))
-    ),
+    screen_ts_head(),
     shiny::div(class = "header",
-      shiny::div(class = "header-title",
-        if (!is.null(.title)) .title else "Time series screening"
-      ),
-      shiny::div(class = "header-hint",
-        shiny::tags$kbd("\u2190"), "/", shiny::tags$kbd("\u2192"), " navigate  ",
-        shiny::tags$kbd("Space"), " flag  ",
-        shiny::tags$kbd("R"), " reset zoom  ",
-        shiny::tags$kbd("Q"), " quit"
-      )
+      shiny::div(
+        shiny::div(class = "header-eyebrow", "daos / screening"),
+        shiny::h1(class = "header-title",
+          if (!is.null(.title)) .title else "Time series screening")),
+      shiny::div(class = "header-actions",
+        shiny::div(class = "flag-count", role = "status", title = "All flagged groups, including those outside the current filters",
+          shiny::textOutput("flag_count", inline = TRUE)),
+        screen_ts_button("finish_btn", "Finish", "Q", class = "screen-btn-primary",
+          title = "Finish screening and return flagged groups (Q)", "aria-keyshortcuts" = "Q"))
     ),
-    shiny::div(class = "control-bar",
-      shiny::div(class = "nav-group",
-        shiny::tags$button(id = "prev",     class = "nav-btn action-button", "\u2190"),
-        shiny::div(class = "counter", shiny::textOutput("counter", inline = TRUE)),
-        shiny::tags$button(id = "next_btn", class = "nav-btn action-button", "\u2192"),
-        shiny::tags$button(id = "flag_btn", class = "nav-btn action-button", "\u2605")
-      ),
-      !!!dropdowns
-    ),
-    shiny::div(class = "plot-container",
-      shiny::div(class = "plot-meta",
-        shiny::div(class = "plot-meta-left",
-          shiny::h2(class = "plot-title",
-                    shiny::textOutput("plot_title", inline = TRUE)),
-          shiny::div(class = "plot-subtitle",
-                     shiny::textOutput("plot_subtitle", inline = TRUE))
+    shiny::div(class = "screen-workspace",
+      shiny::tags$main(class = "screen-main",
+        shiny::div(class = "control-bar",
+          shiny::div(class = "field nav-field",
+            shiny::div(class = "field-label", "Browse groups"),
+            shiny::div(class = "nav-group", role = "group", "aria-label" = "Group navigation",
+              shiny::actionButton("prev", "\u2190", class = "screen-btn nav-btn",
+                title = "Previous group (Left arrow)", "aria-label" = "Previous group",
+                "aria-keyshortcuts" = "ArrowLeft", disabled = "disabled"),
+              shiny::div(class = "counter", role = "status", shiny::textOutput("counter", inline = TRUE)),
+              shiny::actionButton("next_btn", "\u2192", class = "screen-btn nav-btn",
+                title = "Next group (Right arrow)", "aria-label" = "Next group",
+                "aria-keyshortcuts" = "ArrowRight"))),
+          shiny::div(class = "group-fields", !!!dropdowns),
+          shiny::actionButton("flag_btn", shiny::tagList(
+            shiny::span(class = "flag-icon", "aria-hidden" = "true", "\u2605"),
+            shiny::span(class = "button-label", "Flag group"),
+            shiny::tags$kbd("aria-hidden" = "true", "Space")),
+            class = "screen-btn flag-btn", title = "Flag this group (Space)",
+            "aria-pressed" = "false", "aria-keyshortcuts" = "Space")
         ),
-        shiny::div(class = "y-axis-controls",
-          shiny::div(class = "field",
-            shiny::tags$label(class = "field-label", "Y min"),
-            shiny::numericInput("y_min", label = NULL, value = .y_min, width = "100%")
+        shiny::div(class = "screen-plot-card",
+          shiny::div(class = "plot-meta",
+            shiny::div(class = "plot-meta-left",
+              shiny::h2(class = "plot-title", shiny::textOutput("plot_title", inline = TRUE)),
+              shiny::div(class = "plot-subtitle", shiny::textOutput("plot_subtitle", inline = TRUE))),
+            shiny::div(class = "y-axis-controls",
+              axis_input("y_min", "Y min", .y_min), axis_input("y_max", "Y max", .y_max),
+              screen_ts_button("reset_zoom", "Reset zoom", "R",
+                title = "Reset horizontal zoom (R)", "aria-keyshortcuts" = "R"))
           ),
-          shiny::div(class = "field",
-            shiny::tags$label(class = "field-label", "Y max"),
-            shiny::numericInput("y_max", label = NULL, value = .y_max, width = "100%")
-          )
+          shiny::div(class = "plot-area", plotly::plotlyOutput("plot", height = "100%")),
+          shiny::conditionalPanel("input.diagnostics && input.diagnostics.length > 0",
+            class = "diagnostic-dock",
+            shiny::actionButton("show_notes", "Method notes", class = "dock-notes link-btn"),
+            shiny::tabsetPanel(id = "diagnostic_view", type = "tabs", selected = "overview",
+              shiny::tabPanel("Overview", value = "overview", shiny::uiOutput("diagnostic_findings")),
+              shiny::tabPanel("Statistics", value = "summary",
+                analysis("summary", shiny::uiOutput("summary_metrics"))),
+              shiny::tabPanel("Seasonality", value = "seasonality",
+                analysis("seasonality", chart("season_plot"), shiny::uiOutput("season_metrics"))),
+              shiny::tabPanel("Outliers", value = "outliers",
+                analysis("outliers", shiny::uiOutput("outlier_results"))),
+              shiny::tabPanel("Stationarity", value = "stationarity",
+                analysis("stationarity", shiny::uiOutput("stationarity_results"))),
+              shiny::tabPanel("Autocorrelation", value = "autocorrelation",
+                analysis("autocorrelation", chart("correlation_plot"), shiny::uiOutput("correlation_metrics"))),
+              shiny::tabPanel("Breaks", value = "breaks",
+                analysis("breaks", shiny::uiOutput("break_results")))))
         )
       ),
-      plotly::plotlyOutput("plot", height = "480px")
+      shiny::tags$aside(class = "screen-sidebar", "aria-label" = "Review settings",
+        shiny::tags$details(id = "scope-panel", class = "scope-tools",
+          shiny::tags$summary(
+            shiny::span(shiny::span("Review scope"),
+              shiny::span(class = "scope-caption", shiny::textOutput("scope_count", inline = TRUE))),
+            shiny::span(class = "sidebar-chevron", "aria-hidden" = "true", "\u2304")),
+          shiny::div(class = "scope-body",
+            shiny::p(class = "sidebar-intro", "Choose groups and a period to review."),
+            lapply(seq_along(by_names), function(i) shiny::div(class = "field",
+              shiny::selectizeInput(paste0("scope_", i), by_names[i], choices = NULL,
+                multiple = TRUE, width = "100%",
+                options = list(placeholder = "All groups", plugins = list("remove_button"))))),
+            if (time_scope$enabled) shiny::sliderInput("time_scope", "Time range",
+              min = time_scope$bounds[1], max = time_scope$bounds[2], value = time_scope$bounds,
+              step = if (inherits(time_scope$bounds, "Date")) 1 else NULL,
+              ticks = FALSE, width = "100%"),
+            shiny::actionButton("reset_scope", "Reset filters", class = "screen-btn scope-reset"),
+            shiny::p(class = "field-help", "Flags are kept when you change the filters."))
+        ),
+        shiny::tags$details(id = "diagnostic-panel", class = "diagnostic-tools", open = "open",
+          shiny::tags$summary(
+            shiny::span(id = "diagnostics-heading", "Diagnostic tools"),
+            shiny::span(class = "sidebar-chevron", "aria-hidden" = "true", "\u2304")),
+          shiny::p(class = "sidebar-intro", "Add a second perspective to your review."),
+          shiny::tags$div(role = "group", "aria-labelledby" = "diagnostics-heading", diagnostic_input),
+          shiny::conditionalPanel("input.diagnostics && input.diagnostics.length > 0",
+            shiny::div(class = "diagnostic-controls",
+              if (has_series) shiny::selectInput("diagnostic_series", "Series to diagnose", choices = NULL),
+              shiny::conditionalPanel("input.diagnostics && (input.diagnostics.indexOf('seasonality') >= 0 || input.diagnostics.indexOf('outliers') >= 0 || input.diagnostics.indexOf('breaks') >= 0)",
+                shiny::numericInput("diagnostic_period", "Seasonal period",
+                  value = if (is.null(.period)) NA_real_ else .period, min = 1, step = 1),
+                shiny::p(class = "field-help", "Leave blank to infer from the time index.")),
+              shiny::conditionalPanel("input.diagnostics && input.diagnostics.indexOf('breaks') >= 0",
+                shiny::selectInput("break_type", "Break model", c("Level" = "level", "Trend" = "trend")))
+            ),
+            shiny::div(class = "diagnostic-context", shiny::textOutput("diagnostic_context"))
+          )
+        )
+      )
     )
   )
-
-  server <- function(input, output, session) {
-    idx     <- shiny::reactiveVal(1L)
-    flagged <- shiny::reactiveVal(integer(0))
-
-    shiny::observeEvent(input$exit_key, {
-      f <- flagged()
-      result <- if (length(f) > 0) keys[sort(f), , drop = FALSE] else NULL
-      shiny::stopApp(result)
-    }, ignoreInit = TRUE)
-
-    shiny::observeEvent(input$flag_btn, {
-      i       <- idx()
-      current <- flagged()
-      flagged(if (i %in% current) setdiff(current, i) else union(current, i))
-    }, ignoreInit = TRUE)
-
-    shiny::observeEvent(input$reset_zoom, {
-      plotly::plotlyProxy("plot", session) |>
-        plotly::plotlyProxyInvoke("relayout", list("xaxis.autorange" = TRUE))
-    }, ignoreInit = TRUE)
-
-    shiny::observe({
-      session$sendCustomMessage("toggle_class", list(
-        selector = "#flag_btn", cls = "active", active = idx() %in% flagged()
-      ))
-    })
-
-    # Treat an empty/NA axis-limit input as "no bound".
-    nullify   <- function(v) if (is.null(v) || is.na(v)) NULL else v
-    y_min_val <- shiny::reactive(nullify(input$y_min))
-    y_max_val <- shiny::reactive(nullify(input$y_max))
-
-    sync_dropdowns <- function(new_idx) {
-      current_key <- keys[new_idx, , drop = FALSE]
-      for (var in by_names) {
-        shiny::updateSelectInput(session, gid(var),
-                                 selected = as.character(current_key[[var]]))
-      }
-    }
-
-    find_idx <- function() {
-      current_values <- vapply(by_names, \(var) {
-        val <- input[[gid(var)]]
-        if (is.null(val)) NA_character_ else as.character(val)
-      }, character(1))
-      matches <- vapply(seq_len(nrow(keys)), \(i) {
-        all(as.character(unlist(keys[i, ])) == current_values)
-      }, logical(1))
-      which(matches)[1]
-    }
-
-    shiny::observeEvent(input$prev, {
-      new_idx <- max(1L, idx() - 1L); idx(new_idx); sync_dropdowns(new_idx)
-    })
-    shiny::observeEvent(input$next_btn, {
-      new_idx <- min(nrow(keys), idx() + 1L); idx(new_idx); sync_dropdowns(new_idx)
-    })
-
-    for (var in by_names) {
-      local({
-        var <- var
-        shiny::observeEvent(input[[gid(var)]], {
-          new_idx <- find_idx()
-          if (!is.na(new_idx) && new_idx != idx()) idx(new_idx)
-        }, ignoreInit = TRUE)
-      })
-    }
-
-    current_data <- shiny::reactive({
-      target <- keys[idx(), , drop = FALSE]
-      data |>
-        dplyr::semi_join(target, by = names(target)) |>
-        dplyr::arrange(!!x_var)
-    })
-
-    current_key <- shiny::reactive({ keys[idx(), , drop = FALSE] })
-
-    output$counter <- shiny::renderText({
-      n_flagged <- length(flagged())
-      flag_str  <- if (n_flagged > 0) paste0("  \u2605", n_flagged) else ""
-      paste0(idx(), " / ", nrow(keys), flag_str)
-    })
-    output$plot_title <- shiny::renderText({
-      paste(as.character(unlist(current_key())), collapse = " \u00b7 ")
-    })
-    output$plot_subtitle <- shiny::renderText({
-      d <- current_data()
-      if (has_series) {
-        counts    <- tapply(seq_len(nrow(d)), dplyr::pull(d, !!series_var), length)
-        n_series  <- length(counts)
-        obs_range <- range(counts)
-        obs_str   <- if (obs_range[1] == obs_range[2]) {
-          paste0(obs_range[1], " observations each")
-        } else {
-          paste0(obs_range[1], "\u2013", obs_range[2], " observations")
-        }
-        paste0(n_series, " series \u00b7 ", obs_str)
-      } else {
-        n_obs <- nrow(d)
-        paste0(n_obs, " observation", if (n_obs == 1) "" else "s")
-      }
-    })
-
-    output$plot <- plotly::renderPlotly({
-      d       <- current_data()
-      palette <- c("#18181b", "#6366f1", "#10b981", "#f59e0b",
-                   "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
-
-      if (has_series) {
-        series_col <- rlang::as_label(series_var)
-        d[[series_col]] <- as.character(d[[series_col]])
-        unique_series <- unique(d[[series_col]])
-        colors <- setNames(rep_len(palette, length(unique_series)), unique_series)
-        p <- ggplot2::ggplot(d, ggplot2::aes(
-          x     = !!x_var,
-          y     = !!y_var,
-          color = !!series_var,
-          group = !!series_var
-        )) +
-          ggplot2::geom_line(linewidth = 0.8) +
-          ggplot2::geom_point(size = 1.5) +
-          ggplot2::scale_color_manual(values = colors)
-      } else {
-        p <- ggplot2::ggplot(d, ggplot2::aes(x = !!x_var, y = !!y_var)) +
-          ggplot2::geom_line(color = "#18181b", linewidth = 0.8) +
-          ggplot2::geom_point(color = "#18181b", size = 1.5)
-      }
-
-      p <- p +
-        ggplot2::scale_y_continuous(
-          labels = scales::label_number(big.mark = ".", decimal.mark = ",")
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(
-          plot.background    = ggplot2::element_blank(),
-          panel.background   = ggplot2::element_blank(),
-          panel.grid.major.x = ggplot2::element_blank(),
-          panel.grid.minor   = ggplot2::element_blank(),
-          panel.grid.major.y = ggplot2::element_line(color = "#f4f4f5"),
-          axis.text          = ggplot2::element_text(color = "#71717a", size = 9),
-          axis.title         = ggplot2::element_blank(),
-          legend.title       = ggplot2::element_blank(),
-          legend.position    = if (has_series) "top" else "none"
-        )
-
-      y_lo <- y_min_val()
-      y_hi <- y_max_val()
-      if (!is.null(y_lo) || !is.null(y_hi)) {
-        p <- p + ggplot2::coord_cartesian(
-          ylim = c(
-            if (is.null(y_lo)) NA_real_ else y_lo,
-            if (is.null(y_hi)) NA_real_ else y_hi
-          )
-        )
-      }
-
-      key_str <- paste(as.character(unlist(current_key())), collapse = "_")
-
-      plotly::ggplotly(p) |>
-        plotly::layout(
-          paper_bgcolor = "rgba(0,0,0,0)",
-          plot_bgcolor  = "rgba(0,0,0,0)"
-        ) |>
-        plotly::config(
-          displayModeBar = "hover",
-          modeBarButtonsToRemove = list("select2d", "lasso2d"),
-          toImageButtonOptions = list(
-            format   = "png",
-            filename = key_str
-          )
-        )
-    })
-  }
-
-  invisible(shiny::runApp(shiny::shinyApp(ui, server)))
+  shiny::shinyApp(ui, screen_ts_server(prepared, x_col, y_col, series_col, .title))
 }

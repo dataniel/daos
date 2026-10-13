@@ -579,7 +579,8 @@ series group by group, zoom, and flag anomalies -- without writing any
 filtering code.
 
 All columns that are not `x`, `y`, `series`, or excluded automatically
-become dropdown filters. Requires `shiny`, `ggplot2`, and `plotly`.
+become dropdown filters. Requires `shiny` and `plotly`. Group row indices
+are prepared once, and plots are built directly with Plotly for fast navigation.
 
 ```{r, eval = FALSE}
 df <- expand.grid(
@@ -592,7 +593,8 @@ screen_timeseries(df, x = year, y = gdp)
 
 # Multiple lines per group with series:
 ggplot2::economics_long |>
-  screen_timeseries(date, value, series = variable)
+  mutate(group = "Economics") |>
+  screen_timeseries(date, value, series = variable, .exclude = value01)
 ```
 
 **Keyboard shortcuts**
@@ -613,6 +615,66 @@ screen_timeseries(df, year, gdp,
                   .y_min = 0, .y_max = 500,
                   .title = "GDP by country")
 ```
+
+Press **Q**, click **Finish**, or close the browser session to end screening.
+The function returns flagged group keys invisibly and also prints pasteable
+R code such as `flagged <- tibble::tibble(country = c("DK", "NO"))`.
+This preserves the result even if you did not assign the call to an object.
+Use `.print = FALSE` to suppress the console code when desired. Reloading the
+browser also ends its session, so restart `screen_timeseries()` to begin again.
+
+**Choose diagnostics inside the app**
+
+All diagnostic tools start switched off. Select any combination of
+**Statistics**, **Seasonality**, **Outliers**, **Stationarity**,
+**Autocorrelation**, and **Structural breaks** using the checkboxes.
+Only selected tools run; results are cached within the session. Your choices
+remain active as you navigate through groups. With multiple lines, use
+**Series to diagnose** to choose one line for analysis.
+
+Results share a compact panel inside the main graph card. Switch between
+enabled analyses using the tabs; each shows its conclusion alongside the
+figures or a small diagnostic plot. **Overview** gathers the main findings;
+click a finding to open that analysis. Data quality, full outlier tables and
+method notes open in dialogs. On desktop screens, the graph adjusts its height
+to keep the active results in view. Keys **1** to **6** toggle tools in sidebar
+order; arrow keys on a focused result tab switch tabs.
+
+- **Seasonality** adds a dashed trend-plus-season line to the main plot and
+  a seasonal profile alongside it. The profile is in the original units.
+- **Outliers** marks unusual residual observations on the main plot.
+- **Autocorrelation** displays ACF and PACF plots below the main plot.
+- **Stationarity** shows KPSS and Phillips--Perron results, including their
+  different null hypotheses and interpretations.
+- **Structural breaks** marks candidate dates on the main plot and displays
+  confidence limits. Choose a level or trend model in the app.
+
+The **Seasonal period** control sets observations per seasonal cycle, such
+as 12 for monthly observations with annual seasonality. Leave it blank to
+infer annual seasonality for calendar months/quarters; other indices default
+to 1 (no seasonality). `.period = 12` can pre-fill this control, but does not
+enable any tool. Gaps, duplicate dates and missing/non-finite values are
+reported, and prevent time-dependent analysis without silently modifying data.
+
+Descriptive statistics, decomposition, outlier screening and correlations
+use base R. Stationarity tests additionally need `feasts` and `urca`;
+structural breaks need `strucchange`. The app explains unavailable analyses.
+Break searches are limited to 30--2000 observations, use BIC to choose up to
+three breaks, and require segments of at least 15% (and at least 10 observations).
+Outlier and break markers are candidates for review, not corrections.
+
+The same diagnostic engine is available outside Shiny. Group explicitly by
+the columns identifying **one** time series:
+
+```{r, eval = FALSE}
+df |>
+  group_by(country) |>
+  diagnose_timeseries(year, gdp, .features = c("summary", "stationarity"))
+```
+
+This returns one row per group with scalar statistics and list columns for
+test results, outliers, break dates, correlations, decomposition and notes.
+See `?diagnose_timeseries` for sample-size requirements and method details.
 
 ### `browse_files()`: grab filesystem paths without typing them
 
