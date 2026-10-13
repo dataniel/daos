@@ -19,12 +19,34 @@ is derived automatically (see Details). Any other columns cause an error.}
 \description{
 Writes a data frame to a Greenlandic TA fixed-width file. Writes the nine
 columns \code{nrnr}, \code{trans}, \code{brch}, \code{bas}, \code{eng}, \code{det}, \code{afg}, \code{moms}, and
-\code{kbx}. Numeric columns are written without decimal places; character
-columns are left-aligned in their field.
+\code{kbx}, in the positions \code{\link[=read_ta]{read_ta()}} reads them from.
 }
 \details{
 If \code{moms} is absent from \code{x}, it is derived automatically: \code{NA} for rows
 where \code{trans} is \code{"0100"} or \code{"0700"} (no VAT in Greenland), \code{0} otherwise.
+
+The file is guaranteed to read back through \code{\link[=read_ta]{read_ta()}} unchanged.
+A fixed-width file has no delimiters, so a value wider than its field does
+not fail: it pushes every following field out of position, and the file
+still parses, just into the wrong columns. \code{write_ta()} therefore refuses to
+write anything it cannot write exactly, and lists every offending value at
+once.
+\itemize{
+\item Numbers are written with the fewest decimals that reproduce the value
+exactly, so whole numbers are written without decimals. A number whose
+exact form is wider than its field is an error, never rounded.
+\item Character values are left-aligned. Because \code{\link[=read_ta]{read_ta()}} trims
+whitespace and reads blank fields as \code{NA}, values that are too long, empty,
+or start or end with a space are errors.
+\item \code{NA} is written as a blank field.
+}\tabular{ll}{
+   Column \tab Width \cr
+   nrnr \tab 5 \cr
+   trans \tab 6 \cr
+   brch \tab 4 \cr
+   bas \tab 13 \cr
+   eng, det, afg, moms, kbx \tab 11 \cr
+}
 }
 \examples{
 \dontrun{

@@ -322,6 +322,10 @@ df <- read_ta("ta.file")
 write_ta(df, "ta.file")
 ```
 
+`write_ta()` only writes what `read_ta()` reads back unchanged. Values that
+would not fit their fixed-width field, or would lose decimals, stop with an
+error that lists them, so no file with shifted fields is written.
+
 ---
 
 ## Data inspection
