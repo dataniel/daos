@@ -108,8 +108,10 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
-| `read_ta()` | Read Greenlandic TA files |
-| `write_ta()` | Write Greenlandic TA files |
+| `read_ta()` | Read Greenlandic TA files (old layout) |
+| `write_ta()` | Write Greenlandic TA files (old layout) |
+| `read_ta2()` | Read Greenlandic TA files (new 140-character layout) |
+| `write_ta2()` | Write Greenlandic TA files (new 140-character layout) |
 | `screen_timeseries()` | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
 | `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |

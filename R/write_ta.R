@@ -45,15 +45,24 @@
 #'
 #' @export
 write_ta <- function(x, path) {
-  widths <- c(nrnr = 5, trans = 6, brch = 4, bas = 13, eng = 11,
-              det = 11, afg = 11, moms = 11, kbx = 11)
+  ta_write(x, path,
+           widths = c(nrnr = 5, trans = 6, brch = 4, bas = 13, eng = 11,
+                      det = 11, afg = 11, moms = 11, kbx = 11),
+           gaps = rep(1, 8), fn = "write_ta", reader = "read_ta")
+}
+
+# Shared by write_ta() and write_ta2(): the two layouts differ only in field
+# widths and the blank gaps between fields. `gaps[i]` is the number of spaces
+# between field i and field i + 1.
+ta_write <- function(x, path, widths, gaps, fn, reader,
+                     call = rlang::caller_env()) {
   str_cols <- c("nrnr", "trans", "brch")
   ta_cols <- names(widths)
 
   extra <- setdiff(names(x), ta_cols)
   if (length(extra) > 0) {
-    stop("write_ta() only supports the 9 TA columns. Remove: ",
-         paste(extra, collapse = ", "))
+    cli::cli_abort(paste0(fn, "() only supports the 9 TA columns. Remove: ",
+                          paste(extra, collapse = ", ")), call = call)
   }
 
   if (!"moms" %in% names(x)) {
@@ -63,7 +72,8 @@ write_ta <- function(x, path) {
 
   missing <- setdiff(ta_cols, names(x))
   if (length(missing) > 0) {
-    cli::cli_abort("{.arg x} is missing column{?s} {.field {missing}}.")
+    cli::cli_abort("{.arg x} is missing column{?s} {.field {missing}}.",
+                   call = call)
   }
 
   fields <- lapply(ta_cols, function(col) {
@@ -73,7 +83,7 @@ write_ta <- function(x, path) {
 
   problems <- unlist(lapply(ta_cols, function(col) {
     ta_field_problems(col, x[[col]], fields[[col]], widths[[col]],
-                      is_str = col %in% str_cols)
+                      is_str = col %in% str_cols, reader = reader)
   }))
   if (length(problems) > 0) {
     # Escape braces so values are shown literally, not interpolated by cli.
@@ -81,19 +91,22 @@ write_ta <- function(x, path) {
     names(shown) <- rep("x", length(shown))
     more <- length(problems) - length(shown)
     cli::cli_abort(c(
-      "Cannot write {length(problems)} value{?s} so that {.fn read_ta} reads {?it/them} back unchanged:",
+      "Cannot write {length(problems)} value{?s} so that {.fn {reader}} reads {cli::qty(length(problems))}{?it/them} back unchanged:",
       shown,
       if (more > 0) c(" " = "... and {more} more")
-    ))
+    ), call = call)
   }
 
   padded <- lapply(ta_cols, function(col) {
     formatC(fields[[col]], width = widths[[col]],
             flag = if (col %in% str_cols) "-" else "")
   })
+  # Interleave fields with their fixed gaps: field, gap, field, ..., field.
+  pieces <- vector("list", 2 * length(padded) - 1)
+  pieces[c(TRUE, FALSE)] <- padded
+  pieces[c(FALSE, TRUE)] <- lapply(gaps, function(n) strrep(" ", n))
 
-  # The single-space separators from paste() are the fixed gaps between fields.
-  writeLines(do.call(paste, padded), path)
+  writeLines(do.call(paste0, pieces), path)
   invisible(path)
 }
 
@@ -121,7 +134,7 @@ ta_num <- function(v, width) {
   out
 }
 
-ta_field_problems <- function(col, value, field, width, is_str) {
+ta_field_problems <- function(col, value, field, width, is_str, reader) {
   bad <- if (is_str) {
     !is.na(value) & (nchar(field) > width | field == "" | field != trimws(field))
   } else {
@@ -137,7 +150,7 @@ ta_field_problems <- function(col, value, field, width, is_str) {
     } else if (field[i] == "") {
       "is empty and would read back as NA"
     } else {
-      "has leading or trailing spaces, which read_ta() trims"
+      sprintf("has leading or trailing spaces, which %s() trims", reader)
     }
     sprintf("%s, row %d: %s %s.", col, i, shown, why)
   }, character(1))
