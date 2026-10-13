@@ -12,8 +12,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Utility Functions for Statistical Work">
-<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, data validation checkpoints, duplicate detection, Danish identifier cleaning, interactive time-series screening, a filesystem browser and RStudio addins for grabbing paths, and various convenience shortcuts for common tidyverse patterns.">
-<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, data validation checkpoints, duplicate detection, Danish identifier cleaning, interactive time-series screening, a filesystem browser and RStudio addins for grabbing paths, and various convenience shortcuts for common tidyverse patterns.">
+<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, data validation checkpoints, duplicate detection, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns.">
+<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, data validation checkpoints, duplicate detection, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -40,7 +40,6 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="articles/read-files.html">Reading many files at once</a></li>
-    <li><a class="dropdown-item" href="articles/paths.html">Less fiddling with file paths</a></li>
     <li><a class="dropdown-item" href="articles/validation.html">Lightweight data validation with checkpoints</a></li>
   </ul>
 </li>
@@ -63,7 +62,7 @@
 <div class="section level2">
 <h2 id="related-packages">Related packages<a class="anchor" aria-label="anchor" href="#related-packages"></a>
 </h2>
-<p>Four bodies of work grew large enough to leave and become packages of their own. They are standalone — none of them depends on <code>daos</code>, or <code>daos</code> on them.</p>
+<p>Five bodies of work grew large enough to leave and become packages of their own. They are standalone — none of them depends on <code>daos</code>, or <code>daos</code> on them.</p>
 <table class="table">
 <colgroup>
 <col width="39%">
@@ -89,6 +88,10 @@
 <tr class="even">
 <td><a href="https://github.com/dataniel/taxmill" class="external-link">taxmill</a></td>
 <td>PDF financial statements milled into a tidy Excel dataset, locally</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/dataniel/pathr" class="external-link">pathr</a></td>
+<td>Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths</td>
 </tr>
 </tbody>
 </table>
@@ -158,32 +161,8 @@
 <td>Regex matching that preserves <code>NA</code> (unlike <code>grepl</code>)</td>
 </tr>
 <tr class="odd">
-<td><code><a href="reference/addin_fix_path.html">addin_fix_path()</a></code></td>
-<td>RStudio addin: replace backslashes with forward slashes in Windows paths</td>
-</tr>
-<tr class="even">
-<td><code><a href="reference/addin_paste_path.html">addin_paste_path()</a></code></td>
-<td>RStudio addin: paste Windows path from clipboard as a quoted R string</td>
-</tr>
-<tr class="odd">
-<td><code><a href="reference/addin_flip_backslash.html">addin_flip_backslash()</a></code></td>
-<td>RStudio addin: replace all backslashes with forward slashes in selection</td>
-</tr>
-<tr class="even">
-<td><code><a href="reference/addin_open_in_explorer.html">addin_open_in_explorer()</a></code></td>
-<td>RStudio addin: open the selected path (or <code><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd()</a></code>) in the file explorer</td>
-</tr>
-<tr class="odd">
-<td><code><a href="reference/addin_text_to_vector.html">addin_text_to_vector()</a></code></td>
-<td>RStudio addin: convert selected lines to an R character vector</td>
-</tr>
-<tr class="even">
 <td><code><a href="reference/add_cpr_info.html">add_cpr_info()</a></code></td>
 <td>Add birth date, age, sex, and validity derived from Danish CPR numbers</td>
-</tr>
-<tr class="odd">
-<td><code><a href="reference/browse_files.html">browse_files()</a></code></td>
-<td>Yazi-style Shiny file browser: mark files/folders and copy paths to R</td>
 </tr>
 <tr class="even">
 <td><code><a href="reference/clean_cpr.html">clean_cpr()</a></code></td>

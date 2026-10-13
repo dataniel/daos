@@ -38,7 +38,6 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
-    <li><a class="dropdown-item" href="../articles/paths.html">Less fiddling with file paths</a></li>
     <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
   </ul>
 </li>
@@ -70,13 +69,14 @@
 <p>The <strong>daos</strong> package is a collection of utility
 functions built for day-to-day statistical work. This vignette walks
 through every function with short, self-contained examples.</p>
-<p>Four bodies of work that started here have since grown into packages
+<p>Five bodies of work that started here have since grown into packages
 of their own, and are not covered below: <a href="https://github.com/dataniel/taskr" class="external-link">taskr</a> for task management,
 <a href="https://github.com/dataniel/statbank" class="external-link">statbank</a> for the
 Greenland and Faroese statbanks, <a href="https://github.com/dataniel/cvrr" class="external-link">cvrr</a> for published Danish
-annual reports, and <a href="https://github.com/dataniel/taxmill" class="external-link">taxmill</a> for milling PDF
-financial statements into data. None of them depends on daos, or daos on
-them.</p>
+annual reports, <a href="https://github.com/dataniel/taxmill" class="external-link">taxmill</a> for milling PDF
+financial statements into data, and <a href="https://github.com/dataniel/pathr" class="external-link">pathr</a> for the file browser
+and the RStudio addins that take the friction out of Windows paths. None
+of them depends on daos, or daos on them.</p>
 <hr>
 <div class="section level2">
 <h2 id="convenience-shorthands">Convenience shorthands<a class="anchor" aria-label="anchor" href="#convenience-shorthands"></a>
@@ -107,7 +107,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261013"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-13 21:14"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-13 22:43"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -876,99 +876,6 @@ series:</p>
 columns for test results, outliers, break dates, correlations,
 decomposition and notes. See <code><a href="../reference/diagnose_timeseries.html">?diagnose_timeseries</a></code> for
 sample-size requirements and method details.</p>
-</div>
-<div class="section level3">
-<h3 id="browse_files-grab-filesystem-paths-without-typing-them">
-<code>browse_files()</code>: grab filesystem paths without typing
-them<a class="anchor" aria-label="anchor" href="#browse_files-grab-filesystem-paths-without-typing-them"></a>
-</h3>
-<p>Typing or hand-fixing long Windows paths is tedious.
-<code><a href="../reference/browse_files.html">browse_files()</a></code> launches a small Shiny app that walks the
-filesystem in a three-column, yazi-style browser – parent directory,
-current directory, and a live preview – navigated with
-<code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
-keys. The point is to grab paths: mark one or more files or folders with
-<code>Space</code>, then take them into R.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/browse_files.html">browse_files</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># navigate, mark, press Q</span></span></code></pre></div>
-<p>Pressing <code>Q</code> returns the marked paths – a single string
-for one, a <code>c("a", "b")</code> vector for several – with forward
-slashes, so the result drops straight into a script. <code>y</code>
-copies the same R expression to the clipboard, and <code>o</code> opens
-the item under the cursor in the system file explorer (reusing
-<code><a href="../reference/open_in_explorer.html">open_in_explorer()</a></code>). Requires <code>shiny</code>.</p>
-<p><code><a href="../reference/browse_files.html">browse_files()</a></code>, the explorer addins, and
-<code><a href="../reference/read_files.html">read_files()</a></code> together make up a way of handling many
-sources without a file explorer open alongside RStudio;
-<code><a href="../articles/paths.html">vignette("paths")</a></code> walks through it.</p>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="rstudio-addins">RStudio addins<a class="anchor" aria-label="anchor" href="#rstudio-addins"></a>
-</h2>
-<p>The following addins are available via the <em>Addins</em> menu or
-the command palette (<code>Ctrl+Shift+P</code>). Keyboard shortcuts can
-be bound under <em>Tools -&gt; Modify Keyboard Shortcuts</em>.</p>
-<div class="section level3">
-<h3 id="fix-windows-paths">Fix Windows paths<a class="anchor" aria-label="anchor" href="#fix-windows-paths"></a>
-</h3>
-<p>Replaces backslashes with forward slashes in Windows-style paths
-(<code>C:\...</code> or <code>\\server\...</code>). Only path-like
-backslashes are converted; <code>\(x)</code> lambda syntax and escape
-sequences like <code>\n</code> are left alone.</p>
-<ul>
-<li>
-<strong>Text selected:</strong> operates on the selection only</li>
-<li>
-<strong>Nothing selected:</strong> operates on the entire active
-file and restores the cursor position</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="text-to-vector">Text to vector<a class="anchor" aria-label="anchor" href="#text-to-vector"></a>
-</h3>
-<p>Converts selected lines (one item per line) to an R character vector
-expression. Empty lines are ignored.</p>
-<p>Selecting:</p>
-<pre><code><span><span class="fl">12345678</span></span>
-<span><span class="fl">87654321</span></span>
-<span><span class="fl">11223344</span></span></code></pre>
-<p>produces:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"12345678"</span>,</span>
-<span>  <span class="st">"87654321"</span>,</span>
-<span>  <span class="st">"11223344"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Useful for quickly wrapping CVR numbers, variable names, or any
-line-delimited list copied from Excel or an email.</p>
-</div>
-<div class="section level3">
-<h3 id="open-in-file-explorer">Open in file explorer<a class="anchor" aria-label="anchor" href="#open-in-file-explorer"></a>
-</h3>
-<p>Opens a location in the system file explorer.</p>
-<ul>
-<li>
-<strong>A path selected:</strong> opens it directly if it is a
-folder, or reveals the file inside its containing folder if it is a
-file</li>
-<li>
-<strong>An object or call selected:</strong> the selection is
-evaluated as R code, so <code>my_path</code> or
-<code>file.path(dir, "data.csv")</code> work too</li>
-<li>
-<strong>Just the cursor on a token (no selection):</strong> the
-path-like word under the cursor is used, so you can place the cursor on
-a path or an object holding one without selecting it (paths with spaces
-still need to be selected)</li>
-<li>
-<strong>Cursor on whitespace / nothing selected:</strong> opens the
-current working directory (<code><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd()</a></code>)</li>
-</ul>
-<p>A literal path that exists on disk is used as-is; anything else is
-evaluated, making it easy to jump from a path stored in a variable
-straight to its location on disk.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

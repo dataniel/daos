@@ -15,16 +15,17 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 
 ## Related packages
 
-Four bodies of work grew large enough to leave and become packages of
+Five bodies of work grew large enough to leave and become packages of
 their own. They are standalone — none of them depends on `daos`, or
 `daos` on them.
 
-| Package                                          | What it does                                                                                 |
-|--------------------------------------------------|----------------------------------------------------------------------------------------------|
-| [taskr](https://github.com/dataniel/taskr)       | Taskwarrior-style task management backed by a shared SQLite file                             |
-| [statbank](https://github.com/dataniel/statbank) | Client and keyboard browser for the Greenland and Faroese statbanks                          |
-| [cvrr](https://github.com/dataniel/cvrr)         | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
-| [taxmill](https://github.com/dataniel/taxmill)   | PDF financial statements milled into a tidy Excel dataset, locally                           |
+| Package                                          | What it does                                                                                           |
+|--------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [taskr](https://github.com/dataniel/taskr)       | Taskwarrior-style task management backed by a shared SQLite file                                       |
+| [statbank](https://github.com/dataniel/statbank) | Client and keyboard browser for the Greenland and Faroese statbanks                                    |
+| [cvrr](https://github.com/dataniel/cvrr)         | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation           |
+| [taxmill](https://github.com/dataniel/taxmill)   | PDF financial statements milled into a tidy Excel dataset, locally                                     |
+| [pathr](https://github.com/dataniel/pathr)       | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
 
 ## Installation
 
@@ -99,40 +100,34 @@ formatted timestamp.
 
 ## Functions
 
-| Function                                                                                          | Description                                                                                                    |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `%??%`                                                                                            | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""`               |
-| `%like%`                                                                                          | Regex matching that preserves `NA` (unlike `grepl`)                                                            |
-| [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)                 | RStudio addin: replace backslashes with forward slashes in Windows paths                                       |
-| [`addin_paste_path()`](https://dataniel.github.io/daos/reference/addin_paste_path.md)             | RStudio addin: paste Windows path from clipboard as a quoted R string                                          |
-| [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md)     | RStudio addin: replace all backslashes with forward slashes in selection                                       |
-| [`addin_open_in_explorer()`](https://dataniel.github.io/daos/reference/addin_open_in_explorer.md) | RStudio addin: open the selected path (or [`getwd()`](https://rdrr.io/r/base/getwd.html)) in the file explorer |
-| [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md)     | RStudio addin: convert selected lines to an R character vector                                                 |
-| [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)                     | Add birth date, age, sex, and validity derived from Danish CPR numbers                                         |
-| [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)                     | Yazi-style Shiny file browser: mark files/folders and copy paths to R                                          |
-| [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)                           | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros                                    |
-| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)                           | Standardise CVR numbers: strip separators and the DK VAT prefix                                                |
-| [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md)                                   | Format DB07 industry codes with dots (`011100` → `01.11.00`)                                                   |
-| [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)                       | Drop rows and/or columns that are entirely `NA`                                                                |
-| [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)                     | Pipeline checkpoint that warns or aborts if a data frame is non-empty                                          |
-| [`f()`](https://dataniel.github.io/daos/reference/f.md)                                           | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias)          |
-| [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)               | Prepend `isdup`/`dupid` columns to mark duplicate rows                                                         |
-| [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)                             | Test whether a value is blank in the broadest sense                                                            |
-| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)                                     | Formatted current timestamp, e.g. for file names                                                               |
-| [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)                       | Read data from a Microsoft Access database via ODBC                                                            |
-| [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)                         | Validate paths, read files (auto or custom reader), and optionally bind or unpack                              |
-| [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                               | Read Greenlandic TA files (old layout)                                                                         |
-| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                             | Write Greenlandic TA files (old layout)                                                                        |
-| [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)                             | Read Greenlandic TA files (new 140-character layout)                                                           |
-| [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)                           | Write Greenlandic TA files (new 140-character layout)                                                          |
-| [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)           | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots                     |
-| [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)       | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group    |
-| [`shh()`](https://dataniel.github.io/daos/reference/shh.md)                                       | Suppress messages and warnings during evaluation                                                               |
-| [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)                             | Split a data frame into a named list by grouping columns                                                       |
-| [`summon()`](https://dataniel.github.io/daos/reference/summon.md)                                 | Retrieve objects matching a regex pattern from an environment                                                  |
-| [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)                         | Compare column types across multiple data frames                                                               |
-| [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)                       | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs                    |
-| [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)                     | Append formatted sheets to an existing xlsx file                                                               |
+| Function                                                                                    | Description                                                                                                 |
+|---------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `%??%`                                                                                      | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""`            |
+| `%like%`                                                                                    | Regex matching that preserves `NA` (unlike `grepl`)                                                         |
+| [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)               | Add birth date, age, sex, and validity derived from Danish CPR numbers                                      |
+| [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)                     | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros                                 |
+| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)                     | Standardise CVR numbers: strip separators and the DK VAT prefix                                             |
+| [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md)                             | Format DB07 industry codes with dots (`011100` → `01.11.00`)                                                |
+| [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)                 | Drop rows and/or columns that are entirely `NA`                                                             |
+| [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)               | Pipeline checkpoint that warns or aborts if a data frame is non-empty                                       |
+| [`f()`](https://dataniel.github.io/daos/reference/f.md)                                     | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias)       |
+| [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)         | Prepend `isdup`/`dupid` columns to mark duplicate rows                                                      |
+| [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)                       | Test whether a value is blank in the broadest sense                                                         |
+| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)                               | Formatted current timestamp, e.g. for file names                                                            |
+| [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)                 | Read data from a Microsoft Access database via ODBC                                                         |
+| [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)                   | Validate paths, read files (auto or custom reader), and optionally bind or unpack                           |
+| [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                         | Read Greenlandic TA files (old layout)                                                                      |
+| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                       | Write Greenlandic TA files (old layout)                                                                     |
+| [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)                       | Read Greenlandic TA files (new 140-character layout)                                                        |
+| [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)                     | Write Greenlandic TA files (new 140-character layout)                                                       |
+| [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)     | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots                  |
+| [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md) | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
+| [`shh()`](https://dataniel.github.io/daos/reference/shh.md)                                 | Suppress messages and warnings during evaluation                                                            |
+| [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)                       | Split a data frame into a named list by grouping columns                                                    |
+| [`summon()`](https://dataniel.github.io/daos/reference/summon.md)                           | Retrieve objects matching a regex pattern from an environment                                               |
+| [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)                   | Compare column types across multiple data frames                                                            |
+| [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)                 | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs                 |
+| [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)               | Append formatted sheets to an existing xlsx file                                                            |
 
 # Package index
 
@@ -197,10 +192,6 @@ formatted timestamp.
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
-- [`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
-  : Browse the filesystem and copy paths to R
-- [`open_in_explorer()`](https://dataniel.github.io/daos/reference/open_in_explorer.md)
-  : Open a path in the system file explorer
 
 ## Danish and Greenlandic data
 
@@ -221,19 +212,6 @@ formatted timestamp.
 - [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)
   : Write a Greenlandic TA file in the new layout
 
-## RStudio addins
-
-- [`addin_fix_path()`](https://dataniel.github.io/daos/reference/addin_fix_path.md)
-  : RStudio addin: fix Windows paths
-- [`addin_flip_backslash()`](https://dataniel.github.io/daos/reference/addin_flip_backslash.md)
-  : RStudio addin: flip backslashes in selection
-- [`addin_open_in_explorer()`](https://dataniel.github.io/daos/reference/addin_open_in_explorer.md)
-  : RStudio addin: open path in file explorer
-- [`addin_paste_path()`](https://dataniel.github.io/daos/reference/addin_paste_path.md)
-  : RStudio addin: paste path from clipboard
-- [`addin_text_to_vector()`](https://dataniel.github.io/daos/reference/addin_text_to_vector.md)
-  : RStudio addin: convert lines to R character vector
-
 # Articles
 
 ### Get started
@@ -245,7 +223,5 @@ formatted timestamp.
 
 - [Reading many files at
   once](https://dataniel.github.io/daos/articles/read-files.md):
-- [Less fiddling with file
-  paths](https://dataniel.github.io/daos/articles/paths.md):
 - [Lightweight data validation with
   checkpoints](https://dataniel.github.io/daos/articles/validation.md):

@@ -4,14 +4,16 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
-Four bodies of work that started here have since grown into packages of
+Five bodies of work that started here have since grown into packages of
 their own, and are not covered below:
 [taskr](https://github.com/dataniel/taskr) for task management,
 [statbank](https://github.com/dataniel/statbank) for the Greenland and
 Faroese statbanks, [cvrr](https://github.com/dataniel/cvrr) for
-published Danish annual reports, and
+published Danish annual reports,
 [taxmill](https://github.com/dataniel/taxmill) for milling PDF financial
-statements into data. None of them depends on daos, or daos on them.
+statements into data, and [pathr](https://github.com/dataniel/pathr) for
+the file browser and the RStudio addins that take the friction out of
+Windows paths. None of them depends on daos, or daos on them.
 
 ------------------------------------------------------------------------
 
@@ -44,7 +46,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261013"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-13 21:14"
+#> [1] "2026-10-13 22:43"
 ```
 
 A typical use is timestamping an export file:
@@ -863,94 +865,3 @@ for test results, outliers, break dates, correlations, decomposition and
 notes. See
 [`?diagnose_timeseries`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
 for sample-size requirements and method details.
-
-### `browse_files()`: grab filesystem paths without typing them
-
-Typing or hand-fixing long Windows paths is tedious.
-[`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md)
-launches a small Shiny app that walks the filesystem in a three-column,
-yazi-style browser – parent directory, current directory, and a live
-preview – navigated with `h`/`j`/`k`/`l` or the arrow keys. The point is
-to grab paths: mark one or more files or folders with `Space`, then take
-them into R.
-
-``` r
-p <- browse_files()           # navigate, mark, press Q
-```
-
-Pressing `Q` returns the marked paths – a single string for one, a
-`c("a", "b")` vector for several – with forward slashes, so the result
-drops straight into a script. `y` copies the same R expression to the
-clipboard, and `o` opens the item under the cursor in the system file
-explorer (reusing
-[`open_in_explorer()`](https://dataniel.github.io/daos/reference/open_in_explorer.md)).
-Requires `shiny`.
-
-[`browse_files()`](https://dataniel.github.io/daos/reference/browse_files.md),
-the explorer addins, and
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-together make up a way of handling many sources without a file explorer
-open alongside RStudio;
-[`vignette("paths")`](https://dataniel.github.io/daos/articles/paths.md)
-walks through it.
-
-------------------------------------------------------------------------
-
-## RStudio addins
-
-The following addins are available via the *Addins* menu or the command
-palette (`Ctrl+Shift+P`). Keyboard shortcuts can be bound under *Tools
--\> Modify Keyboard Shortcuts*.
-
-### Fix Windows paths
-
-Replaces backslashes with forward slashes in Windows-style paths
-(`C:\...` or `\\server\...`). Only path-like backslashes are converted;
-`\(x)` lambda syntax and escape sequences like `\n` are left alone.
-
-- **Text selected:** operates on the selection only
-- **Nothing selected:** operates on the entire active file and restores
-  the cursor position
-
-### Text to vector
-
-Converts selected lines (one item per line) to an R character vector
-expression. Empty lines are ignored.
-
-Selecting:
-
-    12345678
-    87654321
-    11223344
-
-produces:
-
-``` r
-c(
-  "12345678",
-  "87654321",
-  "11223344"
-)
-```
-
-Useful for quickly wrapping CVR numbers, variable names, or any
-line-delimited list copied from Excel or an email.
-
-### Open in file explorer
-
-Opens a location in the system file explorer.
-
-- **A path selected:** opens it directly if it is a folder, or reveals
-  the file inside its containing folder if it is a file
-- **An object or call selected:** the selection is evaluated as R code,
-  so `my_path` or `file.path(dir, "data.csv")` work too
-- **Just the cursor on a token (no selection):** the path-like word
-  under the cursor is used, so you can place the cursor on a path or an
-  object holding one without selecting it (paths with spaces still need
-  to be selected)
-- **Cursor on whitespace / nothing selected:** opens the current working
-  directory ([`getwd()`](https://rdrr.io/r/base/getwd.html))
-
-A literal path that exists on disk is used as-is; anything else is
-evaluated, making it easy to jump from a path stored in a variable
-straight to its location on disk.
