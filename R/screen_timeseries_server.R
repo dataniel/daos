@@ -110,7 +110,7 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
       }
       added <- setdiff(enabled, previous_features)
       current <- shiny::isolate(input$diagnostic_view)
-      selected <- if (length(added)) tail(added, 1) else if (length(current) && current %in% enabled) current else "overview"
+      selected <- if (length(added)) utils::tail(added, 1) else if (length(current) && current %in% enabled) current else "overview"
       previous_features <<- enabled
       shiny::updateTabsetPanel(session, "diagnostic_view", selected = selected)
     }, ignoreNULL = FALSE)
