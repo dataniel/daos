@@ -45,8 +45,6 @@ reference:
   - title: Interactive
     contents:
       - screen_timeseries
-      - browse_files
-      - open_in_explorer
 
   - title: Danish and Greenlandic data
     contents:
@@ -59,14 +57,6 @@ reference:
       - read_ta2
       - write_ta2
 
-  - title: RStudio addins
-    contents:
-      - addin_fix_path
-      - addin_flip_backslash
-      - addin_open_in_explorer
-      - addin_paste_path
-      - addin_text_to_vector
-
 articles:
   - title: Get started
     navbar: ~
@@ -77,5 +67,4 @@ articles:
     navbar: Guides
     contents:
       - read-files
-      - paths
       - validation

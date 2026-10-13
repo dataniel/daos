@@ -15,7 +15,7 @@
 
 ## Related packages
 
-Four bodies of work grew large enough to leave and become packages of their
+Five bodies of work grew large enough to leave and become packages of their
 own. They are standalone — none of them depends on `daos`, or `daos` on them.
 
 | Package | What it does |
@@ -24,6 +24,7 @@ own. They are standalone — none of them depends on `daos`, or `daos` on them.
 | [statbank](https://github.com/dataniel/statbank) | Client and keyboard browser for the Greenland and Faroese statbanks |
 | [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
 | [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
+| [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
 
 ## Installation
 
@@ -90,13 +91,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 |----------|-------------|
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
-| `addin_fix_path()` | RStudio addin: replace backslashes with forward slashes in Windows paths |
-| `addin_paste_path()` | RStudio addin: paste Windows path from clipboard as a quoted R string |
-| `addin_flip_backslash()` | RStudio addin: replace all backslashes with forward slashes in selection |
-| `addin_open_in_explorer()` | RStudio addin: open the selected path (or `getwd()`) in the file explorer |
-| `addin_text_to_vector()` | RStudio addin: convert selected lines to an R character vector |
 | `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
-| `browse_files()` | Yazi-style Shiny file browser: mark files/folders and copy paths to R |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | `dbdot()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
