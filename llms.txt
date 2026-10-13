@@ -121,8 +121,10 @@ formatted timestamp.
 | [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)                                     | Formatted current timestamp, e.g. for file names                                                               |
 | [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)                       | Read data from a Microsoft Access database via ODBC                                                            |
 | [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)                         | Validate paths, read files (auto or custom reader), and optionally bind or unpack                              |
-| [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                               | Read Greenlandic TA files                                                                                      |
-| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                             | Write Greenlandic TA files                                                                                     |
+| [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                               | Read Greenlandic TA files (old layout)                                                                         |
+| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                             | Write Greenlandic TA files (old layout)                                                                        |
+| [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)                             | Read Greenlandic TA files (new 140-character layout)                                                           |
+| [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)                           | Write Greenlandic TA files (new 140-character layout)                                                          |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)           | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots                     |
 | [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)       | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group    |
 | [`shh()`](https://dataniel.github.io/daos/reference/shh.md)                                       | Suppress messages and warnings during evaluation                                                               |
@@ -214,6 +216,10 @@ formatted timestamp.
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
   : Write a Greenlandic TA file
+- [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)
+  : Read a Greenlandic TA file in the new layout
+- [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)
+  : Write a Greenlandic TA file in the new layout
 
 ## RStudio addins
 

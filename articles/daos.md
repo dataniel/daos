@@ -44,7 +44,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261013"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-13 12:16"
+#> [1] "2026-10-13 21:14"
 ```
 
 A typical use is timestamping an export file:
@@ -375,6 +375,21 @@ only writes what
 reads back unchanged. Values that would not fit their fixed-width field,
 or would lose decimals, stop with an error that lists them, so no file
 with shifted fields is written.
+
+### `read_ta2()` / `write_ta2()`: the new TA layout
+
+``` r
+df <- read_ta2("ta.file")
+write_ta2(df, "ta.file")
+```
+
+The new TA system uses a 140-character layout with nine columns. The `2`
+functions handle it with the same guarantee as
+[`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md);
+the old pair is kept for the transition and for old files.
+[`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)
+refuses lines shorter than 140 characters, so an old-layout file is
+never read into the wrong columns.
 
 ------------------------------------------------------------------------
 

@@ -107,7 +107,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261013"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-13 12:16"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-13 21:14"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -405,6 +405,21 @@ Greenlandic TA files<a class="anchor" aria-label="anchor" href="#read_ta-write_t
 back unchanged. Values that would not fit their fixed-width field, or
 would lose decimals, stop with an error that lists them, so no file with
 shifted fields is written.</p>
+</div>
+<div class="section level3">
+<h3 id="read_ta2-write_ta2-the-new-ta-layout">
+<code>read_ta2()</code> / <code>write_ta2()</code>: the new TA
+layout<a class="anchor" aria-label="anchor" href="#read_ta2-write_ta2-the-new-ta-layout"></a>
+</h3>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_ta2.html">read_ta2</a></span><span class="op">(</span><span class="st">"ta.file"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/write_ta2.html">write_ta2</a></span><span class="op">(</span><span class="va">df</span>, <span class="st">"ta.file"</span><span class="op">)</span></span></code></pre></div>
+<p>The new TA system uses a 140-character layout with nine columns. The
+<code>2</code> functions handle it with the same guarantee as
+<code><a href="../reference/write_ta.html">write_ta()</a></code>; the old pair is kept for the transition and for
+old files. <code><a href="../reference/read_ta2.html">read_ta2()</a></code> refuses lines shorter than 140
+characters, so an old-layout file is never read into the wrong
+columns.</p>
 <hr>
 </div>
 </div>
@@ -420,7 +435,7 @@ frames<a class="anchor" aria-label="anchor" href="#view_types-compare-column-typ
 data frames at once: one row per column, with the type in each dataset.
 Useful before a join, or before binding with
 <code>read_files(out = "bind")</code>.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>,  y <span class="op">=</span> <span class="st">"a"</span>, z <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">df_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1.0</span>, y <span class="op">=</span> <span class="st">"b"</span>, z <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
@@ -431,7 +446,7 @@ Useful before a join, or before binding with
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      int   dbl  </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> y      chr   chr  </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> z      lgl   int</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Only columns where types differ:</span></span>
 <span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
@@ -441,7 +456,7 @@ Useful before a join, or before binding with
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> z      lgl   int</span></span></code></pre></div>
 <p>The <code>focus</code> argument checks that a specific column has an
 expected type and returns only the datasets where it does not:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"int"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
 <span><span class="co">#&gt;   column df_b </span></span>
@@ -467,7 +482,7 @@ repetitive. <code><a href="../reference/expect_empty.html">expect_empty()</a></c
 pipeline, and can write to a log file.</p>
 <p>Filter for the rows that should not exist, pipe them in, and the
 offending rows are at hand the moment something goes wrong.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Success:</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">name</span> <span class="op">==</span> <span class="st">"Harry Potter"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -476,13 +491,13 @@ offending rows are at hand the moment something goes wrong.</p>
 <span>    warn_msg    <span class="op">=</span> <span class="st">"Unexpected fictional character found"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No Harry Potter rows in starwars</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Warning: rows found</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Unrealistic mass values"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Unrealistic mass values</span></span></code></pre></div>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Hard abort:</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -490,7 +505,7 @@ offending rows are at hand the moment something goes wrong.</p>
 <p>The <code>log</code> argument writes a timestamped entry to a file,
 so when a scheduled run misbehaves, the errors are already collected by
 the time you sit down to investigate:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/checks.log"</span><span class="op">)</span></span>
 <span><span class="va">checker</span>  <span class="op">&lt;-</span> \<span class="op">(</span><span class="va">data</span>, <span class="va">...</span><span class="op">)</span> <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">...</span>, log <span class="op">=</span> <span class="va">log_path</span><span class="op">)</span></span>
 <span></span>
@@ -513,7 +528,7 @@ together. The ID can also serve as an implicit record linkage key: if
 several respondents have reported the same information but background
 data is missing for one of them, the shared <code>dupid</code> reveals
 the connection.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 234 × 13</span></span></span>
 <span><span class="co">#&gt;    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy</span></span>
@@ -530,7 +545,7 @@ the connection.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> FALSE     0 audi         a4 quattro   2    <span style="text-decoration: underline;">2</span>008     4 manu… 4        20    28</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 224 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check specific columns:</span></span>
 <span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span>, <span class="va">model</span>, <span class="va">year</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -552,7 +567,7 @@ the connection.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
 <p>Combine with <code><a href="../reference/expect_empty.html">expect_empty()</a></code> for a pipeline validation
 gate:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -575,7 +590,7 @@ Unlike <code><a href="https://tidyr.tidyverse.org/reference/drop_na.html" class=
 <em>every</em> value is <code>NA</code>. It is equivalent to
 <code>janitor::remove_empty()</code> with <code>cutoff = 1</code>,
 reimplemented here to keep the dependency footprint small:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  b <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
@@ -609,7 +624,7 @@ reimplemented here to keep the dependency footprint small:</p>
 <p><code><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">dplyr::group_split()</a></code> returns an unnamed list.
 <code><a href="../reference/split_by.html">split_by()</a></code> adds names derived from the grouping values,
 making it straightforward to index by group:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "audi"      "chevrolet" "dodge"     "ford"      "honda"</span></span>
@@ -624,7 +639,7 @@ making it straightforward to index by group:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 auto(l5)   f        16    26 p     compa…</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 manual(m5) f        18    26 p     compa…</span></span></code></pre></div>
 <p>Multiple grouping columns are joined with <code>.sep</code>:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">cyl</span>, <span class="va">drv</span>, .sep <span class="op">=</span> <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts2</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "4-4" "4-f" "5-f" "6-4"</span></span></code></pre></div>
@@ -645,7 +660,7 @@ identifier columns<a class="anchor" aria-label="anchor" href="#clean_cpr-clean_c
 in Excel. Before a join, both sides need the same form, and that is all
 these two functions do. They take a vector and return a vector, so the
 natural place for them is inside a <code><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate()</a></code>:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"111111-1118"</span>, <span class="st">"101004007"</span>, <span class="st">"1111111118"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "1111111118" "0101004007" "1111111118"</span></span>
 <span><span class="fu"><a href="../reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK12345678"</span>, <span class="st">"12 34 56 78"</span>, <span class="st">"12345678"</span><span class="op">)</span><span class="op">)</span></span>
@@ -669,7 +684,7 @@ still visibly malformed. Validation is <code><a href="../reference/add_cpr_info.
 normalises to the dotted form. Existing dots are stripped first, so
 mixed input comes out uniform and running it twice changes nothing. Any
 aggregation level works:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dbdot.html">dbdot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "01.11.00" "01.11.00" "01.11"    "01.1"</span></span></code></pre></div>
 <p>The bare-digit inverse is just <code>gsub("[.]", "", x)</code>. Like
@@ -695,7 +710,7 @@ works as a data quality signal. The implementation is plain vectorised
 arithmetic (a digit matrix, mod-11 as a matrix product, dates built as
 day counts instead of parsed strings), so a few million rows take
 seconds.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span>, <span class="st">"111111118"</span><span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -707,14 +722,14 @@ seconds.</p>
 <span><span class="co">#&gt; 2 1111111118 1911-11-11 114   0  TRUE  TRUE</span></span>
 <span><span class="co">#&gt; 3 0111111118 1911-11-01 114   0 FALSE  TRUE</span></span></code></pre></div>
 <p>Choose a subset of columns and optionally rename them:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>birth_date <span class="op">=</span> <span class="st">"bday"</span>, years_old <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          pnr birth_date years_old</span></span>
 <span><span class="co">#&gt; 1 1111111118 1911-11-11       114</span></span>
 <span><span class="co">#&gt; 2 1111111118 1911-11-11       114</span></span>
 <span><span class="co">#&gt; 3 0111111118 1911-11-01       114</span></span></code></pre></div>
 <p>A custom reference date shifts the age calculation:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="st">"age"</span>, ref_date <span class="op">=</span> <span class="st">"2000-01-01"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          pnr age</span></span>
 <span><span class="co">#&gt; 1 1111111118  88</span></span>
@@ -740,7 +755,7 @@ without writing any filtering code.</p>
 Requires <code>shiny</code> and <code>plotly</code>. Group row indices
 are prepared once, and plots are built directly with Plotly for fast
 navigation.</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  year    <span class="op">=</span> <span class="fl">2010</span><span class="op">:</span><span class="fl">2020</span>,</span>
 <span>  country <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK"</span>, <span class="st">"SE"</span>, <span class="st">"NO"</span>, <span class="st">"FI"</span><span class="op">)</span></span>
@@ -784,7 +799,7 @@ navigation.</p>
 Y-axis bounds globally across all groups. The <code>.title</code>
 argument sets a title shown in the app header and in downloaded
 figures:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
@@ -853,7 +868,7 @@ corrections.</p>
 <p>The same diagnostic engine is available outside Shiny. Group
 explicitly by the columns identifying <strong>one</strong> time
 series:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/diagnose_timeseries.html">diagnose_timeseries</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">gdp</span>, .features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"stationarity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -874,7 +889,7 @@ current directory, and a live preview – navigated with
 <code>h</code>/<code>j</code>/<code>k</code>/<code>l</code> or the arrow
 keys. The point is to grab paths: mark one or more files or folders with
 <code>Space</code>, then take them into R.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/browse_files.html">browse_files</a></span><span class="op">(</span><span class="op">)</span>           <span class="co"># navigate, mark, press Q</span></span></code></pre></div>
 <p>Pressing <code>Q</code> returns the marked paths – a single string
 for one, a <code>c("a", "b")</code> vector for several – with forward
@@ -920,7 +935,7 @@ expression. Empty lines are ignored.</p>
 <span><span class="fl">87654321</span></span>
 <span><span class="fl">11223344</span></span></code></pre>
 <p>produces:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"12345678"</span>,</span>
 <span>  <span class="st">"87654321"</span>,</span>

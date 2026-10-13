@@ -80,6 +80,10 @@
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
   : Write a Greenlandic TA file
+- [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)
+  : Read a Greenlandic TA file in the new layout
+- [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)
+  : Write a Greenlandic TA file in the new layout
 
 ## RStudio addins
 
