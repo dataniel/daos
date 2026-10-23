@@ -79,6 +79,14 @@ The original data frame with the requested columns appended.
 | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1)                    |
 | `"valid"` | logical | Format valid *and* the encoded birth date is a real calendar date |
 
+**Age and leap years:** age counts completed calendar years, rather than
+dividing elapsed days by 365.25. For someone born on 29 February, age
+increases on 29 February in leap years and on 1 March in non-leap years.
+For example, someone born on 29 February 2000 is 23 on 28 February 2024
+and 24 on 29 February 2024; they remain 24 on 28 February 2025 and turn
+25 on 1 March 2025. A numeric reference year still defaults to 1
+January, including in leap years.
+
 **What `valid` means, and what it does not:** `valid = TRUE` requires
 exactly two things: the cleaned value is ten digits, and those digits
 encode a real calendar date under the official century rules. **The

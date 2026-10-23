@@ -107,7 +107,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261023"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-23 22:47"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-23 23:26"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -773,6 +773,41 @@ or ISO-format strings. Missing reference dates give missing ages.</p>
 <span><span class="co">#&gt; 1 1111111118 2026 2026-01-01        114</span></span>
 <span><span class="co">#&gt; 2 1111111118 2026 2026-01-01        114</span></span>
 <span><span class="co">#&gt; 3 0111111118 2026 2026-01-01        114</span></span></code></pre></div>
+<p>Age counts completed calendar years, not elapsed days divided by
+365.25. For a person born on 29 February, age increases on 29 February
+in leap years and on 1 March in non-leap years. For a birth date of 29
+February 2000:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Reference date</th>
+<th align="right">Age</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>2024-02-28</td>
+<td align="right">23</td>
+</tr>
+<tr class="even">
+<td>2024-02-29</td>
+<td align="right">24</td>
+</tr>
+<tr class="odd">
+<td>2024-03-01</td>
+<td align="right">24</td>
+</tr>
+<tr class="even">
+<td>2025-02-28</td>
+<td align="right">24</td>
+</tr>
+<tr class="odd">
+<td>2025-03-01</td>
+<td align="right">25</td>
+</tr>
+</tbody>
+</table>
+<p>Numeric <code>ref_date = 2024</code> or <code>year = 2024</code>
+still means 1 January 2024 by default, giving age 23 in this
+example.</p>
 </div>
 </div>
 <div class="section level2">

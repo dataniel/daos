@@ -46,7 +46,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261023"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-23 22:47"
+#> [1] "2026-10-23 23:26"
 ```
 
 A typical use is timestamping an export file:
@@ -792,6 +792,22 @@ add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
 #> 2 1111111118 2026 2026-01-01        114
 #> 3 0111111118 2026 2026-01-01        114
 ```
+
+Age counts completed calendar years, not elapsed days divided by 365.25.
+For a person born on 29 February, age increases on 29 February in leap
+years and on 1 March in non-leap years. For a birth date of 29 February
+2000:
+
+| Reference date | Age |
+|----------------|----:|
+| 2024-02-28     |  23 |
+| 2024-02-29     |  24 |
+| 2024-03-01     |  24 |
+| 2025-02-28     |  24 |
+| 2025-03-01     |  25 |
+
+Numeric `ref_date = 2024` or `year = 2024` still means 1 January 2024 by
+default, giving age 23 in this example.
 
 ## Interactive tools
 

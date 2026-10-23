@@ -110,7 +110,14 @@ with <code>at</code>. Reference arguments are only evaluated when adding age.</p
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Supported info types</strong> (<code>add</code> values):</p><table class="table table"><tr><td>Type</td><td>Output</td><td>Description</td></tr><tr><td><code>"bday"</code></td><td>Date</td><td>Date of birth</td></tr><tr><td><code>"age"</code></td><td>integer</td><td>Age in whole years at <code>ref_date</code></td></tr><tr><td><code>"sex"</code></td><td>integer</td><td><code>1</code> (male, odd last digit) or <code>0</code> (female, even last digit)</td></tr><tr><td><code>"mod11"</code></td><td>logical</td><td>Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1)</td></tr><tr><td><code>"valid"</code></td><td>logical</td><td>Format valid <em>and</em> the encoded birth date is a real calendar date</td></tr></table><p><strong>What <code>valid</code> means, and what it does not:</strong>
+    <p><strong>Supported info types</strong> (<code>add</code> values):</p><table class="table table"><tr><td>Type</td><td>Output</td><td>Description</td></tr><tr><td><code>"bday"</code></td><td>Date</td><td>Date of birth</td></tr><tr><td><code>"age"</code></td><td>integer</td><td>Age in whole years at <code>ref_date</code></td></tr><tr><td><code>"sex"</code></td><td>integer</td><td><code>1</code> (male, odd last digit) or <code>0</code> (female, even last digit)</td></tr><tr><td><code>"mod11"</code></td><td>logical</td><td>Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1)</td></tr><tr><td><code>"valid"</code></td><td>logical</td><td>Format valid <em>and</em> the encoded birth date is a real calendar date</td></tr></table><p><strong>Age and leap years:</strong> age counts completed calendar years, rather
+than dividing elapsed days by 365.25. For someone born on 29 February,
+age increases on 29 February in leap years and on 1 March in non-leap
+years. For example, someone born on 29 February 2000 is 23 on
+28 February 2024 and 24 on 29 February 2024; they remain 24 on
+28 February 2025 and turn 25 on 1 March 2025. A numeric reference year
+still defaults to 1 January, including in leap years.</p>
+<p><strong>What <code>valid</code> means, and what it does not:</strong>
 <code>valid = TRUE</code> requires exactly two things: the cleaned value is ten
 digits, and those digits encode a real calendar date under the official
 century rules. <strong>The modulus-11 check is <em>not</em> part of <code>valid</code>.</strong> Since
