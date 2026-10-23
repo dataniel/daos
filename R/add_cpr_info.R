@@ -41,9 +41,9 @@
 #' always returned in the standardised 10-digit format `xxxxxxxxxx`.
 #'
 #' **Implementation note:** the function is plain vectorised arithmetic:
-#' one string-to-number conversion, digits peeled into an n-by-10 matrix,
-#' the mod-11 checksum as a single matrix product, and birth dates
-#' constructed directly as epoch day counts (no date-string parsing).
+#' only requested outputs and their dependencies are calculated. The
+#' digit matrix is only built for mod-11; birth dates are only constructed
+#' when requested. Numeric reference years use direct age arithmetic.
 #' It scales linearly to millions of rows.
 #'
 #' @param data A tibble or data frame.
@@ -56,7 +56,19 @@
 #'     name and the right-hand side is the type.
 #'   Default: all five types.
 #' @param ref_date Reference date for age calculation. Accepts a `Date`
-#'   object or an ISO-format string (`"YYYY-MM-DD"`). Default: `Sys.Date()`.
+#'   vector or ISO-format strings (`"YYYY-MM-DD"`), supplied directly or as
+#'   an unquoted column name/expression evaluated in `data`. Use one date
+#'   for all rows or one date per row. Missing dates give missing ages.
+#'   Numeric whole years (e.g. `2025L`) are interpreted as 1 January of
+#'   that year, for calculating age at the start of the year.
+#'   Default: `Sys.Date()`.
+#' @param year Numeric whole reference years, supplied directly or as an
+#'   unquoted column/expression. An explicit alternative to `ref_date`;
+#'   do not supply both. Missing years give missing ages.
+#' @param at Point in a numeric reference year: `"primo"` (1 January,
+#'   default), `"medio"` (1 July), or `"ultimo"` (31 December). Used with
+#'   `year` or numeric `ref_date`. Explicit dates must not be combined
+#'   with `at`. Reference arguments are only evaluated when adding age.
 #'
 #' @return The original data frame with the requested columns appended.
 #'
@@ -83,6 +95,16 @@
 #' # Unnamed: uses type names directly
 #' add_cpr_info(df, pnr, add = c("bday", "sex"))
 #'
+#' # Age at the start of each row's year:
+#' df$year <- c(2024L, 2025L, 2026L)
+#' add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
+#' add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
+#' add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
+#'
+#' # Or use an explicit date column:
+#' df$primo <- as.Date(paste0(df$year, "-01-01"))
+#' add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
+#'
 #' @seealso [daos::clean_cpr()]
 #'
 #' @importFrom cli cli_abort
@@ -94,7 +116,9 @@ add_cpr_info <- function(
     data,
     cpr_col,
     add      = c("bday", "age", "sex", "mod11", "valid"),
-    ref_date = Sys.Date()
+    ref_date = Sys.Date(),
+    year = NULL,
+    at = c("primo", "medio", "ultimo")
 ) {
 
   gyldige_typer <- c("bday", "age", "sex", "mod11", "valid")
@@ -114,13 +138,49 @@ add_cpr_info <- function(
     ))
   }
 
-  if (is.character(ref_date)) {
-    ref_date <- as.Date(ref_date)
-    if (is.na(ref_date)) {
-      cli::cli_abort("{.var ref_date} could not be parsed as a date (expected ISO format, e.g. {.val 2020-01-01})")
+  if ("age" %in% add) {
+    use_year <- !missing(year)
+    if (use_year && !missing(ref_date)) {
+      cli::cli_abort("Supply only one of {.var year} and {.var ref_date}.")
     }
-  } else if (!inherits(ref_date, "Date")) {
-    cli::cli_abort("{.var ref_date} must be a string or a {.cls Date} object")
+    ref_date <- if (use_year) {
+      rlang::eval_tidy(rlang::enquo(year), data = data)
+    } else {
+      rlang::eval_tidy(rlang::enquo(ref_date), data = data)
+    }
+    numeric_year <- is.numeric(ref_date) && !is.object(ref_date)
+    if (use_year && !numeric_year) {
+      cli::cli_abort("{.var year} must contain numeric whole years.")
+    }
+    if (!numeric_year && !missing(at)) {
+      cli::cli_abort("{.var at} is only supported with numeric reference years.")
+    }
+    if (!length(ref_date) %in% c(1L, nrow(data))) {
+      cli::cli_abort("{.var ref_date} must have length 1 or one date per row of {.var data} ({nrow(data)}).")
+    }
+    if (is.character(ref_date)) {
+      parsed <- tryCatch(as.Date(ref_date), error = function(e) NULL)
+      if (is.null(parsed) || any(!is.na(ref_date) & is.na(parsed))) {
+        cli::cli_abort("{.var ref_date} could not be parsed as a date (expected ISO format, e.g. {.val 2020-01-01})")
+      }
+      ref_date <- parsed
+    } else if (numeric_year) {
+      if (any(!is.na(ref_date) &
+              (!is.finite(ref_date) | ref_date != trunc(ref_date) |
+               ref_date < 1 | ref_date > 9999))) {
+        cli::cli_abort("Numeric {.var ref_date} must contain whole years between 1 and 9999.")
+      }
+    } else if (!inherits(ref_date, "Date")) {
+      cli::cli_abort("{.var ref_date} must be a string, a {.cls Date} object, or a numeric year")
+    }
+    if (numeric_year) {
+      ref_year <- ref_date
+      ref_md <- switch(match.arg(at), primo = 101L, medio = 701L, ultimo = 1231L)
+    } else {
+      ref <- as.POSIXlt(ref_date)
+      ref_year <- ref$year + 1900L
+      ref_md <- (ref$mon + 1L) * 100L + ref$mday
+    }
   }
 
   cpr_navn <- rlang::as_name(rlang::enquo(cpr_col))
@@ -131,6 +191,9 @@ add_cpr_info <- function(
   # Separator stripping and Excel-leading-zero repair live in clean_cpr(),
   # so the cleaning rule is defined in exactly one place.
   cpr_clean <- clean_cpr(data[[cpr_navn]])
+  data[[cpr_navn]] <- cpr_clean
+  if (length(add) == 0L) return(data)
+  alle <- list()
 
   format_ok <- grepl("^\\d{10}$", cpr_clean, perl = TRUE)
 
@@ -141,76 +204,80 @@ add_cpr_info <- function(
   num <- rep(NA_real_, length(cpr_clean))
   num[format_ok] <- as.numeric(cpr_clean[format_ok])
 
-  # Peel the digits into an n-by-10 matrix: D[, k] is digit k of every CPR.
-  D <- outer(num, 10^(9:0), function(n, p) (n %/% p) %% 10)
+  if ("mod11" %in% add) {
+    D <- outer(num, 10^(9:0), function(n, p) (n %/% p) %% 10)
+  }
 
-  dag    <- D[, 1L] * 10 + D[, 2L]
-  maaned <- D[, 3L] * 10 + D[, 4L]
-  aar2   <- D[, 5L] * 10 + D[, 6L]
-  d7     <- D[, 7L]
+  if (any(add %in% c("bday", "age", "sex", "valid"))) {
+    if ("mod11" %in% add) {
+      dag    <- D[, 1L] * 10 + D[, 2L]
+      maaned <- D[, 3L] * 10 + D[, 4L]
+      aar2   <- D[, 5L] * 10 + D[, 6L]
+      d7     <- D[, 7L]
+    } else {
+      dag    <- num %/% 10^8
+      maaned <- (num %/% 10^6) %% 100
+      aar2   <- (num %/% 10^4) %% 100
+      d7     <- (num %/% 10^3) %% 10
+    }
 
-  # Official century rules (digit 7 crossed with the two-digit year):
-  #
-  #   d7    | yy 00-36 | yy 37-57 | yy 58-99
-  #   ------|----------|----------|----------
-  #   0-3   | 1900     | 1900     | 1900
-  #   4, 9  | 2000     | 1900     | 1900
-  #   5-8   | 2000     | 2000     | 1800
-  #
-  # Encoded branchlessly: start at 1900 and shift by +-100 where the table
-  # says so. Logical vectors act as 0/1, so this is three vector ops.
-  aarhundrede <- 1900 +
-    100 * ((d7 == 4 | d7 == 9) & aar2 <= 36) +
-    100 * (d7 >= 5 & d7 <= 8 & aar2 <= 57) -
-    100 * (d7 >= 5 & d7 <= 8 & aar2 >= 58)
+    # Official century rules (digit 7 crossed with the two-digit year):
+    #
+    #   d7    | yy 00-36 | yy 37-57 | yy 58-99
+    #   ------|----------|----------|----------
+    #   0-3   | 1900     | 1900     | 1900
+    #   4, 9  | 2000     | 1900     | 1900
+    #   5-8   | 2000     | 2000     | 1800
+    #
+    # Encoded branchlessly: start at 1900 and shift by +-100 where the table
+    # says so. Logical vectors act as 0/1, so this is three vector ops.
+    aarhundrede <- 1900 +
+      100 * ((d7 == 4 | d7 == 9) & aar2 <= 36) +
+      100 * (d7 >= 5 & d7 <= 8 & aar2 <= 57) -
+      100 * (d7 >= 5 & d7 <= 8 & aar2 >= 58)
 
-  aar <- aarhundrede + aar2
+    aar <- aarhundrede + aar2
 
-  # Calendar validation in pure arithmetic: clamp the month for safe table
-  # lookup, then check the day against the month length (+1 for February
-  # in leap years).
-  skudaar   <- (aar %% 4 == 0 & aar %% 100 != 0) | aar %% 400 == 0
-  maaned_ok <- maaned >= 1 & maaned <= 12
-  midx      <- maaned
-  midx[which(!maaned_ok)] <- 1
-  maks_dag  <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[midx] +
-    (maaned == 2) * skudaar
-  dato_ok   <- maaned_ok & dag >= 1 & dag <= maks_dag
+    # Calendar validation in pure arithmetic: clamp the month for safe table
+    # lookup, then check the day against the month length (+1 for February
+    # in leap years).
+    skudaar   <- (aar %% 4 == 0 & aar %% 100 != 0) | aar %% 400 == 0
+    maaned_ok <- maaned >= 1 & maaned <= 12
+    midx      <- maaned
+    midx[which(!maaned_ok)] <- 1
+    maks_dag  <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[midx] +
+      (maaned == 2) * skudaar
+    dato_ok   <- maaned_ok & dag >= 1 & dag <= maks_dag
 
-  gyldig <- !is.na(dato_ok) & dato_ok
+    gyldig <- !is.na(dato_ok) & dato_ok
 
-  # Date construction without parsing: convert (year, month, day) straight
-  # to days since 1970-01-01 (Hinnant's civil-days algorithm) and stamp the
-  # Date class on. This skips strptime entirely.
-  dage <- .cpr_days_from_civil(aar, maaned, dag)
-  dage[!gyldig] <- NA_real_
-  foedselsdato <- structure(as.double(dage), class = "Date")
-
-  koen <- as.integer(D[, 10L] %% 2)
+    # Date construction without parsing: convert (year, month, day) straight
+    # to days since 1970-01-01 (Hinnant's civil-days algorithm) and stamp the
+    # Date class on. This skips strptime entirely.
+    if ("bday" %in% add) {
+      dage <- .cpr_days_from_civil(aar, maaned, dag)
+      dage[!gyldig] <- NA_real_
+      alle$bday <- structure(as.double(dage), class = "Date")
+    }
+    if ("sex" %in% add) {
+      koen <- as.integer(num %% 2)
+      koen[!gyldig] <- NA_integer_
+      alle$sex <- koen
+    }
+    if ("age" %in% add) {
+      alder <- as.integer(ref_year - aar - (ref_md < maaned * 100 + dag))
+      alder[!gyldig] <- NA_integer_
+      alle$age <- alder
+    }
+    if ("valid" %in% add) alle$valid <- gyldig
+  }
 
   # The mod-11 checksum for all rows at once: digit matrix times weight
   # vector is one BLAS call.
-  m11_vaegte <- c(4, 3, 2, 7, 6, 5, 4, 3, 2, 1)
-  m11_ok     <- as.vector(D %*% m11_vaegte) %% 11 == 0
-
-  # Age via integer comparison of (month, day) pairs -- no formatting of
-  # the date vector.
-  ref      <- as.POSIXlt(ref_date)
-  ref_md   <- (ref$mon + 1L) * 100L + ref$mday
-  alder    <- as.integer(ref$year + 1900L - aar - (ref_md < maaned * 100 + dag))
-
-  koen[!gyldig]  <- NA_integer_
-  alder[!gyldig] <- NA_integer_
-
-  alle <- list(
-    bday  = foedselsdato,
-    age   = alder,
-    sex   = koen,
-    mod11 = m11_ok,
-    valid = gyldig
-  )
-
-  data[[cpr_navn]] <- cpr_clean
+  if ("mod11" %in% add) {
+    m11_vaegte <- c(4, 3, 2, 7, 6, 5, 4, 3, 2, 1)
+    alle$mod11 <- as.vector(D %*% m11_vaegte) %% 11 == 0
+  }
 
   valgt <- alle[unname(add)]
   names(valgt) <- names(add)

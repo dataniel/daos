@@ -8,7 +8,9 @@ add_cpr_info(
   data,
   cpr_col,
   add = c("bday", "age", "sex", "mod11", "valid"),
-  ref_date = Sys.Date()
+  ref_date = Sys.Date(),
+  year = NULL,
+  at = c("primo", "medio", "ultimo")
 )
 }
 \arguments{
@@ -26,7 +28,21 @@ Default: all five types.
 }}
 
 \item{ref_date}{Reference date for age calculation. Accepts a \code{Date}
-object or an ISO-format string (\code{"YYYY-MM-DD"}). Default: \code{Sys.Date()}.}
+vector or ISO-format strings (\code{"YYYY-MM-DD"}), supplied directly or as
+an unquoted column name/expression evaluated in \code{data}. Use one date
+for all rows or one date per row. Missing dates give missing ages.
+Numeric whole years (e.g. \code{2025L}) are interpreted as 1 January of
+that year, for calculating age at the start of the year.
+Default: \code{Sys.Date()}.}
+
+\item{year}{Numeric whole reference years, supplied directly or as an
+unquoted column/expression. An explicit alternative to \code{ref_date};
+do not supply both. Missing years give missing ages.}
+
+\item{at}{Point in a numeric reference year: \code{"primo"} (1 January,
+default), \code{"medio"} (1 July), or \code{"ultimo"} (31 December). Used with
+\code{year} or numeric \code{ref_date}. Explicit dates must not be combined
+with \code{at}. Reference arguments are only evaluated when adding age.}
 }
 \value{
 The original data frame with the requested columns appended.
@@ -73,9 +89,9 @@ leading zero in Excel). The CPR column in the returned data frame is
 always returned in the standardised 10-digit format \code{xxxxxxxxxx}.
 
 \strong{Implementation note:} the function is plain vectorised arithmetic:
-one string-to-number conversion, digits peeled into an n-by-10 matrix,
-the mod-11 checksum as a single matrix product, and birth dates
-constructed directly as epoch day counts (no date-string parsing).
+only requested outputs and their dependencies are calculated. The
+digit matrix is only built for mod-11; birth dates are only constructed
+when requested. Numeric reference years use direct age arithmetic.
 It scales linearly to millions of rows.
 }
 \examples{
@@ -92,6 +108,16 @@ add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
 
 # Unnamed: uses type names directly
 add_cpr_info(df, pnr, add = c("bday", "sex"))
+
+# Age at the start of each row's year:
+df$year <- c(2024L, 2025L, 2026L)
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
+add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
+add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
+
+# Or use an explicit date column:
+df$primo <- as.Date(paste0(df$year, "-01-01"))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
 
 }
 \references{

@@ -583,6 +583,36 @@ A custom reference date shifts the age calculation:
 add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 ```
 
+For age at the start of each row's year, pass a numeric year column directly.
+Whole years are interpreted as 1 January of that year:
+
+```{r}
+df$year <- rep(2026L, nrow(df))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
+```
+
+Alternatively, use `year` and choose a point in the year with `at`:
+`"primo"` (1 January, default), `"medio"` (1 July), or `"ultimo"`
+(31 December). Supply either `year` or `ref_date`, not both.
+
+```{r}
+add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
+add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
+```
+
+Only requested outputs and their dependencies are calculated. Reference
+dates and years are only evaluated when `add` includes `"age"`.
+
+You can also pass a date column directly.
+`ref_date` accepts a single date or one date per row, as `Date` values or
+ISO-format strings. Missing reference dates give missing ages.
+
+```{r}
+df$year <- rep(2026L, nrow(df))
+df$primo <- as.Date(paste0(df$year, "-01-01"))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
+```
+
 ## Interactive tools
 
 ### `screen_timeseries()`: interactive time-series screening
