@@ -124,6 +124,28 @@ test_that("numeric years mean January 1 for scalar and row-wise ages", {
   }
 })
 
+test_that("leap-day birthdays advance on February 29 or March 1", {
+  dates <- c("2024-02-28", "2024-02-29", "2024-03-01",
+             "2025-02-28", "2025-03-01", "2100-02-28", "2100-03-01")
+  expected <- c(23L, 24L, 24L, 24L, 25L, 99L, 100L)
+  df <- data.frame(pnr = rep("2902004007", length(dates)), ref = dates)
+  # Character and Date columns must follow the same rule. 2100 is not a leap year.
+  for (refs in list(dates, as.Date(dates))) {
+    df$ref <- refs
+    expect_identical(add_cpr_info(df, pnr, add = "age", ref_date = ref)$age,
+                     expected)
+  }
+  for (i in seq_along(dates)) {
+    expect_identical(
+      add_cpr_info(df[1L, ], pnr, add = "age", ref_date = dates[i])$age,
+      expected[i])
+  }
+  expect_identical(add_cpr_info(df[1L, ], pnr, add = "age", ref_date = 2024)$age,
+                   23L)
+  expect_identical(add_cpr_info(df[1L, ], pnr, add = "age", year = 2024)$age,
+                   23L)
+})
+
 test_that("reference date columns support empty data", {
   df <- data.frame(pnr = character(), primo = as.Date(character()))
   expect_identical(add_cpr_info(df, pnr, ref_date = primo)$age, integer())

@@ -613,6 +613,21 @@ df$primo <- as.Date(paste0(df$year, "-01-01"))
 add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
 ```
 
+Age counts completed calendar years, not elapsed days divided by 365.25.
+For a person born on 29 February, age increases on 29 February in leap
+years and on 1 March in non-leap years. For a birth date of 29 February 2000:
+
+| Reference date | Age |
+| --- | ---: |
+| 2024-02-28 | 23 |
+| 2024-02-29 | 24 |
+| 2024-03-01 | 24 |
+| 2025-02-28 | 24 |
+| 2025-03-01 | 25 |
+
+Numeric `ref_date = 2024` or `year = 2024` still means 1 January 2024
+by default, giving age 23 in this example.
+
 ## Interactive tools
 
 ### `screen_timeseries()`: interactive time-series screening
