@@ -44,9 +44,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20261013"
+#> [1] "20261023"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-13 22:43"
+#> [1] "2026-10-23 22:47"
 ```
 
 A typical use is timestamping an export file:
@@ -745,6 +745,52 @@ add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
 #> 1 1111111118  88
 #> 2 1111111118  88
 #> 3 0111111118  88
+```
+
+For age at the start of each row’s year, pass a numeric year column
+directly. Whole years are interpreted as 1 January of that year:
+
+``` r
+df$year <- rep(2026L, nrow(df))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
+#>          pnr year primoalder
+#> 1 1111111118 2026        114
+#> 2 1111111118 2026        114
+#> 3 0111111118 2026        114
+```
+
+Alternatively, use `year` and choose a point in the year with `at`:
+`"primo"` (1 January, default), `"medio"` (1 July), or `"ultimo"` (31
+December). Supply either `year` or `ref_date`, not both.
+
+``` r
+add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
+#>          pnr year medioalder
+#> 1 1111111118 2026        114
+#> 2 1111111118 2026        114
+#> 3 0111111118 2026        114
+add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
+#>          pnr year ultimoalder
+#> 1 1111111118 2026         115
+#> 2 1111111118 2026         115
+#> 3 0111111118 2026         115
+```
+
+Only requested outputs and their dependencies are calculated. Reference
+dates and years are only evaluated when `add` includes `"age"`.
+
+You can also pass a date column directly. `ref_date` accepts a single
+date or one date per row, as `Date` values or ISO-format strings.
+Missing reference dates give missing ages.
+
+``` r
+df$year <- rep(2026L, nrow(df))
+df$primo <- as.Date(paste0(df$year, "-01-01"))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
+#>          pnr year      primo primoalder
+#> 1 1111111118 2026 2026-01-01        114
+#> 2 1111111118 2026 2026-01-01        114
+#> 3 0111111118 2026 2026-01-01        114
 ```
 
 ## Interactive tools

@@ -11,7 +11,9 @@ add_cpr_info(
   data,
   cpr_col,
   add = c("bday", "age", "sex", "mod11", "valid"),
-  ref_date = Sys.Date()
+  ref_date = Sys.Date(),
+  year = NULL,
+  at = c("primo", "medio", "ultimo")
 )
 ```
 
@@ -39,9 +41,26 @@ add_cpr_info(
 
 - ref_date:
 
-  Reference date for age calculation. Accepts a `Date` object or an
-  ISO-format string (`"YYYY-MM-DD"`). Default:
+  Reference date for age calculation. Accepts a `Date` vector or
+  ISO-format strings (`"YYYY-MM-DD"`), supplied directly or as an
+  unquoted column name/expression evaluated in `data`. Use one date for
+  all rows or one date per row. Missing dates give missing ages. Numeric
+  whole years (e.g. `2025L`) are interpreted as 1 January of that year,
+  for calculating age at the start of the year. Default:
   [`Sys.Date()`](https://rdrr.io/r/base/Sys.time.html).
+
+- year:
+
+  Numeric whole reference years, supplied directly or as an unquoted
+  column/expression. An explicit alternative to `ref_date`; do not
+  supply both. Missing years give missing ages.
+
+- at:
+
+  Point in a numeric reference year: `"primo"` (1 January, default),
+  `"medio"` (1 July), or `"ultimo"` (31 December). Used with `year` or
+  numeric `ref_date`. Explicit dates must not be combined with `at`.
+  Reference arguments are only evaluated when adding age.
 
 ## Value
 
@@ -87,10 +106,10 @@ column in the returned data frame is always returned in the standardised
 10-digit format `xxxxxxxxxx`.
 
 **Implementation note:** the function is plain vectorised arithmetic:
-one string-to-number conversion, digits peeled into an n-by-10 matrix,
-the mod-11 checksum as a single matrix product, and birth dates
-constructed directly as epoch day counts (no date-string parsing). It
-scales linearly to millions of rows.
+only requested outputs and their dependencies are calculated. The digit
+matrix is only built for mod-11; birth dates are only constructed when
+requested. Numeric reference years use direct age arithmetic. It scales
+linearly to millions of rows.
 
 ## References
 
@@ -133,4 +152,30 @@ add_cpr_info(df, pnr, add = c("bday", "sex"))
 #> 1 1111111118 1911-11-11   0
 #> 2 1111111118 1911-11-11   0
 #> 3 0111111118 1911-11-01   0
+
+# Age at the start of each row's year:
+df$year <- c(2024L, 2025L, 2026L)
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
+#>          pnr year primoalder
+#> 1 1111111118 2024        112
+#> 2 1111111118 2025        113
+#> 3 0111111118 2026        114
+add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
+#>          pnr year medioalder
+#> 1 1111111118 2024        112
+#> 2 1111111118 2025        113
+#> 3 0111111118 2026        114
+add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
+#>          pnr year ultimoalder
+#> 1 1111111118 2024         113
+#> 2 1111111118 2025         114
+#> 3 0111111118 2026         115
+
+# Or use an explicit date column:
+df$primo <- as.Date(paste0(df$year, "-01-01"))
+add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
+#>          pnr year      primo primoalder
+#> 1 1111111118 2024 2024-01-01        112
+#> 2 1111111118 2025 2025-01-01        113
+#> 3 0111111118 2026 2026-01-01        114
 ```

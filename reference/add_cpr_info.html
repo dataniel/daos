@@ -54,7 +54,9 @@ Returns the original data frame with the requested columns appended.</p>
 <span>  <span class="va">data</span>,</span>
 <span>  <span class="va">cpr_col</span>,</span>
 <span>  add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bday"</span>, <span class="st">"age"</span>, <span class="st">"sex"</span>, <span class="st">"mod11"</span>, <span class="st">"valid"</span><span class="op">)</span>,</span>
-<span>  ref_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  ref_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  year <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"primo"</span>, <span class="st">"medio"</span>, <span class="st">"ultimo"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,7 +83,25 @@ Default: all five types.</p></li>
 
 <dt id="arg-ref-date">ref_date<a class="anchor" aria-label="anchor" href="#arg-ref-date"></a></dt>
 <dd><p>Reference date for age calculation. Accepts a <code>Date</code>
-object or an ISO-format string (<code>"YYYY-MM-DD"</code>). Default: <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date()</a></code>.</p></dd>
+vector or ISO-format strings (<code>"YYYY-MM-DD"</code>), supplied directly or as
+an unquoted column name/expression evaluated in <code>data</code>. Use one date
+for all rows or one date per row. Missing dates give missing ages.
+Numeric whole years (e.g. <code>2025L</code>) are interpreted as 1 January of
+that year, for calculating age at the start of the year.
+Default: <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date()</a></code>.</p></dd>
+
+
+<dt id="arg-year">year<a class="anchor" aria-label="anchor" href="#arg-year"></a></dt>
+<dd><p>Numeric whole reference years, supplied directly or as an
+unquoted column/expression. An explicit alternative to <code>ref_date</code>;
+do not supply both. Missing years give missing ages.</p></dd>
+
+
+<dt id="arg-at">at<a class="anchor" aria-label="anchor" href="#arg-at"></a></dt>
+<dd><p>Point in a numeric reference year: <code>"primo"</code> (1 January,
+default), <code>"medio"</code> (1 July), or <code>"ultimo"</code> (31 December). Used with
+<code>year</code> or numeric <code>ref_date</code>. Explicit dates must not be combined
+with <code>at</code>. Reference arguments are only evaluated when adding age.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -113,9 +133,9 @@ numbers are zero-padded on the left (recovering values that lost a
 leading zero in Excel). The CPR column in the returned data frame is
 always returned in the standardised 10-digit format <code>xxxxxxxxxx</code>.</p>
 <p><strong>Implementation note:</strong> the function is plain vectorised arithmetic:
-one string-to-number conversion, digits peeled into an n-by-10 matrix,
-the mod-11 checksum as a single matrix product, and birth dates
-constructed directly as epoch day counts (no date-string parsing).
+only requested outputs and their dependencies are calculated. The
+digit matrix is only built for mod-11; birth dates are only constructed
+when requested. Numeric reference years use direct age arithmetic.
 It scales linearly to millions of rows.</p>
     </div>
     <div class="section level2">
@@ -159,6 +179,32 @@ It scales linearly to millions of rows.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 1111111118 1911-11-11   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 1111111118 1911-11-11   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3 0111111118 1911-11-01   0</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Age at the start of each row's year:</span></span></span>
+<span class="r-in"><span><span class="va">df</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2024L</span>, <span class="fl">2025L</span>, <span class="fl">2026L</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">add_cpr_info</span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>primoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, ref_date <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year primoalder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1111111118 2024        112</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 1111111118 2025        113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0111111118 2026        114</span>
+<span class="r-in"><span><span class="fu">add_cpr_info</span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>medioalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, year <span class="op">=</span> <span class="va">year</span>, at <span class="op">=</span> <span class="st">"medio"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year medioalder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1111111118 2024        112</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 1111111118 2025        113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0111111118 2026        114</span>
+<span class="r-in"><span><span class="fu">add_cpr_info</span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ultimoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, year <span class="op">=</span> <span class="va">year</span>, at <span class="op">=</span> <span class="st">"ultimo"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year ultimoalder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1111111118 2024         113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 1111111118 2025         114</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0111111118 2026         115</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Or use an explicit date column:</span></span></span>
+<span class="r-in"><span><span class="va">df</span><span class="op">$</span><span class="va">primo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">year</span>, <span class="st">"-01-01"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">add_cpr_info</span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>primoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, ref_date <span class="op">=</span> <span class="va">primo</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year      primo primoalder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1111111118 2024 2024-01-01        112</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 1111111118 2025 2025-01-01        113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0111111118 2026 2026-01-01        114</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
