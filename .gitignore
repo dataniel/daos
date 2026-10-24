@@ -20,3 +20,14 @@
 
 # Claude Code
 .claude/
+
+# Native R compilation
+src/*.o
+src/*.dll
+src/*.so
+src/*.dylib
+src/*.a
+src/*.rds
+
+# Local profiling output
+/benchmarks/*-profile.out

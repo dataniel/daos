@@ -1,309 +1,174 @@
 #' Add information derived from Danish CPR numbers
 #'
-#' Vectorised derivation of birth date, age, sex, and validity indicators
-#' from Danish CPR (Civil Person Register) numbers.
-#' Returns the original data frame with the requested columns appended.
+#' Add selected CPR information without changing the original CPR column.
+#'
+#' @param data A data frame or tibble.
+#' @param cpr_col CPR column, unquoted or a literal column-name string.
+#' @param ... Information to add: `bday`, `sex`, `valid`, `mod11`, `age`, or
+#'   [daos::age()] with a reference year or date. Name a selection to choose its
+#'   output column, e.g. `birth_date = bday`. With no selections, adds
+#'   `bday`, `age`, `sex`, `mod11`, and `valid`. Bare `age` uses today's date.
+#' @param overwrite Allow replacing existing output columns? Default `FALSE`.
+#'   The CPR source column cannot be replaced.
 #'
 #' @details
-#' **Supported info types** (`add` values):
+#' `bday` is a Date; `age` is completed calendar years (integer); `sex` is
+#' integer 1 for an odd final digit (male), 0 for even (female).
+#' `valid` checks ten digits and a real encoded calendar date, not whether
+#' the number was assigned to a person. Missing and malformed CPRs give
+#' `valid = FALSE` and missing birth date, age, and sex.
+#' `mod11` is a separate logical checksum, not a requirement for `valid`.
+#' Malformed formats give a missing checksum.
 #'
-#' | Type | Output | Description |
-#' |------|--------|-------------|
-#' | `"bday"` | Date | Date of birth |
-#' | `"age"` | integer | Age in whole years at `ref_date` |
-#' | `"sex"` | integer | `1` (male, odd last digit) or `0` (female, even last digit) |
-#' | `"mod11"` | logical | Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) |
-#' | `"valid"` | logical | Format valid *and* the encoded birth date is a real calendar date |
+#' CPR values are cleaned internally with [daos::clean_cpr()]. To also standardise
+#' the source column, use `dplyr::mutate(pnr = clean_cpr(pnr))` explicitly.
+#' Rows, row order, and input columns are preserved unless `overwrite = TRUE`.
+#' Duplicate output names are always an error.
 #'
-#' **Age and leap years:** age counts completed calendar years, rather
-#' than dividing elapsed days by 365.25. For someone born on 29 February,
-#' age increases on 29 February in leap years and on 1 March in non-leap
-#' years. For example, someone born on 29 February 2000 is 23 on
-#' 28 February 2024 and 24 on 29 February 2024; they remain 24 on
-#' 28 February 2025 and turn 25 on 1 March 2025. A numeric reference year
-#' still defaults to 1 January, including in leap years.
+#' CPR parsing, calendar validation, and requested outputs share a single
+#' native pass. Multiple age selections reuse the decoded birth date.
+#' Pre-cleaning is optional: use [daos::clean_cpr()] when the source column
+#' itself must be standardised for joins or export.
 #'
-#' **What `valid` means, and what it does not:**
-#' `valid = TRUE` requires exactly two things: the cleaned value is ten
-#' digits, and those digits encode a real calendar date under the official
-#' century rules. **The modulus-11 check is *not* part of `valid`.** Since
-#' 2007 the CPR office has assigned numbers *without* modulus-11 control,
-#' because some birth dates have run out of mod-11-compatible sequence
-#' numbers. cpr.dk states that these are "fuldt ud gyldige personnumre"
-#' (so far assigned to persons born on certain 1 January dates between
-#' 1960 and the 1990s). A failed mod-11 therefore does not make a CPR
-#' number invalid. Validators that reject on mod-11 wrongly reject real,
-#' living people. The check is still reported separately as `mod11`,
-#' where it works as a data quality signal: a high failure rate in older
-#' data suggests keying errors. The official assignment series start at
-#' sequence number 0001, so `0000` never occurs in practice. It is not
-#' rejected here, since the date check is the documented criterion.
+#' For 29 February births, age advances on 1 March in non-leap years.
+#' A reference before birth gives a negative age. Use an explicit reference
+#' for reproducible analysis; today's date changes between runs.
 #'
-#' **Century detection** follows the official CPR rules based on digit 7
-#' and the two-digit year component (see the table in the source code).
+#' This selection API replaces `add`, `ref_date`, `year`, and `at` arguments:
+#' use `age(year, "primo")` or `age(date = reference_date)` instead.
+#' Unlike the previous API, the source CPR column is preserved.
 #'
-#' **Input tolerance:** the CPR column is standardised with
-#' [daos::clean_cpr()]: dashes and spaces are stripped and nine-digit
-#' numbers are zero-padded on the left (recovering values that lost a
-#' leading zero in Excel). The CPR column in the returned data frame is
-#' always returned in the standardised 10-digit format `xxxxxxxxxx`.
-#'
-#' **Implementation note:** the function is plain vectorised arithmetic:
-#' only requested outputs and their dependencies are calculated. The
-#' digit matrix is only built for mod-11; birth dates are only constructed
-#' when requested. Numeric reference years use direct age arithmetic.
-#' It scales linearly to millions of rows.
-#'
-#' @param data A tibble or data frame.
-#' @param cpr_col Name of the CPR column (unquoted).
-#' @param add Which info types to add. Either:
-#'   - An **unnamed** character vector, e.g. `c("bday", "age")`, which uses
-#'     the type names as column names.
-#'   - A **named** character vector, e.g. `c(birth_date = "bday",
-#'     years_old = "age")`, where the left-hand side becomes the column
-#'     name and the right-hand side is the type.
-#'   Default: all five types.
-#' @param ref_date Reference date for age calculation. Accepts a `Date`
-#'   vector or ISO-format strings (`"YYYY-MM-DD"`), supplied directly or as
-#'   an unquoted column name/expression evaluated in `data`. Use one date
-#'   for all rows or one date per row. Missing dates give missing ages.
-#'   Numeric whole years (e.g. `2025L`) are interpreted as 1 January of
-#'   that year, for calculating age at the start of the year.
-#'   Default: `Sys.Date()`.
-#' @param year Numeric whole reference years, supplied directly or as an
-#'   unquoted column/expression. An explicit alternative to `ref_date`;
-#'   do not supply both. Missing years give missing ages.
-#' @param at Point in a numeric reference year: `"primo"` (1 January,
-#'   default), `"medio"` (1 July), or `"ultimo"` (31 December). Used with
-#'   `year` or numeric `ref_date`. Explicit dates must not be combined
-#'   with `at`. Reference arguments are only evaluated when adding age.
-#'
-#' @return The original data frame with the requested columns appended.
-#'
-#' @references
-#' CPR-kontoret, *Personnummeret i CPR-systemet* (1 July 2008),
-#' <https://cdn2.gopublic.dk/cpr/media/12066/personnummeret-i-cpr.pdf>;
-#' *Opbygning af CPR-nummeret*,
-#' <https://www.cpr.dk/cpr-systemet/opbygning-af-cpr-nummeret>;
-#' *Personnumre uden kontrolciffer (modulus 11 kontrol)*,
-#' <https://www.cpr.dk/cpr-systemet/personnumre-uden-kontrolciffer-modulus-11-kontrol>.
-#'
+#' @return The input data frame with selected columns added in selection order.
 #' @examples
-#' df <- data.frame(
-#'   pnr = c("1111111118", "111111-1118", "111111118"),
-#'   stringsAsFactors = FALSE
-#' )
-#'
-#' # Default: add all columns
+#' df <- data.frame(pnr = c("0101004007", "111111-1118"), year = 2024:2025)
 #' add_cpr_info(df, pnr)
-#'
-#' # Custom column names:
-#' add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
-#'
-#' # Unnamed: uses type names directly
-#' add_cpr_info(df, pnr, add = c("bday", "sex"))
-#'
-#' # Age at the start of each row's year:
-#' df$year <- c(2024L, 2025L, 2026L)
-#' add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
-#' add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
-#' add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
-#'
-#' # Or use an explicit date column:
-#' df$primo <- as.Date(paste0(df$year, "-01-01"))
-#' add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
-#'
-#' @seealso [daos::clean_cpr()]
-#'
-#' @importFrom cli cli_abort
-#' @importFrom rlang as_name enquo
-#' @importFrom dplyr bind_cols
-#' @importFrom tibble as_tibble
+#' add_cpr_info(df, pnr, sex, birth_date = bday)
+#' add_cpr_info(df, pnr,
+#'   primoalder = age(year), ultimoalder = age(year, "ultimo"), sex)
+#' add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
+#' @seealso [daos::age()], [daos::clean_cpr()]
+#' @useDynLib daos, .registration = TRUE, .fixes = "C_"
 #' @export
-add_cpr_info <- function(
-    data,
-    cpr_col,
-    add      = c("bday", "age", "sex", "mod11", "valid"),
-    ref_date = Sys.Date(),
-    year = NULL,
-    at = c("primo", "medio", "ultimo")
-) {
-
-  gyldige_typer <- c("bday", "age", "sex", "mod11", "valid")
-
-  if (is.null(names(add))) {
-    names(add) <- add
-  } else {
-    mangler_navn <- names(add) == "" | is.na(names(add))
-    names(add)[mangler_navn] <- add[mangler_navn]
+add_cpr_info <- function(data, cpr_col, ..., overwrite = FALSE) {
+  if (!is.data.frame(data)) cli::cli_abort("{.arg data} must be a data frame or tibble.")
+  if (anyNA(names(data)) || any(names(data) == "") || anyDuplicated(names(data))) {
+    cli::cli_abort("{.arg data} must have unique, non-empty column names.")
   }
-
-  ukendt <- setdiff(add, gyldige_typer)
-  if (length(ukendt) > 0) {
-    cli::cli_abort(c(
-      "Unknown info type in {.var add}: {.val {ukendt}}",
-      "i" = "Valid values: {.val {gyldige_typer}}"
-    ))
+  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
+    cli::cli_abort("{.arg overwrite} must be TRUE or FALSE.")
   }
-
-  if ("age" %in% add) {
-    use_year <- !missing(year)
-    if (use_year && !missing(ref_date)) {
-      cli::cli_abort("Supply only one of {.var year} and {.var ref_date}.")
+  col <- rlang::enquo(cpr_col)
+  if (!rlang::quo_is_symbol(col) && !rlang::is_string(rlang::quo_get_expr(col))) {
+    cli::cli_abort("{.arg cpr_col} must be an unquoted column name or a single string.")
+  }
+  source <- rlang::as_name(col)
+  if (!source %in% names(data)) cli::cli_abort("Column {.var {source}} not found in data.")
+  if (!is.atomic(data[[source]]) || !is.null(dim(data[[source]]))) {
+    cli::cli_abort("The CPR column must be an atomic vector.")
+  }
+  selections <- rlang::enquos(..., .ignore_empty = "none")
+  legacy <- intersect(names(selections), c("add", "ref_date", "year", "at"))
+  types <- c("bday", "age", "sex", "mod11", "valid")
+  if (!length(selections)) {
+    selections <- lapply(types, function(x) rlang::new_quosure(rlang::sym(x)))
+    names(selections) <- rep("", length(types))
+  }
+  specs <- lapply(selections, function(q) {
+    if (rlang::quo_is_missing(q)) cli::cli_abort("Empty CPR selection. Remove the extra comma or choose an information type.")
+    expr <- rlang::quo_get_expr(q)
+    if (rlang::is_symbol(expr) && rlang::as_string(expr) %in% types) {
+      type <- rlang::as_string(expr)
+      return(list(type = type, reference = if (type == "age") age() else NULL))
     }
-    ref_date <- if (use_year) {
-      rlang::eval_tidy(rlang::enquo(year), data = data)
-    } else {
-      rlang::eval_tidy(rlang::enquo(ref_date), data = data)
-    }
-    numeric_year <- is.numeric(ref_date) && !is.object(ref_date)
-    if (use_year && !numeric_year) {
-      cli::cli_abort("{.var year} must contain numeric whole years.")
-    }
-    if (!numeric_year && !missing(at)) {
-      cli::cli_abort("{.var at} is only supported with numeric reference years.")
-    }
-    if (!length(ref_date) %in% c(1L, nrow(data))) {
-      cli::cli_abort("{.var ref_date} must have length 1 or one date per row of {.var data} ({nrow(data)}).")
-    }
-    if (is.character(ref_date)) {
-      parsed <- tryCatch(as.Date(ref_date), error = function(e) NULL)
-      if (is.null(parsed) || any(!is.na(ref_date) & is.na(parsed))) {
-        cli::cli_abort("{.var ref_date} could not be parsed as a date (expected ISO format, e.g. {.val 2020-01-01})")
+    is_age <- rlang::is_call(expr, "age") ||
+      (is.call(expr) && identical(expr[[1L]], quote(daos::age)))
+    if (!is_age) {
+      if (length(legacy)) {
+        cli::cli_abort(c("The CPR selection API has changed.",
+          "i" = 'Use bare selections such as sex and bday, age(year, "primo"), or age(date = reference_date).',
+          "i" = "Name outputs with alder = age(year). The old add/ref_date/year/at arguments are no longer supported."))
       }
-      ref_date <- parsed
-    } else if (numeric_year) {
-      if (any(!is.na(ref_date) &
-              (!is.finite(ref_date) | ref_date != trunc(ref_date) |
-               ref_date < 1 | ref_date > 9999))) {
-        cli::cli_abort("Numeric {.var ref_date} must contain whole years between 1 and 9999.")
-      }
-    } else if (!inherits(ref_date, "Date")) {
-      cli::cli_abort("{.var ref_date} must be a string, a {.cls Date} object, or a numeric year")
+      label <- rlang::as_label(q)
+      cli::cli_abort(c("Unknown CPR selection: {.val {label}}.",
+        "i" = 'Choose bday, sex, valid, mod11, age, or age(year, "primo").'))
     }
-    if (numeric_year) {
-      ref_year <- ref_date
-      ref_md <- switch(match.arg(at), primo = 101L, medio = 701L, ultimo = 1231L)
-    } else {
-      ref <- as.POSIXlt(ref_date)
-      ref_year <- ref$year + 1900L
-      ref_md <- (ref$mon + 1L) * 100L + ref$mday
-    }
+    # Resolve our helper explicitly; capture its arguments in the caller's
+    # environment and evaluate references against data only afterwards.
+    expr[[1L]] <- quote(.cpr_age_helper)
+    env <- rlang::env(rlang::quo_get_env(q), .cpr_age_helper = age)
+    list(type = "age", reference = rlang::eval_bare(expr, env))
+  })
+  output <- names(selections)
+  unnamed <- output == ""
+  output[unnamed] <- vapply(specs[unnamed], `[[`, character(1), "type")
+  if (anyDuplicated(output)) {
+    cli::cli_abort(c("Duplicate output column names.",
+      "i" = 'Give each selection a unique name, e.g. primoalder = age(year), ultimoalder = age(year, "ultimo").'))
   }
-
-  cpr_navn <- rlang::as_name(rlang::enquo(cpr_col))
-  if (!cpr_navn %in% names(data)) {
-    cli::cli_abort("Column {.var {cpr_navn}} not found in data.")
+  if (source %in% output) cli::cli_abort("The CPR source column {.var {source}} cannot be overwritten. Choose another output name.")
+  collisions <- intersect(output, names(data))
+  if (length(collisions) && !overwrite) {
+    cli::cli_abort(c("Output columns already exist: {.var {collisions}}.",
+      "i" = "Choose different output names or set overwrite = TRUE."))
   }
-
-  # Separator stripping and Excel-leading-zero repair live in clean_cpr(),
-  # so the cleaning rule is defined in exactly one place.
-  cpr_clean <- clean_cpr(data[[cpr_navn]])
-  data[[cpr_navn]] <- cpr_clean
-  if (length(add) == 0L) return(data)
-  alle <- list()
-
-  format_ok <- grepl("^\\d{10}$", cpr_clean, perl = TRUE)
-
-  # The single string-to-number conversion. A 10-digit value is < 2^53, so
-  # it is exactly representable in a double and all integer arithmetic on
-  # it is exact. Invalid rows become NA here and propagate through every
-  # computation below for free.
-  num <- rep(NA_real_, length(cpr_clean))
-  num[format_ok] <- as.numeric(cpr_clean[format_ok])
-
-  if ("mod11" %in% add) {
-    D <- outer(num, 10^(9:0), function(n, p) (n %/% p) %% 10)
-  }
-
-  if (any(add %in% c("bday", "age", "sex", "valid"))) {
-    if ("mod11" %in% add) {
-      dag    <- D[, 1L] * 10 + D[, 2L]
-      maaned <- D[, 3L] * 10 + D[, 4L]
-      aar2   <- D[, 5L] * 10 + D[, 6L]
-      d7     <- D[, 7L]
-    } else {
-      dag    <- num %/% 10^8
-      maaned <- (num %/% 10^6) %% 100
-      aar2   <- (num %/% 10^4) %% 100
-      d7     <- (num %/% 10^3) %% 10
-    }
-
-    # Official century rules (digit 7 crossed with the two-digit year):
-    #
-    #   d7    | yy 00-36 | yy 37-57 | yy 58-99
-    #   ------|----------|----------|----------
-    #   0-3   | 1900     | 1900     | 1900
-    #   4, 9  | 2000     | 1900     | 1900
-    #   5-8   | 2000     | 2000     | 1800
-    #
-    # Encoded branchlessly: start at 1900 and shift by +-100 where the table
-    # says so. Logical vectors act as 0/1, so this is three vector ops.
-    aarhundrede <- 1900 +
-      100 * ((d7 == 4 | d7 == 9) & aar2 <= 36) +
-      100 * (d7 >= 5 & d7 <= 8 & aar2 <= 57) -
-      100 * (d7 >= 5 & d7 <= 8 & aar2 >= 58)
-
-    aar <- aarhundrede + aar2
-
-    # Calendar validation in pure arithmetic: clamp the month for safe table
-    # lookup, then check the day against the month length (+1 for February
-    # in leap years).
-    skudaar   <- (aar %% 4 == 0 & aar %% 100 != 0) | aar %% 400 == 0
-    maaned_ok <- maaned >= 1 & maaned <= 12
-    midx      <- maaned
-    midx[which(!maaned_ok)] <- 1
-    maks_dag  <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[midx] +
-      (maaned == 2) * skudaar
-    dato_ok   <- maaned_ok & dag >= 1 & dag <= maks_dag
-
-    gyldig <- !is.na(dato_ok) & dato_ok
-
-    # Date construction without parsing: convert (year, month, day) straight
-    # to days since 1970-01-01 (Hinnant's civil-days algorithm) and stamp the
-    # Date class on. This skips strptime entirely.
-    if ("bday" %in% add) {
-      dage <- .cpr_days_from_civil(aar, maaned, dag)
-      dage[!gyldig] <- NA_real_
-      alle$bday <- structure(as.double(dage), class = "Date")
-    }
-    if ("sex" %in% add) {
-      koen <- as.integer(num %% 2)
-      koen[!gyldig] <- NA_integer_
-      alle$sex <- koen
-    }
-    if ("age" %in% add) {
-      alder <- as.integer(ref_year - aar - (ref_md < maaned * 100 + dag))
-      alder[!gyldig] <- NA_integer_
-      alle$age <- alder
-    }
-    if ("valid" %in% add) alle$valid <- gyldig
-  }
-
-  # The mod-11 checksum for all rows at once: digit matrix times weight
-  # vector is one BLAS call.
-  if ("mod11" %in% add) {
-    m11_vaegte <- c(4, 3, 2, 7, 6, 5, 4, 3, 2, 1)
-    alle$mod11 <- as.vector(D %*% m11_vaegte) %% 11 == 0
-  }
-
-  valgt <- alle[unname(add)]
-  names(valgt) <- names(add)
-
-  dplyr::bind_cols(data, tibble::as_tibble(valgt))
+  codes <- match(vapply(specs, `[[`, character(1), "type"), types) - 1L
+  references <- lapply(seq_along(specs), function(i) {
+    if (specs[[i]]$type == "age") .cpr_reference(specs[[i]]$reference, data, output[i]) else NULL
+  })
+  cpr <- data[[source]]
+  if (!is.character(cpr)) cpr <- as.character(cpr)
+  values <- .Call(C_daos_cpr_info, cpr, codes, references)
+  # Compute against the original data, before any output is assigned.
+  result <- if (inherits(data, "data.table")) data.table::copy(data) else data
+  for (i in seq_along(output)) result[[output[i]]] <- values[[i]]
+  result
 }
 
-# Days since 1970-01-01 from (year, month, day), fully vectorised integer
-# arithmetic. This is Howard Hinnant's days_from_civil algorithm
-# (https://howardhinnant.github.io/date_algorithms.html): years are shifted
-# so March is month 0 (putting the leap day last), and the day-of-year for
-# the shifted month follows the linear pattern (153 * m + 2) %/% 5.
-.cpr_days_from_civil <- function(y, m, d) {
-  y   <- y - (m <= 2)
-  era <- y %/% 400
-  yoe <- y - era * 400
-  mp  <- (m + 9) %% 12
-  doy <- (153 * mp + 2) %/% 5 + d - 1
-  doe <- yoe * 365 + yoe %/% 4 - yoe %/% 100 + doy
-  era * 146097 + doe - 719468
+#' Specify an age calculation for CPR information
+#'
+#' Use inside [daos::add_cpr_info()] to choose the reference for an age column.
+#' This helper describes a calculation; it does not calculate an age itself.
+#' @param year Numeric whole year(s), directly or as a column/expression in
+#'   the input data. Defaults to 1 January of each year.
+#' @param at Point in the year: `"primo"` (1 January), `"medio"` (1 July),
+#'   or `"ultimo"` (31 December). Only allowed with `year`.
+#' @param date A Date vector or strict ISO date strings (`YYYY-MM-DD`).
+#'   Supply either `year` or `date`. With neither, uses `Sys.Date()`.
+#' @details References may have length one or one value per input row.
+#' Missing references produce missing ages. Data columns take precedence
+#' over caller variables; `.env` and `.data` can make the source explicit.
+#' @return An age specification for [daos::add_cpr_info()].
+#' @examples
+#' df <- data.frame(pnr = "0101004007", year = 2025L)
+#' add_cpr_info(df, pnr, age(year), sex)
+#' add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
+#' @export
+age <- function(year, at = "primo", date) {
+  if (!missing(year) && !missing(date)) cli::cli_abort("Supply only one of year and date in age().")
+  if (missing(year) && !missing(at)) cli::cli_abort("at is only supported with year in age().")
+  at <- rlang::arg_match(at, c("primo", "medio", "ultimo"))
+  use_year <- !missing(year)
+  reference <- if (use_year) rlang::enquo(year) else if (!missing(date)) rlang::enquo(date) else rlang::quo(Sys.Date())
+  structure(list(reference = reference, year = use_year, at = at), class = "daos_cpr_age")
+}
+
+.cpr_reference <- function(spec, data, output) {
+  value <- tryCatch(rlang::eval_tidy(spec$reference, data), error = function(e) {
+    cli::cli_abort("Cannot evaluate the age reference for {.var {output}}.", parent = e)
+  })
+  if (!length(value) %in% c(1L, nrow(data)) || !is.null(dim(value))) {
+    cli::cli_abort("Reference for {.var {output}} must have length 1 or one value per row ({nrow(data)}).")
+  }
+  if (spec$year) {
+    if (!is.numeric(value) || is.object(value) || any(!is.na(value) &
+        (!is.finite(value) | value != trunc(value) | value < 1 | value > 9999))) {
+      cli::cli_abort("year for {.var {output}} must contain numeric whole years between 1 and 9999.")
+    }
+    return(list(as.double(value), 0L, switch(spec$at, primo = 101L, medio = 701L, ultimo = 1231L), output))
+  }
+  if (is.character(value)) return(list(value, 2L, 0L, output))
+  if (!inherits(value, "Date") || any(!is.na(value) & !is.finite(value))) {
+    cli::cli_abort("date for {.var {output}} must be a Date vector or ISO date strings; use age(year = ...) for numeric years.")
+  }
+  list(as.double(value), 1L, 0L, output)
 }

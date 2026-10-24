@@ -27,8 +27,12 @@ malformed number stays visibly malformed for downstream checks. Use
 \code{\link[=add_cpr_info]{add_cpr_info()}} for validity, or pipe through a checkpoint
 (see \code{vignette("validation")}).
 
-\code{\link[=add_cpr_info]{add_cpr_info()}} applies exactly this cleaning internally, so a
-column standardised with \code{clean_cpr()} round-trips unchanged.
+\code{\link[=add_cpr_info]{add_cpr_info()}} applies this cleaning internally for its
+calculations, while preserving the original CPR column in its output.
+Both functions use the same native normalisation rules. Cleaning is
+optional before \code{add_cpr_info()}; use it when you need a standardised
+identifier for joins or export. Already clean character vectors are
+returned without allocating a replacement vector.
 }
 \examples{
 clean_cpr(c("111111-1118", "1111111118", "101004007", NA))

@@ -4,138 +4,62 @@
 \alias{add_cpr_info}
 \title{Add information derived from Danish CPR numbers}
 \usage{
-add_cpr_info(
-  data,
-  cpr_col,
-  add = c("bday", "age", "sex", "mod11", "valid"),
-  ref_date = Sys.Date(),
-  year = NULL,
-  at = c("primo", "medio", "ultimo")
-)
+add_cpr_info(data, cpr_col, ..., overwrite = FALSE)
 }
 \arguments{
-\item{data}{A tibble or data frame.}
+\item{data}{A data frame or tibble.}
 
-\item{cpr_col}{Name of the CPR column (unquoted).}
+\item{cpr_col}{CPR column, unquoted or a literal column-name string.}
 
-\item{add}{Which info types to add. Either:
-\itemize{
-\item An \strong{unnamed} character vector, e.g. \code{c("bday", "age")}, which uses
-the type names as column names.
-\item A \strong{named} character vector, e.g. \code{c(birth_date = "bday", years_old = "age")}, where the left-hand side becomes the column
-name and the right-hand side is the type.
-Default: all five types.
-}}
+\item{...}{Information to add: \code{bday}, \code{sex}, \code{valid}, \code{mod11}, \code{age}, or
+\code{\link[=age]{age()}} with a reference year or date. Name a selection to choose its
+output column, e.g. \code{birth_date = bday}. With no selections, adds
+\code{bday}, \code{age}, \code{sex}, \code{mod11}, and \code{valid}. Bare \code{age} uses today's date.}
 
-\item{ref_date}{Reference date for age calculation. Accepts a \code{Date}
-vector or ISO-format strings (\code{"YYYY-MM-DD"}), supplied directly or as
-an unquoted column name/expression evaluated in \code{data}. Use one date
-for all rows or one date per row. Missing dates give missing ages.
-Numeric whole years (e.g. \code{2025L}) are interpreted as 1 January of
-that year, for calculating age at the start of the year.
-Default: \code{Sys.Date()}.}
-
-\item{year}{Numeric whole reference years, supplied directly or as an
-unquoted column/expression. An explicit alternative to \code{ref_date};
-do not supply both. Missing years give missing ages.}
-
-\item{at}{Point in a numeric reference year: \code{"primo"} (1 January,
-default), \code{"medio"} (1 July), or \code{"ultimo"} (31 December). Used with
-\code{year} or numeric \code{ref_date}. Explicit dates must not be combined
-with \code{at}. Reference arguments are only evaluated when adding age.}
+\item{overwrite}{Allow replacing existing output columns? Default \code{FALSE}.
+The CPR source column cannot be replaced.}
 }
 \value{
-The original data frame with the requested columns appended.
+The input data frame with selected columns added in selection order.
 }
 \description{
-Vectorised derivation of birth date, age, sex, and validity indicators
-from Danish CPR (Civil Person Register) numbers.
-Returns the original data frame with the requested columns appended.
+Add selected CPR information without changing the original CPR column.
 }
 \details{
-\strong{Supported info types} (\code{add} values):\tabular{lll}{
-   Type \tab Output \tab Description \cr
-   \code{"bday"} \tab Date \tab Date of birth \cr
-   \code{"age"} \tab integer \tab Age in whole years at \code{ref_date} \cr
-   \code{"sex"} \tab integer \tab \code{1} (male, odd last digit) or \code{0} (female, even last digit) \cr
-   \code{"mod11"} \tab logical \tab Modulus-11 check (weights 4,3,2,7,6,5,4,3,2,1) \cr
-   \code{"valid"} \tab logical \tab Format valid \emph{and} the encoded birth date is a real calendar date \cr
-}
+\code{bday} is a Date; \code{age} is completed calendar years (integer); \code{sex} is
+integer 1 for an odd final digit (male), 0 for even (female).
+\code{valid} checks ten digits and a real encoded calendar date, not whether
+the number was assigned to a person. Missing and malformed CPRs give
+\code{valid = FALSE} and missing birth date, age, and sex.
+\code{mod11} is a separate logical checksum, not a requirement for \code{valid}.
+Malformed formats give a missing checksum.
 
+CPR values are cleaned internally with \code{\link[=clean_cpr]{clean_cpr()}}. To also standardise
+the source column, use \code{dplyr::mutate(pnr = clean_cpr(pnr))} explicitly.
+Rows, row order, and input columns are preserved unless \code{overwrite = TRUE}.
+Duplicate output names are always an error.
 
-\strong{Age and leap years:} age counts completed calendar years, rather
-than dividing elapsed days by 365.25. For someone born on 29 February,
-age increases on 29 February in leap years and on 1 March in non-leap
-years. For example, someone born on 29 February 2000 is 23 on
-28 February 2024 and 24 on 29 February 2024; they remain 24 on
-28 February 2025 and turn 25 on 1 March 2025. A numeric reference year
-still defaults to 1 January, including in leap years.
+CPR parsing, calendar validation, and requested outputs share a single
+native pass. Multiple age selections reuse the decoded birth date.
+Pre-cleaning is optional: use \code{\link[=clean_cpr]{clean_cpr()}} when the source column
+itself must be standardised for joins or export.
 
-\strong{What \code{valid} means, and what it does not:}
-\code{valid = TRUE} requires exactly two things: the cleaned value is ten
-digits, and those digits encode a real calendar date under the official
-century rules. \strong{The modulus-11 check is \emph{not} part of \code{valid}.} Since
-2007 the CPR office has assigned numbers \emph{without} modulus-11 control,
-because some birth dates have run out of mod-11-compatible sequence
-numbers. cpr.dk states that these are "fuldt ud gyldige personnumre"
-(so far assigned to persons born on certain 1 January dates between
-1960 and the 1990s). A failed mod-11 therefore does not make a CPR
-number invalid. Validators that reject on mod-11 wrongly reject real,
-living people. The check is still reported separately as \code{mod11},
-where it works as a data quality signal: a high failure rate in older
-data suggests keying errors. The official assignment series start at
-sequence number 0001, so \code{0000} never occurs in practice. It is not
-rejected here, since the date check is the documented criterion.
+For 29 February births, age advances on 1 March in non-leap years.
+A reference before birth gives a negative age. Use an explicit reference
+for reproducible analysis; today's date changes between runs.
 
-\strong{Century detection} follows the official CPR rules based on digit 7
-and the two-digit year component (see the table in the source code).
-
-\strong{Input tolerance:} the CPR column is standardised with
-\code{\link[=clean_cpr]{clean_cpr()}}: dashes and spaces are stripped and nine-digit
-numbers are zero-padded on the left (recovering values that lost a
-leading zero in Excel). The CPR column in the returned data frame is
-always returned in the standardised 10-digit format \code{xxxxxxxxxx}.
-
-\strong{Implementation note:} the function is plain vectorised arithmetic:
-only requested outputs and their dependencies are calculated. The
-digit matrix is only built for mod-11; birth dates are only constructed
-when requested. Numeric reference years use direct age arithmetic.
-It scales linearly to millions of rows.
+This selection API replaces \code{add}, \code{ref_date}, \code{year}, and \code{at} arguments:
+use \code{age(year, "primo")} or \code{age(date = reference_date)} instead.
+Unlike the previous API, the source CPR column is preserved.
 }
 \examples{
-df <- data.frame(
-  pnr = c("1111111118", "111111-1118", "111111118"),
-  stringsAsFactors = FALSE
-)
-
-# Default: add all columns
+df <- data.frame(pnr = c("0101004007", "111111-1118"), year = 2024:2025)
 add_cpr_info(df, pnr)
-
-# Custom column names:
-add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
-
-# Unnamed: uses type names directly
-add_cpr_info(df, pnr, add = c("bday", "sex"))
-
-# Age at the start of each row's year:
-df$year <- c(2024L, 2025L, 2026L)
-add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
-add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
-add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
-
-# Or use an explicit date column:
-df$primo <- as.Date(paste0(df$year, "-01-01"))
-add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
-
-}
-\references{
-CPR-kontoret, \emph{Personnummeret i CPR-systemet} (1 July 2008),
-\url{https://cdn2.gopublic.dk/cpr/media/12066/personnummeret-i-cpr.pdf};
-\emph{Opbygning af CPR-nummeret},
-\url{https://www.cpr.dk/cpr-systemet/opbygning-af-cpr-nummeret};
-\emph{Personnumre uden kontrolciffer (modulus 11 kontrol)},
-\url{https://www.cpr.dk/cpr-systemet/personnumre-uden-kontrolciffer-modulus-11-kontrol}.
+add_cpr_info(df, pnr, sex, birth_date = bday)
+add_cpr_info(df, pnr,
+  primoalder = age(year), ultimoalder = age(year, "ultimo"), sex)
+add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
 }
 \seealso{
-\code{\link[=clean_cpr]{clean_cpr()}}
+\code{\link[=age]{age()}}, \code{\link[=clean_cpr]{clean_cpr()}}
 }

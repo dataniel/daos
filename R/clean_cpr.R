@@ -12,8 +12,12 @@
 #' [daos::add_cpr_info()] for validity, or pipe through a checkpoint
 #' (see `vignette("validation")`).
 #'
-#' [daos::add_cpr_info()] applies exactly this cleaning internally, so a
-#' column standardised with `clean_cpr()` round-trips unchanged.
+#' [daos::add_cpr_info()] applies this cleaning internally for its
+#' calculations, while preserving the original CPR column in its output.
+#' Both functions use the same native normalisation rules. Cleaning is
+#' optional before `add_cpr_info()`; use it when you need a standardised
+#' identifier for joins or export. Already clean character vectors are
+#' returned without allocating a replacement vector.
 #'
 #' @param x A character vector of CPR numbers. Numeric vectors are
 #'   converted with `as.character()` first.
@@ -31,8 +35,5 @@
 #' @export
 clean_cpr <- function(x) {
   if (!is.character(x)) x <- as.character(x)
-  x <- gsub("[- ]", "", x)
-  pad <- !is.na(x) & grepl("^\\d{9}$", x, perl = TRUE)
-  x[pad] <- paste0("0", x[pad])
-  x
+  .Call(C_daos_clean_cpr, x)
 }

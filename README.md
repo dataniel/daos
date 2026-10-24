@@ -92,10 +92,12 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| `age()` | Choose the reference year or date for an age column in `add_cpr_info()` |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
-| `dbdot()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
-| `drop_all_na()` | Drop rows and/or columns that are entirely `NA` |
+| `clean_db07()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
+| `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
+| `drop_empty_cols()` | Drop entirely empty selected columns |
 | `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |

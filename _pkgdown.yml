@@ -39,7 +39,8 @@ reference:
       - flag_duplicates
       - expect_empty
       - diagnose_timeseries
-      - drop_all_na
+      - drop_empty_rows
+      - drop_empty_cols
       - split_by
 
   - title: Interactive
@@ -50,8 +51,9 @@ reference:
     contents:
       - clean_cpr
       - add_cpr_info
+      - age
       - clean_cvr
-      - dbdot
+      - clean_db07
       - read_ta
       - write_ta
       - read_ta2
