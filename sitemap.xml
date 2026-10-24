@@ -8,13 +8,15 @@
 <url><loc>https://dataniel.github.io/daos/articles/validation.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/authors.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/index.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/news/index.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/add_cpr_info.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/age.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/append_excel.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/clean_cpr.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/clean_cvr.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/dbdot.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/clean_db07.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/diagnose_timeseries.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/drop_all_na.html</loc></url>
+<url><loc>https://dataniel.github.io/daos/reference/drop_empty_rows.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/expect_empty.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/f.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/flag_duplicates.html</loc></url>

@@ -105,9 +105,9 @@ inline without stopping to look up the
 <code>format(Sys.time(), ...)</code> signature.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
-<span><span class="co">#&gt; [1] "20261023"</span></span>
+<span><span class="co">#&gt; [1] "20261024"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-23 23:26"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-24 11:20"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -580,42 +580,62 @@ gate:</p>
 <h2 id="data-manipulation">Data manipulation<a class="anchor" aria-label="anchor" href="#data-manipulation"></a>
 </h2>
 <div class="section level3">
-<h3 id="drop_all_na-drop-empty-rows-andor-columns">
-<code>drop_all_na()</code>: drop empty rows and/or columns<a class="anchor" aria-label="anchor" href="#drop_all_na-drop-empty-rows-andor-columns"></a>
+<h3 id="drop_empty_rows-and-drop_empty_cols-selective-removal">
+<code>drop_empty_rows()</code> and <code>drop_empty_cols()</code>:
+selective removal<a class="anchor" aria-label="anchor" href="#drop_empty_rows-and-drop_empty_cols-selective-removal"></a>
 </h3>
-<p>After a join or import you often end up with rows or columns that are
-entirely <code>NA</code>. <code><a href="../reference/drop_all_na.html">drop_all_na()</a></code> removes them.
-Unlike <code><a href="https://tidyr.tidyverse.org/reference/drop_na.html" class="external-link">tidyr::drop_na()</a></code> (which drops a row on the
-<em>first</em> <code>NA</code>), it only drops a row or column where
-<em>every</em> value is <code>NA</code>. It is equivalent to
-<code>janitor::remove_empty()</code> with <code>cutoff = 1</code>,
-reimplemented here to keep the dependency footprint small:</p>
+<p>Choose which columns determine whether a row is empty, so an ID or
+metadata column does not keep an otherwise empty observation. Selection
+works like <code><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select()</a></code>: names, ranges,
+<code><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with()</a></code>, <code>where(is.numeric)</code>, and
+<code><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of()</a></code>. With no selection, every column is inspected.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>  b <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>  c <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="cn">NA</span>, <span class="st">"z"</span><span class="op">)</span></span>
+<span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
+<span>  score_a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>  score_b <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA_real_</span>, <span class="cn">NA_real_</span>, <span class="cn">NA_real_</span><span class="op">)</span>,</span>
+<span>  comment <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ok"</span>, <span class="st">""</span>, <span class="st">"  "</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/drop_all_na.html">drop_all_na</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span>                  <span class="co"># column b and the all-NA row</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
-<span><span class="co">#&gt;       a c    </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 x    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     3 z</span></span>
-<span><span class="fu"><a href="../reference/drop_all_na.html">drop_all_na</a></span><span class="op">(</span><span class="va">df</span>, which <span class="op">=</span> <span class="st">"rows"</span><span class="op">)</span>  <span class="co"># only the all-NA row</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;       a b     c    </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 <span style="color: #BB0000;">NA</span>    x    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     3 <span style="color: #BB0000;">NA</span>    z</span></span>
-<span><span class="fu"><a href="../reference/drop_all_na.html">drop_all_na</a></span><span class="op">(</span><span class="va">df</span>, which <span class="op">=</span> <span class="st">"cols"</span><span class="op">)</span>  <span class="co"># only column b</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 2</span></span></span>
-<span><span class="co">#&gt;       a c    </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 x    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>    <span style="color: #BB0000;">NA</span> <span style="color: #BB0000;">NA</span>   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3 z</span></span></code></pre></div>
+<span><span class="co"># Inspect the score columns; keep every column in retained rows.</span></span>
+<span><span class="fu"><a href="../reference/drop_empty_rows.html">drop_empty_rows</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"score_"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;      id score_a score_b comment</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1       1      <span style="color: #BB0000;">NA</span> ok</span></span>
+<span></span>
+<span><span class="co"># Only numeric columns are candidates for removal; id is not empty.</span></span>
+<span><span class="fu"><a href="../reference/drop_empty_rows.html">drop_empty_cols</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">#&gt;      id score_a comment</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1       1 <span style="color: #949494;">"</span>ok<span style="color: #949494;">"</span>   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2      <span style="color: #BB0000;">NA</span> <span style="color: #949494;">""</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3      <span style="color: #BB0000;">NA</span> <span style="color: #949494;">"</span>  <span style="color: #949494;">"</span></span></span>
+<span></span>
+<span><span class="co"># Include empty and whitespace-only text, without modifying retained values.</span></span>
+<span><span class="fu"><a href="../reference/drop_empty_rows.html">drop_empty_rows</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">comment</span>, blank <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;      id score_a score_b comment</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1       1      <span style="color: #BB0000;">NA</span> ok</span></span>
+<span></span>
+<span><span class="co"># Combine row and column removal explicitly.</span></span>
+<span><span class="va">df</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/drop_empty_rows.html">drop_empty_rows</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"score_"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/drop_empty_rows.html">drop_empty_cols</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
+<span><span class="co">#&gt;      id score_a comment</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1       1 ok</span></span></code></pre></div>
+<p>By default, only missing values (<code>NA</code> and
+<code>NaN</code>) count as empty. <code>blank = TRUE</code> also handles
+blank character values and factor labels. Zero and <code>FALSE</code>
+always count as data. A row is removed only when <strong>all</strong>
+selected values are empty. Column removal only affects the selected
+columns.</p>
+<p>An empty selection changes nothing. Zero-row inputs retain their
+column schema; zero-column inputs retain their rows. Grouped data is
+assessed over the whole input, and grouping metadata is updated when
+columns are removed.</p>
 </div>
 <div class="section level3">
 <h3 id="split_by-split-a-data-frame-into-a-named-list">
@@ -676,20 +696,20 @@ still visibly malformed. Validation is <code><a href="../reference/add_cpr_info.
 (below), or a checkpoint from <code><a href="../articles/validation.html">vignette("validation")</a></code>.</p>
 </div>
 <div class="section level3">
-<h3 id="dbdot-format-db07-industry-codes-with-dots">
-<code>dbdot()</code>: format DB07 industry codes with dots<a class="anchor" aria-label="anchor" href="#dbdot-format-db07-industry-codes-with-dots"></a>
+<h3 id="clean_db07-format-db07-industry-codes-with-dots">
+<code>clean_db07()</code>: format DB07 industry codes with dots<a class="anchor" aria-label="anchor" href="#clean_db07-format-db07-industry-codes-with-dots"></a>
 </h3>
 <p>DB07 industry codes appear both as <code>011100</code> and
-<code>01.11.00</code> depending on the source. <code><a href="../reference/dbdot.html">dbdot()</a></code>
+<code>01.11.00</code> depending on the source. <code><a href="../reference/clean_db07.html">clean_db07()</a></code>
 normalises to the dotted form. Existing dots are stripped first, so
 mixed input comes out uniform and running it twice changes nothing. Any
 aggregation level works:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/dbdot.html">dbdot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/clean_db07.html">clean_db07</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "01.11.00" "01.11.00" "01.11"    "01.1"</span></span></code></pre></div>
 <p>The bare-digit inverse is just <code>gsub("[.]", "", x)</code>. Like
-the <code>clean_*</code> functions, <code><a href="../reference/dbdot.html">dbdot()</a></code> never invents
-digits: a code that lost its leading zero in Excel is ambiguous
+the <code>clean_*</code> functions, <code><a href="../reference/clean_db07.html">clean_db07()</a></code> never
+invents digits: a code that lost its leading zero in Excel is ambiguous
 (<code>111</code> could be group <code>11.1</code> or class
 <code>01.11</code>), so keep industry codes as character columns.</p>
 </div>
@@ -698,81 +718,94 @@ digits: a code that lost its leading zero in Excel is ambiguous
 <code>add_cpr_info()</code>: add birth date, age, sex, and
 validity<a class="anchor" aria-label="anchor" href="#add_cpr_info-add-birth-date-age-sex-and-validity"></a>
 </h3>
-<p><code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code> appends derived columns to a data frame
-using official CPR Register century-detection rules. Dashes and spaces
-are stripped automatically, and nine-digit numbers are zero-padded.</p>
-<p>A word on validity: <code>valid</code> means ten digits encoding a
-real calendar date, and nothing more. The modulus-11 check is not part
-of it, because the CPR office has assigned numbers without mod-11
-control since 2007 and states that they are fully valid. The check is
-still available as the separate <code>mod11</code> column, where it
-works as a data quality signal. The implementation is plain vectorised
-arithmetic (a digit matrix, mod-11 as a matrix product, dates built as
-day counts instead of parsed strings), so a few million rows take
-seconds.</p>
+<p><code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code> appends selected information while
+preserving the original CPR column. Dashes, spaces, and lost leading
+zeroes are handled internally. Use <code><a href="../reference/clean_cpr.html">clean_cpr()</a></code> explicitly
+if you also want to standardise the source column.</p>
+<p>Both functions share the same native cleaning rules.
+<code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code> parses each CPR once for all requested
+outputs, including multiple age calculations. You do not need a separate
+cleaning step just to calculate CPR information. Use an explicit
+cleaning step when the identifier will also be used for joins or
+export:</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>pnr <span class="op">=</span> <span class="fu"><a href="../reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="va">pnr</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">pnr</span>, <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span>, <span class="va">sex</span>, <span class="va">bday</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/clean_cpr.html">clean_cpr()</a></code> is idempotent: cleaning again gives the same
+values. Already standardised character vectors are returned without a
+replacement vector.</p>
+<p>Without selections, the function adds <code>bday</code>,
+<code>age</code>, <code>sex</code>, <code>mod11</code>, and
+<code>valid</code>. Bare <code>age</code> and <code><a href="../reference/age.html">age()</a></code> use
+today’s date; explicit references make analysis reproducible.</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span>, <span class="st">"111111118"</span><span class="op">)</span>,</span>
-<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2024L</span>, <span class="fl">2025L</span>, <span class="fl">2026L</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr       bday age sex mod11 valid</span></span>
-<span><span class="co">#&gt; 1 1111111118 1911-11-11 114   0  TRUE  TRUE</span></span>
-<span><span class="co">#&gt; 2 1111111118 1911-11-11 114   0  TRUE  TRUE</span></span>
-<span><span class="co">#&gt; 3 0111111118 1911-11-01 114   0 FALSE  TRUE</span></span></code></pre></div>
-<p>Choose a subset of columns and optionally rename them:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>birth_date <span class="op">=</span> <span class="st">"bday"</span>, years_old <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr birth_date years_old</span></span>
-<span><span class="co">#&gt; 1 1111111118 1911-11-11       114</span></span>
-<span><span class="co">#&gt; 2 1111111118 1911-11-11       114</span></span>
-<span><span class="co">#&gt; 3 0111111118 1911-11-01       114</span></span></code></pre></div>
-<p>A custom reference date shifts the age calculation:</p>
+<span><span class="co">#&gt;           pnr year       bday age sex mod11 valid</span></span>
+<span><span class="co">#&gt; 1  1111111118 2024 1911-11-11 114   0  TRUE  TRUE</span></span>
+<span><span class="co">#&gt; 2 111111-1118 2025 1911-11-11 114   0  TRUE  TRUE</span></span>
+<span><span class="co">#&gt; 3   111111118 2026 1911-11-01 114   0 FALSE  TRUE</span></span>
+<span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, <span class="va">sex</span>, birth_date <span class="op">=</span> <span class="va">bday</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           pnr year sex birth_date</span></span>
+<span><span class="co">#&gt; 1  1111111118 2024   0 1911-11-11</span></span>
+<span><span class="co">#&gt; 2 111111-1118 2025   0 1911-11-11</span></span>
+<span><span class="co">#&gt; 3   111111118 2026   0 1911-11-01</span></span></code></pre></div>
+<p>Write <code>output_name = calculation</code> to rename a result. Each
+age calculation has its own reference, so several ages can be added in
+one call:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="st">"age"</span>, ref_date <span class="op">=</span> <span class="st">"2000-01-01"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr age</span></span>
-<span><span class="co">#&gt; 1 1111111118  88</span></span>
-<span><span class="co">#&gt; 2 1111111118  88</span></span>
-<span><span class="co">#&gt; 3 0111111118  88</span></span></code></pre></div>
-<p>For age at the start of each row’s year, pass a numeric year column
-directly. Whole years are interpreted as 1 January of that year:</p>
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span></span>
+<span>    <span class="va">pnr</span>,</span>
+<span>    primoalder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span>,</span>
+<span>    medioalder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span>, <span class="st">"medio"</span><span class="op">)</span>,</span>
+<span>    ultimoalder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span>, <span class="st">"ultimo"</span><span class="op">)</span>,</span>
+<span>    <span class="va">sex</span>,</span>
+<span>    <span class="va">bday</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="co">#&gt;           pnr year primoalder medioalder ultimoalder sex       bday</span></span>
+<span><span class="co">#&gt; 1  1111111118 2024        112        112         113   0 1911-11-11</span></span>
+<span><span class="co">#&gt; 2 111111-1118 2025        113        113         114   0 1911-11-11</span></span>
+<span><span class="co">#&gt; 3   111111118 2026        114        114         115   0 1911-11-01</span></span></code></pre></div>
+<p><code>age(year)</code> defaults to <code>"primo"</code> (1 January);
+<code>"medio"</code> means 1 July and <code>"ultimo"</code> means 31
+December. <code>year</code> can be a scalar, a column, or an expression
+evaluated in the original input data.</p>
+<p>For a specific date, use <code>age(date = ...)</code> with a Date or
+ISO date string. Supply one reference for all rows or one per row.
+Missing references give missing ages. Use <code>.env$name</code> to
+explicitly access a caller variable when a column has the same name.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2026L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>primoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, ref_date <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr year primoalder</span></span>
-<span><span class="co">#&gt; 1 1111111118 2026        114</span></span>
-<span><span class="co">#&gt; 2 1111111118 2026        114</span></span>
-<span><span class="co">#&gt; 3 0111111118 2026        114</span></span></code></pre></div>
-<p>Alternatively, use <code>year</code> and choose a point in the year
-with <code>at</code>: <code>"primo"</code> (1 January, default),
-<code>"medio"</code> (1 July), or <code>"ultimo"</code> (31 December).
-Supply either <code>year</code> or <code>ref_date</code>, not both.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>medioalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, year <span class="op">=</span> <span class="va">year</span>, at <span class="op">=</span> <span class="st">"medio"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr year medioalder</span></span>
-<span><span class="co">#&gt; 1 1111111118 2026        114</span></span>
-<span><span class="co">#&gt; 2 1111111118 2026        114</span></span>
-<span><span class="co">#&gt; 3 0111111118 2026        114</span></span>
-<span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ultimoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, year <span class="op">=</span> <span class="va">year</span>, at <span class="op">=</span> <span class="st">"ultimo"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr year ultimoalder</span></span>
-<span><span class="co">#&gt; 1 1111111118 2026         115</span></span>
-<span><span class="co">#&gt; 2 1111111118 2026         115</span></span>
-<span><span class="co">#&gt; 3 0111111118 2026         115</span></span></code></pre></div>
-<p>Only requested outputs and their dependencies are calculated.
-Reference dates and years are only evaluated when <code>add</code>
-includes <code>"age"</code>.</p>
-<p>You can also pass a date column directly. <code>ref_date</code>
-accepts a single date or one date per row, as <code>Date</code> values
-or ISO-format strings. Missing reference dates give missing ages.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2026L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">df</span><span class="op">$</span><span class="va">primo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">year</span>, <span class="st">"-01-01"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, add <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>primoalder <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>, ref_date <span class="op">=</span> <span class="va">primo</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          pnr year      primo primoalder</span></span>
-<span><span class="co">#&gt; 1 1111111118 2026 2026-01-01        114</span></span>
-<span><span class="co">#&gt; 2 1111111118 2026 2026-01-01        114</span></span>
-<span><span class="co">#&gt; 3 0111111118 2026 2026-01-01        114</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, alder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span>date <span class="op">=</span> <span class="st">"2025-07-01"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           pnr year alder</span></span>
+<span><span class="co">#&gt; 1  1111111118 2024   113</span></span>
+<span><span class="co">#&gt; 2 111111-1118 2025   113</span></span>
+<span><span class="co">#&gt; 3   111111118 2026   113</span></span>
+<span><span class="va">df</span><span class="op">$</span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">year</span>, <span class="st">"-01-01"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, alder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span>date <span class="op">=</span> <span class="va">reference</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           pnr year  reference alder</span></span>
+<span><span class="co">#&gt; 1  1111111118 2024 2024-01-01   112</span></span>
+<span><span class="co">#&gt; 2 111111-1118 2025 2025-01-01   113</span></span>
+<span><span class="co">#&gt; 3   111111118 2026 2026-01-01   114</span></span></code></pre></div>
+<p>Existing output names cause an error with guidance to rename the
+selection or use <code>overwrite = TRUE</code>. Duplicate output names
+are always an error, and the source CPR column cannot be
+overwritten.</p>
+<p><code>valid</code> means ten digits encoding a real calendar date,
+not confirmation that the CPR number was assigned. Missing and invalid
+CPR values give <code>valid = FALSE</code>. <code>mod11</code> is an
+independent checksum and is not part of <code>valid</code>. Choose
+<code>mod11</code> explicitly when selecting outputs if you need it.</p>
+<p>The former <code>add</code>, <code>ref_date</code>,
+<code>year</code>, and <code>at</code> arguments are replaced by
+selections and <code><a href="../reference/age.html">age()</a></code>. For example,
+<code>add = c(alder = "age"), year = year</code> becomes
+<code>alder = age(year)</code>. The source CPR column is now
+preserved.</p>
 <p>Age counts completed calendar years, not elapsed days divided by
 365.25. For a person born on 29 February, age increases on 29 February
 in leap years and on 1 March in non-leap years. For a birth date of 29
@@ -805,9 +838,8 @@ February 2000:</p>
 </tr>
 </tbody>
 </table>
-<p>Numeric <code>ref_date = 2024</code> or <code>year = 2024</code>
-still means 1 January 2024 by default, giving age 23 in this
-example.</p>
+<p><code>age(2024)</code> means age on 1 January 2024. by default,
+giving age 23 in this example.</p>
 </div>
 </div>
 <div class="section level2">
@@ -828,7 +860,7 @@ without writing any filtering code.</p>
 Requires <code>shiny</code> and <code>plotly</code>. Group row indices
 are prepared once, and plots are built directly with Plotly for fast
 navigation.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  year    <span class="op">=</span> <span class="fl">2010</span><span class="op">:</span><span class="fl">2020</span>,</span>
 <span>  country <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK"</span>, <span class="st">"SE"</span>, <span class="st">"NO"</span>, <span class="st">"FI"</span><span class="op">)</span></span>
@@ -872,7 +904,7 @@ navigation.</p>
 Y-axis bounds globally across all groups. The <code>.title</code>
 argument sets a title shown in the app header and in downloaded
 figures:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
@@ -941,7 +973,7 @@ corrections.</p>
 <p>The same diagnostic engine is available outside Shiny. Group
 explicitly by the columns identifying <strong>one</strong> time
 series:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/diagnose_timeseries.html">diagnose_timeseries</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">gdp</span>, .features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"stationarity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>

@@ -2,7 +2,7 @@
 
 Danish DB07 industry codes (Dansk Branchekode 2007) appear in data both
 with and without dots: `"011100"` in one register, `"01.11.00"` in a
-classification table. `dbdot()` normalises to the dotted form by
+classification table. `clean_db07()` normalises to the dotted form by
 stripping any existing dots and spaces and inserting a dot after every
 second digit. It works at any aggregation level (`"01.1"`, `"01.11"`,
 `"01.11.00"`) and is idempotent, so mixed input comes out uniform.
@@ -10,7 +10,7 @@ second digit. It works at any aggregation level (`"01.1"`, `"01.11"`,
 ## Usage
 
 ``` r
-dbdot(x)
+clean_db07(x)
 ```
 
 ## Arguments
@@ -42,9 +42,9 @@ codes as character columns to avoid the problem at the source.
 ## Examples
 
 ``` r
-dbdot(c("011100", "01.1100", "0111", "011", NA))
+clean_db07(c("011100", "01.1100", "0111", "011", NA))
 #> [1] "01.11.00" "01.11.00" "01.11"    "01.1"     NA        
 
 # Typical use: match register data to a classification table
-# df |> dplyr::mutate(branche = dbdot(branche))
+# df |> dplyr::mutate(branche = clean_db07(branche))
 ```

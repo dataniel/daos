@@ -165,21 +165,29 @@
 <td>Add birth date, age, sex, and validity derived from Danish CPR numbers</td>
 </tr>
 <tr class="even">
+<td><code><a href="reference/age.html">age()</a></code></td>
+<td>Choose the reference year or date for an age column in <code><a href="reference/add_cpr_info.html">add_cpr_info()</a></code>
+</td>
+</tr>
+<tr class="odd">
 <td><code><a href="reference/clean_cpr.html">clean_cpr()</a></code></td>
 <td>Standardise CPR numbers: strip separators, restore Excel-lost leading zeros</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/clean_cvr.html">clean_cvr()</a></code></td>
 <td>Standardise CVR numbers: strip separators and the DK VAT prefix</td>
 </tr>
-<tr class="even">
-<td><code><a href="reference/dbdot.html">dbdot()</a></code></td>
+<tr class="odd">
+<td><code><a href="reference/clean_db07.html">clean_db07()</a></code></td>
 <td>Format DB07 industry codes with dots (<code>011100</code> → <code>01.11.00</code>)</td>
 </tr>
+<tr class="even">
+<td><code><a href="reference/drop_empty_rows.html">drop_empty_rows()</a></code></td>
+<td>Drop rows empty across selected columns; optionally include blank text</td>
+</tr>
 <tr class="odd">
-<td><code><a href="reference/drop_all_na.html">drop_all_na()</a></code></td>
-<td>Drop rows and/or columns that are entirely <code>NA</code>
-</td>
+<td><code><a href="reference/drop_empty_rows.html">drop_empty_cols()</a></code></td>
+<td>Drop entirely empty selected columns</td>
 </tr>
 <tr class="even">
 <td><code><a href="reference/expect_empty.html">expect_empty()</a></code></td>

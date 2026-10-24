@@ -33,8 +33,13 @@ for validity, or pipe through a checkpoint (see
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md)).
 
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-applies exactly this cleaning internally, so a column standardised with
-`clean_cpr()` round-trips unchanged.
+applies this cleaning internally for its calculations, while preserving
+the original CPR column in its output. Both functions use the same
+native normalisation rules. Cleaning is optional before
+[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md);
+use it when you need a standardised identifier for joins or export.
+Already clean character vectors are returned without allocating a
+replacement vector.
 
 ## See also
 

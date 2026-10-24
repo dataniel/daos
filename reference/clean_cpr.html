@@ -79,8 +79,12 @@ brought to 10 digits are returned cleaned but otherwise untouched, so a
 malformed number stays visibly malformed for downstream checks. Use
 <code><a href="add_cpr_info.html">add_cpr_info()</a></code> for validity, or pipe through a checkpoint
 (see <code><a href="../articles/validation.html">vignette("validation")</a></code>).</p>
-<p><code><a href="add_cpr_info.html">add_cpr_info()</a></code> applies exactly this cleaning internally, so a
-column standardised with <code>clean_cpr()</code> round-trips unchanged.</p>
+<p><code><a href="add_cpr_info.html">add_cpr_info()</a></code> applies this cleaning internally for its
+calculations, while preserving the original CPR column in its output.
+Both functions use the same native normalisation rules. Cleaning is
+optional before <code><a href="add_cpr_info.html">add_cpr_info()</a></code>; use it when you need a standardised
+identifier for joins or export. Already clean character vectors are
+returned without allocating a replacement vector.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

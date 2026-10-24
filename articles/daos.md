@@ -44,9 +44,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20261023"
+#> [1] "20261024"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-23 23:26"
+#> [1] "2026-10-24 11:20"
 ```
 
 A typical use is timestamping an export file:
@@ -570,45 +570,67 @@ ggplot2::mpg |>
 
 ## Data manipulation
 
-### `drop_all_na()`: drop empty rows and/or columns
+### `drop_empty_rows()` and `drop_empty_cols()`: selective removal
 
-After a join or import you often end up with rows or columns that are
-entirely `NA`.
-[`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)
-removes them. Unlike
-[`tidyr::drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html)
-(which drops a row on the *first* `NA`), it only drops a row or column
-where *every* value is `NA`. It is equivalent to
-`janitor::remove_empty()` with `cutoff = 1`, reimplemented here to keep
-the dependency footprint small:
+Choose which columns determine whether a row is empty, so an ID or
+metadata column does not keep an otherwise empty observation. Selection
+works like
+[`select()`](https://dplyr.tidyverse.org/reference/select.html): names,
+ranges,
+[`starts_with()`](https://tidyselect.r-lib.org/reference/starts_with.html),
+`where(is.numeric)`, and
+[`all_of()`](https://tidyselect.r-lib.org/reference/all_of.html). With
+no selection, every column is inspected.
 
 ``` r
 df <- tibble::tibble(
-  a = c(1, NA, 3),
-  b = c(NA, NA, NA),
-  c = c("x", NA, "z")
+  id = 1:3,
+  score_a = c(1, NA, NA),
+  score_b = c(NA_real_, NA_real_, NA_real_),
+  comment = c("ok", "", "  ")
 )
 
-drop_all_na(df)                  # column b and the all-NA row
-#> # A tibble: 2 × 2
-#>       a c    
-#>   <dbl> <chr>
-#> 1     1 x    
-#> 2     3 z
-drop_all_na(df, which = "rows")  # only the all-NA row
-#> # A tibble: 2 × 3
-#>       a b     c    
-#>   <dbl> <lgl> <chr>
-#> 1     1 NA    x    
-#> 2     3 NA    z
-drop_all_na(df, which = "cols")  # only column b
-#> # A tibble: 3 × 2
-#>       a c    
-#>   <dbl> <chr>
-#> 1     1 x    
-#> 2    NA NA   
-#> 3     3 z
+# Inspect the score columns; keep every column in retained rows.
+drop_empty_rows(df, starts_with("score_"))
+#> # A tibble: 1 × 4
+#>      id score_a score_b comment
+#>   <int>   <dbl>   <dbl> <chr>  
+#> 1     1       1      NA ok
+
+# Only numeric columns are candidates for removal; id is not empty.
+drop_empty_cols(df, where(is.numeric))
+#> # A tibble: 3 × 3
+#>      id score_a comment
+#>   <int>   <dbl> <chr>  
+#> 1     1       1 "ok"   
+#> 2     2      NA ""     
+#> 3     3      NA "  "
+
+# Include empty and whitespace-only text, without modifying retained values.
+drop_empty_rows(df, comment, blank = TRUE)
+#> # A tibble: 1 × 4
+#>      id score_a score_b comment
+#>   <int>   <dbl>   <dbl> <chr>  
+#> 1     1       1      NA ok
+
+# Combine row and column removal explicitly.
+df |> drop_empty_rows(starts_with("score_")) |> drop_empty_cols()
+#> # A tibble: 1 × 3
+#>      id score_a comment
+#>   <int>   <dbl> <chr>  
+#> 1     1       1 ok
 ```
+
+By default, only missing values (`NA` and `NaN`) count as empty.
+`blank = TRUE` also handles blank character values and factor labels.
+Zero and `FALSE` always count as data. A row is removed only when
+**all** selected values are empty. Column removal only affects the
+selected columns.
+
+An empty selection changes nothing. Zero-row inputs retain their column
+schema; zero-column inputs retain their rows. Grouped data is assessed
+over the whole input, and grouping metadata is updated when columns are
+removed.
 
 ### `split_by()`: split a data frame into a named list
 
@@ -677,121 +699,133 @@ visibly malformed. Validation is
 job (below), or a checkpoint from
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
 
-### `dbdot()`: format DB07 industry codes with dots
+### `clean_db07()`: format DB07 industry codes with dots
 
 DB07 industry codes appear both as `011100` and `01.11.00` depending on
 the source.
-[`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md)
+[`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
 normalises to the dotted form. Existing dots are stripped first, so
 mixed input comes out uniform and running it twice changes nothing. Any
 aggregation level works:
 
 ``` r
-dbdot(c("011100", "01.1100", "0111", "011"))
+clean_db07(c("011100", "01.1100", "0111", "011"))
 #> [1] "01.11.00" "01.11.00" "01.11"    "01.1"
 ```
 
 The bare-digit inverse is just `gsub("[.]", "", x)`. Like the `clean_*`
 functions,
-[`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) never
-invents digits: a code that lost its leading zero in Excel is ambiguous
-(`111` could be group `11.1` or class `01.11`), so keep industry codes
-as character columns.
+[`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
+never invents digits: a code that lost its leading zero in Excel is
+ambiguous (`111` could be group `11.1` or class `01.11`), so keep
+industry codes as character columns.
 
 ### `add_cpr_info()`: add birth date, age, sex, and validity
 
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-appends derived columns to a data frame using official CPR Register
-century-detection rules. Dashes and spaces are stripped automatically,
-and nine-digit numbers are zero-padded.
+appends selected information while preserving the original CPR column.
+Dashes, spaces, and lost leading zeroes are handled internally. Use
+[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
+explicitly if you also want to standardise the source column.
 
-A word on validity: `valid` means ten digits encoding a real calendar
-date, and nothing more. The modulus-11 check is not part of it, because
-the CPR office has assigned numbers without mod-11 control since 2007
-and states that they are fully valid. The check is still available as
-the separate `mod11` column, where it works as a data quality signal.
-The implementation is plain vectorised arithmetic (a digit matrix,
-mod-11 as a matrix product, dates built as day counts instead of parsed
-strings), so a few million rows take seconds.
+Both functions share the same native cleaning rules.
+[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
+parses each CPR once for all requested outputs, including multiple age
+calculations. You do not need a separate cleaning step just to calculate
+CPR information. Use an explicit cleaning step when the identifier will
+also be used for joins or export:
+
+``` r
+df |>
+  dplyr::mutate(pnr = clean_cpr(pnr)) |>
+  add_cpr_info(pnr, age(year), sex, bday)
+```
+
+[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
+is idempotent: cleaning again gives the same values. Already
+standardised character vectors are returned without a replacement
+vector.
+
+Without selections, the function adds `bday`, `age`, `sex`, `mod11`, and
+`valid`. Bare `age` and
+[`age()`](https://dataniel.github.io/daos/reference/age.md) use today’s
+date; explicit references make analysis reproducible.
 
 ``` r
 df <- data.frame(
   pnr = c("1111111118", "111111-1118", "111111118"),
-  stringsAsFactors = FALSE
+  year = c(2024L, 2025L, 2026L)
 )
-
 add_cpr_info(df, pnr)
-#>          pnr       bday age sex mod11 valid
-#> 1 1111111118 1911-11-11 114   0  TRUE  TRUE
-#> 2 1111111118 1911-11-11 114   0  TRUE  TRUE
-#> 3 0111111118 1911-11-01 114   0 FALSE  TRUE
+#>           pnr year       bday age sex mod11 valid
+#> 1  1111111118 2024 1911-11-11 114   0  TRUE  TRUE
+#> 2 111111-1118 2025 1911-11-11 114   0  TRUE  TRUE
+#> 3   111111118 2026 1911-11-01 114   0 FALSE  TRUE
+add_cpr_info(df, pnr, sex, birth_date = bday)
+#>           pnr year sex birth_date
+#> 1  1111111118 2024   0 1911-11-11
+#> 2 111111-1118 2025   0 1911-11-11
+#> 3   111111118 2026   0 1911-11-01
 ```
 
-Choose a subset of columns and optionally rename them:
+Write `output_name = calculation` to rename a result. Each age
+calculation has its own reference, so several ages can be added in one
+call:
 
 ``` r
-add_cpr_info(df, pnr, add = c(birth_date = "bday", years_old = "age"))
-#>          pnr birth_date years_old
-#> 1 1111111118 1911-11-11       114
-#> 2 1111111118 1911-11-11       114
-#> 3 0111111118 1911-11-01       114
+df |>
+  add_cpr_info(
+    pnr,
+    primoalder = age(year),
+    medioalder = age(year, "medio"),
+    ultimoalder = age(year, "ultimo"),
+    sex,
+    bday
+  )
+#>           pnr year primoalder medioalder ultimoalder sex       bday
+#> 1  1111111118 2024        112        112         113   0 1911-11-11
+#> 2 111111-1118 2025        113        113         114   0 1911-11-11
+#> 3   111111118 2026        114        114         115   0 1911-11-01
 ```
 
-A custom reference date shifts the age calculation:
+`age(year)` defaults to `"primo"` (1 January); `"medio"` means 1 July
+and `"ultimo"` means 31 December. `year` can be a scalar, a column, or
+an expression evaluated in the original input data.
+
+For a specific date, use `age(date = ...)` with a Date or ISO date
+string. Supply one reference for all rows or one per row. Missing
+references give missing ages. Use `.env$name` to explicitly access a
+caller variable when a column has the same name.
 
 ``` r
-add_cpr_info(df, pnr, add = "age", ref_date = "2000-01-01")
-#>          pnr age
-#> 1 1111111118  88
-#> 2 1111111118  88
-#> 3 0111111118  88
+add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
+#>           pnr year alder
+#> 1  1111111118 2024   113
+#> 2 111111-1118 2025   113
+#> 3   111111118 2026   113
+df$reference <- as.Date(paste0(df$year, "-01-01"))
+add_cpr_info(df, pnr, alder = age(date = reference))
+#>           pnr year  reference alder
+#> 1  1111111118 2024 2024-01-01   112
+#> 2 111111-1118 2025 2025-01-01   113
+#> 3   111111118 2026 2026-01-01   114
 ```
 
-For age at the start of each row’s year, pass a numeric year column
-directly. Whole years are interpreted as 1 January of that year:
+Existing output names cause an error with guidance to rename the
+selection or use `overwrite = TRUE`. Duplicate output names are always
+an error, and the source CPR column cannot be overwritten.
 
-``` r
-df$year <- rep(2026L, nrow(df))
-add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = year)
-#>          pnr year primoalder
-#> 1 1111111118 2026        114
-#> 2 1111111118 2026        114
-#> 3 0111111118 2026        114
-```
+`valid` means ten digits encoding a real calendar date, not confirmation
+that the CPR number was assigned. Missing and invalid CPR values give
+`valid = FALSE`. `mod11` is an independent checksum and is not part of
+`valid`. Choose `mod11` explicitly when selecting outputs if you need
+it.
 
-Alternatively, use `year` and choose a point in the year with `at`:
-`"primo"` (1 January, default), `"medio"` (1 July), or `"ultimo"` (31
-December). Supply either `year` or `ref_date`, not both.
-
-``` r
-add_cpr_info(df, pnr, add = c(medioalder = "age"), year = year, at = "medio")
-#>          pnr year medioalder
-#> 1 1111111118 2026        114
-#> 2 1111111118 2026        114
-#> 3 0111111118 2026        114
-add_cpr_info(df, pnr, add = c(ultimoalder = "age"), year = year, at = "ultimo")
-#>          pnr year ultimoalder
-#> 1 1111111118 2026         115
-#> 2 1111111118 2026         115
-#> 3 0111111118 2026         115
-```
-
-Only requested outputs and their dependencies are calculated. Reference
-dates and years are only evaluated when `add` includes `"age"`.
-
-You can also pass a date column directly. `ref_date` accepts a single
-date or one date per row, as `Date` values or ISO-format strings.
-Missing reference dates give missing ages.
-
-``` r
-df$year <- rep(2026L, nrow(df))
-df$primo <- as.Date(paste0(df$year, "-01-01"))
-add_cpr_info(df, pnr, add = c(primoalder = "age"), ref_date = primo)
-#>          pnr year      primo primoalder
-#> 1 1111111118 2026 2026-01-01        114
-#> 2 1111111118 2026 2026-01-01        114
-#> 3 0111111118 2026 2026-01-01        114
-```
+The former `add`, `ref_date`, `year`, and `at` arguments are replaced by
+selections and
+[`age()`](https://dataniel.github.io/daos/reference/age.md). For
+example, `add = c(alder = "age"), year = year` becomes
+`alder = age(year)`. The source CPR column is now preserved.
 
 Age counts completed calendar years, not elapsed days divided by 365.25.
 For a person born on 29 February, age increases on 29 February in leap
@@ -806,8 +840,8 @@ years and on 1 March in non-leap years. For a birth date of 29 February
 | 2025-02-28     |  24 |
 | 2025-03-01     |  25 |
 
-Numeric `ref_date = 2024` or `year = 2024` still means 1 January 2024 by
-default, giving age 23 in this example.
+`age(2024)` means age on 1 January 2024. by default, giving age 23 in
+this example.
 
 ## Interactive tools
 

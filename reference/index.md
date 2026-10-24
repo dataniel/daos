@@ -39,21 +39,15 @@
 
 - [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
   : Compare column types across data frames
-
 - [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
   : Flag duplicate rows
-
 - [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
   : Assert that a data frame is empty
-
 - [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
   : Diagnose time series, optionally within dplyr groups
-
-- [`drop_all_na()`](https://dataniel.github.io/daos/reference/drop_all_na.md)
-  :
-
-  Drop all-`NA` rows and/or columns
-
+- [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)
+  [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)
+  : Drop rows or columns that are empty in selected columns
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
 
@@ -68,10 +62,12 @@
   : Standardise CPR numbers
 - [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
   : Add information derived from Danish CPR numbers
+- [`age()`](https://dataniel.github.io/daos/reference/age.md) : Specify
+  an age calculation for CPR information
 - [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   : Standardise CVR numbers
-- [`dbdot()`](https://dataniel.github.io/daos/reference/dbdot.md) :
-  Format DB07 industry codes with dots
+- [`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
+  : Format DB07 industry codes with dots
 - [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
