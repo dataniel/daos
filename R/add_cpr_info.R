@@ -129,27 +129,38 @@ add_cpr_info <- function(data, cpr_col, ..., overwrite = FALSE) {
 #' Use inside [daos::add_cpr_info()] to choose the reference for an age column.
 #' This helper describes a calculation; it does not calculate an age itself.
 #' @param year Numeric whole year(s), directly or as a column/expression in
-#'   the input data. Defaults to 1 January of each year.
-#' @param at Point in the year: `"primo"` (1 January), `"medio"` (1 July),
+#'   the input data. Defaults to 31 December of the previous year.
+#' @param at Point in the year: `"primo"` (uses the `primo` convention), `"medio"` (1 July),
 #'   or `"ultimo"` (31 December). Only allowed with `year`.
 #' @param date A Date vector or strict ISO date strings (`YYYY-MM-DD`).
 #'   Supply either `year` or `date`. With neither, uses `Sys.Date()`.
+#' @param primo Convention for `at = "primo"`: `"previous_ultimo"` (default)
+#'   uses 31 December of `year - 1`; `"jan1"` uses 1 January of `year`.
+#'   Only allowed with `year` and `at = "primo"` (including its default).
 #' @details References may have length one or one value per input row.
 #' Missing references produce missing ages. Data columns take precedence
 #' over caller variables; `.env` and `.data` can make the source explicit.
+#' For population statistics where opening ages must equal the previous
+#' closing ages, use `age(year, primo = "previous_ultimo")`. This is equivalent
+#' to `age(year - 1L, "ultimo")` and excludes birthdays on 1 January of `year`.
+#' It changes the age reference only, not membership of the population.
 #' @return An age specification for [daos::add_cpr_info()].
 #' @examples
 #' df <- data.frame(pnr = "0101004007", year = 2025L)
 #' add_cpr_info(df, pnr, age(year), sex)
 #' add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
+#' add_cpr_info(df, pnr, primoalder = age(year, primo = "previous_ultimo"))
 #' @export
-age <- function(year, at = "primo", date) {
+age <- function(year, at = "primo", date, primo = "previous_ultimo") {
   if (!missing(year) && !missing(date)) cli::cli_abort("Supply only one of year and date in age().")
   if (missing(year) && !missing(at)) cli::cli_abort("at is only supported with year in age().")
   at <- rlang::arg_match(at, c("primo", "medio", "ultimo"))
+  if (!missing(primo) && (missing(year) || at != "primo"))
+    cli::cli_abort("primo is only supported with year and at = 'primo' in age().")
+  primo <- rlang::arg_match(primo, c("jan1", "previous_ultimo"))
   use_year <- !missing(year)
   reference <- if (use_year) rlang::enquo(year) else if (!missing(date)) rlang::enquo(date) else rlang::quo(Sys.Date())
-  structure(list(reference = reference, year = use_year, at = at), class = "daos_cpr_age")
+  structure(list(reference = reference, year = use_year, at = at, primo = primo), class = "daos_cpr_age")
 }
 
 .cpr_reference <- function(spec, data, output) {
@@ -163,6 +174,11 @@ age <- function(year, at = "primo", date) {
     if (!is.numeric(value) || is.object(value) || any(!is.na(value) &
         (!is.finite(value) | value != trunc(value) | value < 1 | value > 9999))) {
       cli::cli_abort("year for {.var {output}} must contain numeric whole years between 1 and 9999.")
+    }
+    if (spec$at == "primo" && spec$primo == "previous_ultimo") {
+      if (any(value < 2, na.rm = TRUE))
+        cli::cli_abort("year must be at least 2 when primo = 'previous_ultimo'.")
+      return(list(as.double(value) - 1, 0L, 1231L, output))
     }
     return(list(as.double(value), 0L, switch(spec$at, primo = 101L, medio = 701L, ultimo = 1231L), output))
   }

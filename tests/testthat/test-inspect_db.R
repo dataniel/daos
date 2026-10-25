@@ -1,0 +1,31 @@
+test_that("mixed codes are classified by membership without resolving overlap", {
+  x <- c("01.49.10", "014800", "25.30.00", "011200", "999999", NA)
+  out <- inspect_db(x)
+  expect_identical(out$input, x)
+  expect_identical(out$code, c("014910", "014800", "253000", "011200", "999999", NA))
+  expect_identical(out$status, c("db07_only", "db25_only", "both", "both", "unknown", "missing"))
+  expect_identical(out$label_db07[1], "Kenneler")
+  expect_identical(out$label_db25[2], "Avl af andre dyr")
+  expect_false(identical(out$label_db07[3], out$label_db25[3]))
+  expect_identical(out$label_db07[4], out$label_db25[4])
+  expect_true(all(is.na(out$label_db07[c(2, 5, 6)])))
+  expect_true(all(is.na(out$label_db25[c(1, 5, 6)])))
+})
+
+test_that("diagnostics preserve duplicates and handle invalid and missing input", {
+  expect_no_warning(out <- inspect_db(c("01 12 00", "01\t12\n00", "011200", "", "A", "01", "11100", NA)))
+  expect_identical(out$status, c(rep("both", 3), rep("unknown", 4), "missing"))
+  expect_true(all(is.na(out$label_db07[4:8])))
+  expect_true(all(is.na(out$label_db25[4:8])))
+  expect_identical(nrow(inspect_db(character())), 0L)
+  expect_identical(inspect_db(11100)$status, "unknown")
+  expect_identical(inspect_db(factor("014910"))$status, "db07_only")
+})
+
+test_that("all bundled full codes are inspected consistently", {
+  a <- names(db07_db25_key)
+  b <- names(db25_db07_key)
+  expect_true(all(inspect_db(intersect(a, b))$status == "both"))
+  expect_true(all(inspect_db(setdiff(a, b))$status == "db07_only"))
+  expect_true(all(inspect_db(setdiff(b, a))$status == "db25_only"))
+})

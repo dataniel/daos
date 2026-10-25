@@ -31,7 +31,6 @@ reference:
       - read_access
       - summon
       - write_excel
-      - append_excel
 
   - title: Data wrangling
     contents:
@@ -53,7 +52,11 @@ reference:
       - add_cpr_info
       - age
       - clean_cvr
-      - clean_db07
+      - format_db07
+      - convert_db07_to_db25
+      - convert_db25_to_db07
+      - db_label
+      - inspect_db
       - read_ta
       - write_ta
       - read_ta2

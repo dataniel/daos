@@ -7,22 +7,28 @@
 write_excel(
   data,
   path,
-  overwrite = FALSE,
+  mode = c("new", "append", "replace", "overwrite"),
   as_table = FALSE,
   freeze_header = TRUE,
   skip_fmt = NULL,
-  detect_years = TRUE
+  detect_years = TRUE,
+  digits = 0
 )
 }
 \arguments{
 \item{data}{A data frame or named list of data frames. A single data frame
 defaults to sheet name \code{"Sheet1"}; unnamed list elements get names
-\code{"Sheet1"}, \code{"Sheet2"}, etc.}
+\code{"Sheet1"}, \code{"Sheet2"}, etc.
+Sheet names must be valid Excel names and unique ignoring case.}
 
 \item{path}{Path to the output \code{.xlsx} file.}
 
-\item{overwrite}{If \code{FALSE} (default), aborts when \code{path} already exists.
-Set to \code{TRUE} to replace the file.}
+\item{mode}{One of \code{"new"} (default: create a file; fail if it exists),
+\code{"append"} (add sheets to an existing file; fail on name collisions),
+\code{"replace"} (replace matching sheets and add new ones in an existing file),
+or \code{"overwrite"} (write a fresh workbook, replacing the entire file if
+present). Replaced sheets retain their position; new sheets go at the end.
+Append and replace operate on whole sheets, not individual rows.}
 
 \item{as_table}{If \code{TRUE}, data is inserted as an Excel ListObject (table
 with filter arrows and banded rows). Default \code{FALSE}.}
@@ -30,20 +36,25 @@ with filter arrows and banded rows). Default \code{FALSE}.}
 \item{freeze_header}{If \code{TRUE} (default), freezes the first row.}
 
 \item{skip_fmt}{Character vector of column names to exclude from the
-\verb{#,##0} number format.}
+automatic number format.}
 
 \item{detect_years}{If \code{TRUE} (default), numeric columns where every
 non-\code{NA} value is a whole number between 1800 and 2200 are excluded
-from the \verb{#,##0} number format.}
+from the automatic number format.}
+
+\item{digits}{Number of displayed decimal places for automatically formatted
+numeric columns (0 to 15; default 0). Use \code{NULL} to disable automatic
+numeric formatting. Stored values are never rounded. Small-number columns,
+detected year columns and \code{skip_fmt} columns retain their default format.}
 }
 \value{
 \code{path}, invisibly.
 }
 \description{
-Creates a new \code{.xlsx} workbook with formatting applied: the header row is
+Writes an \code{.xlsx} workbook with formatting applied: the header row is
 bold and frozen, \code{NA} values are shown as blank cells, and numeric columns
-are formatted with a thousand separator and no displayed decimals (\verb{#,##0})
-when the column contains at least one value >= 1000. Underlying values are
+are formatted with a thousand separator and \code{digits} displayed decimals
+(default zero) when the column contains at least one absolute value >= 1000. Underlying values are
 preserved. Only the display format changes.
 }
 \details{
@@ -56,7 +67,8 @@ for columns it cannot guess (e.g. numeric period codes like \code{202001}).
 Only the modern \code{.xlsx} format is supported. The old binary \code{.xls}
 format cannot be written.
 
-Use \code{\link[=append_excel]{append_excel()}} to add sheets to an existing file.
+Use \code{mode} to create a file, append sheets, replace selected sheets, or
+overwrite the entire workbook. Sheet names are matched ignoring case.
 }
 \examples{
 \dontrun{
@@ -66,14 +78,20 @@ write_excel(mtcars, "out.xlsx")
 # New file with multiple sheets
 write_excel(list(Cars = mtcars, Iris = iris), "out.xlsx")
 
+# Add or replace sheets in an existing file
+write_excel(list(Bilag = iris), "out.xlsx", mode = "append")
+write_excel(list(Cars = mtcars), "out.xlsx", mode = "replace")
+
+# Replace the entire workbook
+write_excel(mtcars, "out.xlsx", mode = "overwrite")
+
 # Insert as Excel table
 write_excel(mtcars, "out.xlsx", as_table = TRUE)
 
 # Exclude a column from the number format
 write_excel(df, "out.xlsx", skip_fmt = "periode")
+write_excel(df, "out.xlsx", digits = 2)
+write_excel(df, "out.xlsx", digits = NULL)
 }
 
-}
-\seealso{
-\code{\link[=append_excel]{append_excel()}}
 }

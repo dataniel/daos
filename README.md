@@ -95,7 +95,10 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `age()` | Choose the reference year or date for an age column in `add_cpr_info()` |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
-| `clean_db07()` | Format DB07 industry codes with dots (`011100` → `01.11.00`) |
+| `format_db07()` | Automatically handle mixed DB07 input; choose dotted (`01.11.00`) or compact (`011100`) output |
+| `db_label()` | Look up Danish industry labels with an explicit DB07 or DB25 version |
+| `inspect_db()` | Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels |
+| `convert_db07_to_db25()` / `convert_db25_to_db07()` | Convert full industry codes using DST's bundled keys; strict or simplified mapping |
 | `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
 | `drop_empty_cols()` | Drop entirely empty selected columns |
 | `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
@@ -115,5 +118,4 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `view_types()` | Compare column types across multiple data frames |
-| `write_excel()` | Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs |
-| `append_excel()` | Append formatted sheets to an existing xlsx file |
+| `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |

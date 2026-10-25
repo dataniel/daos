@@ -7,7 +7,7 @@ test_that("selections preserve input, order, and output types", {
   expect_named(out, c("pnr", "year", "sex", "birth_date", "age"))
   expect_identical(out$sex, c(1L, 0L, 1L))
   expect_identical(out$birth_date, as.Date(c("2000-01-01", "1911-11-11", "2000-01-01")))
-  expect_identical(out$age, c(25L, 113L, 25L))
+  expect_identical(out$age, c(24L, 113L, 24L))
   expect_identical(add_cpr_info(df, "pnr", sex), add_cpr_info(df, pnr, sex))
   defaults <- add_cpr_info(df, pnr)
   expect_named(defaults, c(names(df), "bday", "age", "sex", "mod11", "valid"))
@@ -20,30 +20,83 @@ test_that("multiple reference years and positions work in one call", {
                           "0207004007", "3112004007", "2902004007"), year = 2025L)
   out <- add_cpr_info(df, pnr, primo = age(year), medio = age(year, "medio"),
                      ultimo = age(year, "ultimo"))
-  expect_identical(out$primo, c(25L, rep(24L, 5)))
+  expect_identical(out$primo, rep(24L, 6))
   expect_identical(out$medio, c(25L, 25L, 25L, 24L, 24L, 25L))
   expect_identical(out$ultimo, rep(25L, 6))
   expect_identical(add_cpr_info(df, pnr, age(2025))$age, out$primo)
   expect_identical(add_cpr_info(df, pnr, age(year + 1L))$age, out$primo + 1L)
 })
 
+test_that("January first births follow the selected primo convention", {
+  df <- data.frame(pnr = "0101004007", year = 1999:2002)
+  out <- add_cpr_info(df, pnr, bday, primoalder = age(year),
+                      explicit_primo = age(year, "primo"),
+                      january = age(year, primo = "jan1"),
+                      date_age = age(date = as.Date(paste0(year, "-01-01"))))
+  expect_identical(out$bday, rep(as.Date("2000-01-01"), 4))
+  expect_identical(out$primoalder, -2:1)
+  expect_identical(out$explicit_primo, -2:1)
+  expect_identical(out$date_age, -1:2)
+  expect_identical(out$january, out$date_age)
+})
+
+test_that("previous year end can be used directly as the age reference", {
+  df <- data.frame(pnr = c("0101004007", "0201004007", "3112004007",
+                          "2902004007", "0101004007"),
+                   year = c(rep(2001L, 4), NA_integer_))
+  out <- add_cpr_info(df, pnr,
+    primoalder = age(year - 1L, "ultimo"),
+    january = age(year, primo = "jan1"),
+    date_age = age(date = as.Date(paste0(year, "-01-01")) - 1L))
+  expect_identical(out$primoalder, c(rep(0L, 4), NA_integer_))
+  expect_identical(out$january, c(1L, rep(0L, 3), NA_integer_))
+  expect_identical(out$date_age, out$primoalder)
+  expect_identical(add_cpr_info(df, pnr, age(2001L - 1L, "ultimo"))$age,
+                   rep(0L, 5))
+})
+
+test_that("primo can use previous ultimo for population statistics", {
+  df <- data.frame(pnr = c("0101004007", "0201004007", "3112004007", "2902004007",
+                          "0101004007", "0101004007"),
+                   year = c(rep(2001L, 4), NA_integer_, 2000L))
+  out <- add_cpr_info(df, pnr,
+    opening = age(year, primo = "previous_ultimo"),
+    previous = age(year - 1L, "ultimo"),
+    january = age(year, primo = "jan1"),
+    default = age(year))
+  expect_identical(out$opening, c(rep(0L, 4), NA_integer_, -1L))
+  expect_identical(out$opening, out$previous)
+  expect_identical(out$opening, out$default)
+  expect_identical(out$january, c(1L, rep(0L, 3), NA_integer_, 0L))
+  expect_identical(add_cpr_info(df, pnr, age(2001, "primo", primo = "previous_ultimo"))$age,
+                   rep(0L, 6))
+  empty <- df[FALSE, ]
+  expect_identical(add_cpr_info(empty, pnr, age(year, primo = "previous_ultimo"))$age, integer())
+  expect_error(age(2025, "medio", primo = "previous_ultimo"), "only supported")
+  expect_error(age(2025, "ultimo", primo = "previous_ultimo"), "only supported")
+  expect_error(age(date = "2025-01-01", primo = "previous_ultimo"), "only supported")
+  expect_error(age(primo = "previous_ultimo"), "only supported")
+  expect_error(age(2025, primo = "unknown"), "primo")
+  expect_error(add_cpr_info(df, pnr, age(1, primo = "previous_ultimo")), "at least 2")
+})
+
 test_that("references use caller environments and explicit data pronouns", {
   df <- data.frame(pnr = c("0101004007", "0101004007"), year = 2024:2025,
                    date = c("2024-07-01", "2025-07-01"), ref = 1:2)
   year <- 2030L
-  expect_identical(add_cpr_info(df, pnr, age(year))$age, 24:25)
-  expect_identical(add_cpr_info(df, pnr, age(.env$year))$age, c(30L, 30L))
-  expect_identical(add_cpr_info(df, pnr, age(.data$year))$age, 24:25)
+  expect_identical(add_cpr_info(df, pnr, age(year))$age, 23:24)
+  expect_identical(add_cpr_info(df, pnr, age(.env$year))$age, c(29L, 29L))
+  expect_identical(add_cpr_info(df, pnr, age(.data$year))$age, 23:24)
   expect_identical(add_cpr_info(df, pnr, age(date = date))$age, 24:25)
   wrapper <- function(data, col, reference) {
     add_cpr_info(data, {{ col }}, alder = age({{ reference }}))
   }
-  expect_identical(wrapper(df, pnr, year)$alder, 24:25)
+  expect_identical(wrapper(df, pnr, year)$alder, 23:24)
   # Selection names are syntax, independent of columns/caller variables.
   sex <- "not a selector"
   df$sex <- 99L
   expect_identical(add_cpr_info(df, pnr, koen = sex)$koen, c(1L, 1L))
-  expect_identical(add_cpr_info(df, pnr, age = age(year))$age, 24:25)
+  expect_identical(add_cpr_info(df, pnr, age = age(year))$age, 23:24)
 })
 
 test_that("leap birthdays and missing references retain calendar semantics", {
@@ -54,7 +107,7 @@ test_that("leap birthdays and missing references retain calendar semantics", {
   expect_identical(add_cpr_info(df, pnr, age(date = dates))$age, expected)
   expect_identical(add_cpr_info(df, pnr, age(date = as.Date(dates)))$age, expected)
   df <- data.frame(pnr = rep("0101004007", 3), year = c(2024L, NA_integer_, 2026L))
-  expect_identical(add_cpr_info(df, pnr, age(year))$age, c(24L, NA_integer_, 26L))
+  expect_identical(add_cpr_info(df, pnr, age(year))$age, c(23L, NA_integer_, 25L))
   expect_identical(add_cpr_info(df, pnr, age(date = "1999-12-31"))$age, rep(-1L, 3))
 })
 
@@ -68,7 +121,7 @@ test_that("format, calendar validity, and checksum remain separate", {
   expect_true(out$mod11[1])
   expect_false(out$mod11[5])
   expect_true(all(is.na(out$mod11[3:4])))
-  expect_identical(out$age[c(1, 5)], c(25L, 25L))
+  expect_identical(out$age[c(1, 5)], c(24L, 24L))
 })
 
 test_that("century boundaries remain correct", {
@@ -81,15 +134,15 @@ test_that("century boundaries remain correct", {
 test_that("collisions require explicit consent and never rename input columns", {
   df <- data.frame(pnr = "0101004007", age = 99L, year = 2025L)
   expect_error(add_cpr_info(df, pnr, age(year)), "overwrite = TRUE")
-  expect_identical(add_cpr_info(df, pnr, age(year), overwrite = TRUE)$age, 25L)
+  expect_identical(add_cpr_info(df, pnr, age(year), overwrite = TRUE)$age, 24L)
   expect_identical(df$age, 99L)
   expect_error(add_cpr_info(df, pnr, age(year), age(2026)), "Duplicate output")
   expect_error(add_cpr_info(df, pnr, x = sex, x = bday), "Duplicate output")
   expect_error(add_cpr_info(df, pnr, pnr = sex, overwrite = TRUE), "source column")
   # All calculations see original columns, including columns being overwritten.
   out <- add_cpr_info(df, pnr, year = age(year), second = age(year), overwrite = TRUE)
-  expect_identical(out$year, 25L)
-  expect_identical(out$second, 25L)
+  expect_identical(out$year, 24L)
+  expect_identical(out$second, 24L)
   expect_error(add_cpr_info(df, pnr, sex, overwrite = NA), "TRUE or FALSE")
 })
 
@@ -146,7 +199,7 @@ test_that("empty frames, tibble grouping, and data tables retain structure", {
 
 test_that("qualified age helper and tidy injection work", {
   df <- data.frame(pnr = "0101004007", year = 2025L)
-  expect_identical(add_cpr_info(df, pnr, daos::age(year))$age, 25L)
+  expect_identical(add_cpr_info(df, pnr, daos::age(year))$age, 24L)
   selections <- rlang::quos(alder = age(year), sex)
   expect_named(add_cpr_info(df, pnr, !!!selections), c("pnr", "year", "alder", "sex"))
 })

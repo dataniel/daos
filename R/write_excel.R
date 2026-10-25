@@ -1,9 +1,9 @@
 #' Write data frames to a presentable Excel file
 #'
-#' Creates a new `.xlsx` workbook with formatting applied: the header row is
+#' Writes an `.xlsx` workbook with formatting applied: the header row is
 #' bold and frozen, `NA` values are shown as blank cells, and numeric columns
-#' are formatted with a thousand separator and no displayed decimals (`#,##0`)
-#' when the column contains at least one value >= 1000. Underlying values are
+#' are formatted with a thousand separator and `digits` displayed decimals
+#' (default zero) when the column contains at least one absolute value >= 1000. Underlying values are
 #' preserved. Only the display format changes.
 #'
 #' Year-like columns are excluded from the number format automatically: a
@@ -15,22 +15,32 @@
 #' Only the modern `.xlsx` format is supported. The old binary `.xls`
 #' format cannot be written.
 #'
-#' Use [daos::append_excel()] to add sheets to an existing file.
+#' Use `mode` to create a file, append sheets, replace selected sheets, or
+#' overwrite the entire workbook. Sheet names are matched ignoring case.
 #'
 #' @param data A data frame or named list of data frames. A single data frame
 #'   defaults to sheet name `"Sheet1"`; unnamed list elements get names
 #'   `"Sheet1"`, `"Sheet2"`, etc.
+#'   Sheet names must be valid Excel names and unique ignoring case.
 #' @param path Path to the output `.xlsx` file.
-#' @param overwrite If `FALSE` (default), aborts when `path` already exists.
-#'   Set to `TRUE` to replace the file.
+#' @param mode One of `"new"` (default: create a file; fail if it exists),
+#'   `"append"` (add sheets to an existing file; fail on name collisions),
+#'   `"replace"` (replace matching sheets and add new ones in an existing file),
+#'   or `"overwrite"` (write a fresh workbook, replacing the entire file if
+#'   present). Replaced sheets retain their position; new sheets go at the end.
+#'   Append and replace operate on whole sheets, not individual rows.
+#' @param digits Number of displayed decimal places for automatically formatted
+#'   numeric columns (0 to 15; default 0). Use `NULL` to disable automatic
+#'   numeric formatting. Stored values are never rounded. Small-number columns,
+#'   detected year columns and `skip_fmt` columns retain their default format.
 #' @param as_table If `TRUE`, data is inserted as an Excel ListObject (table
 #'   with filter arrows and banded rows). Default `FALSE`.
 #' @param freeze_header If `TRUE` (default), freezes the first row.
 #' @param skip_fmt Character vector of column names to exclude from the
-#'   `#,##0` number format.
+#'   automatic number format.
 #' @param detect_years If `TRUE` (default), numeric columns where every
 #'   non-`NA` value is a whole number between 1800 and 2200 are excluded
-#'   from the `#,##0` number format.
+#'   from the automatic number format.
 #'
 #' @return `path`, invisibly.
 #'
@@ -42,14 +52,23 @@
 #' # New file with multiple sheets
 #' write_excel(list(Cars = mtcars, Iris = iris), "out.xlsx")
 #'
+#' # Add or replace sheets in an existing file
+#' write_excel(list(Bilag = iris), "out.xlsx", mode = "append")
+#' write_excel(list(Cars = mtcars), "out.xlsx", mode = "replace")
+#'
+#' # Replace the entire workbook
+#' write_excel(mtcars, "out.xlsx", mode = "overwrite")
+#'
 #' # Insert as Excel table
 #' write_excel(mtcars, "out.xlsx", as_table = TRUE)
 #'
 #' # Exclude a column from the number format
 #' write_excel(df, "out.xlsx", skip_fmt = "periode")
+#' write_excel(df, "out.xlsx", digits = 2)
+#' write_excel(df, "out.xlsx", digits = NULL)
 #' }
 #'
-#' @seealso [daos::append_excel()]
+#' @md
 #'
 #' @importFrom cli cli_abort
 #' @importFrom rlang %||%
@@ -57,96 +76,55 @@
 write_excel <- function(
     data,
     path,
-    overwrite     = FALSE,
+    mode          = c("new", "append", "replace", "overwrite"),
     as_table      = FALSE,
     freeze_header = TRUE,
     skip_fmt      = NULL,
-    detect_years  = TRUE
+    detect_years  = TRUE,
+    digits        = 0
 ) {
+  mode <- match.arg(mode)
+  if (!is.null(digits) && (!is.numeric(digits) || length(digits) != 1L ||
+      is.na(digits) || !is.finite(digits) || digits < 0 || digits > 15 || digits != trunc(digits)))
+    cli::cli_abort("{.arg digits} must be NULL or a whole number from 0 to 15.")
   .xl_check_available()
   .xl_check_path(path)
-
   data_list <- .xl_as_list(data, "data")
-
-  if (file.exists(path) && !overwrite)
+  exists <- file.exists(path)
+  if (exists && mode == "new")
     cli::cli_abort(c(
       "File {.path {path}} already exists.",
-      "i" = "Set {.code overwrite = TRUE} to replace it, or use {.fun append_excel} to add sheets."
+      "i" = 'Choose mode = "append", "replace", or "overwrite".'
     ))
-
-  wb <- openxlsx2::wb_workbook()
-  for (nm in names(data_list)) {
-    wb <- .xl_add_sheet(wb, nm, data_list[[nm]], as_table, freeze_header,
-                        skip_fmt, detect_years)
-  }
-
-  openxlsx2::wb_save(wb, path, overwrite = TRUE)
-  invisible(path)
-}
-
-#' Append sheets to an existing Excel file
-#'
-#' Adds one or more sheets to an existing `.xlsx` workbook without touching
-#' its other sheets. New sheets get the same formatting as
-#' [daos::write_excel()]: bold frozen header, blank `NA` cells, and `#,##0`
-#' number format for large numeric columns (with automatic exclusion of
-#' year-like columns).
-#'
-#' @inheritParams write_excel
-#' @param data A data frame or named list of data frames to add as new
-#'   sheets. Same naming defaults as in [daos::write_excel()].
-#' @param path Path to an existing `.xlsx` file.
-#' @param overwrite If `FALSE` (default), aborts when a sheet of the same name
-#'   already exists in the workbook. Set to `TRUE` to replace it.
-#'
-#' @return `path`, invisibly.
-#'
-#' @examples
-#' \dontrun{
-#' write_excel(list(Hoved = mtcars), "out.xlsx")
-#' append_excel(list(Bilag = iris), "out.xlsx")
-#' }
-#'
-#' @seealso [daos::write_excel()]
-#'
-#' @importFrom cli cli_abort
-#' @importFrom rlang %||%
-#' @export
-append_excel <- function(
-    data,
-    path,
-    overwrite     = FALSE,
-    as_table      = FALSE,
-    freeze_header = TRUE,
-    skip_fmt      = NULL,
-    detect_years  = TRUE
-) {
-  .xl_check_available()
-  .xl_check_path(path)
-
-  data_list <- .xl_as_list(data, "data")
-
-  if (!file.exists(path))
+  editing <- mode %in% c("append", "replace")
+  if (editing && !exists)
     cli::cli_abort(c(
       "File {.path {path}} does not exist.",
-      "i" = "Use {.fun write_excel} to create a new file."
+      "i" = 'Use mode = "new" to create it.'
     ))
 
-  wb <- openxlsx2::wb_load(path)
+  wb <- if (editing) openxlsx2::wb_load(path) else openxlsx2::wb_workbook()
+  sheet_order <- wb$sheet_names
+  collisions <- tolower(names(data_list)) %in% tolower(sheet_order)
+  if (mode == "append" && any(collisions))
+    cli::cli_abort(c(
+      "Sheet {.val {names(data_list)[collisions]}} already exists in {.path {path}}.",
+      "i" = 'Use mode = "replace" to replace matching sheets.'
+    ))
   for (nm in names(data_list)) {
-    if (nm %in% wb$sheet_names) {
-      if (!overwrite)
-        cli::cli_abort(c(
-          "Sheet {.val {nm}} already exists in {.path {path}}.",
-          "i" = "Set {.code overwrite = TRUE} to replace it."
-        ))
-      wb <- openxlsx2::wb_remove_worksheet(wb, sheet = nm)
+    existing <- match(tolower(nm), tolower(wb$sheet_names))
+    if (!is.na(existing)) {
+      old_name <- wb$sheet_names[existing]
+      sheet_order[match(old_name, sheet_order)] <- nm
+      wb <- openxlsx2::wb_remove_worksheet(wb, sheet = old_name)
+    } else {
+      sheet_order <- c(sheet_order, nm)
     }
     wb <- .xl_add_sheet(wb, nm, data_list[[nm]], as_table, freeze_header,
-                        skip_fmt, detect_years)
+                        skip_fmt, detect_years, digits)
   }
-
-  openxlsx2::wb_save(wb, path, overwrite = TRUE)
+  wb <- openxlsx2::wb_set_order(wb, sheets = match(sheet_order, wb$sheet_names))
+  openxlsx2::wb_save(wb, path, overwrite = mode != "new")
   invisible(path)
 }
 
@@ -168,8 +146,18 @@ append_excel <- function(
   if (is.data.frame(x)) return(list(Sheet1 = x))
   if (!is.list(x))
     cli::cli_abort("{.arg {arg_name}} must be a data frame or named list of data frames.")
+  if (!length(x) || !all(vapply(x, is.data.frame, logical(1))))
+    cli::cli_abort("{.arg {arg_name}} must be a non-empty list of data frames.")
   nms <- names(x) %||% character(length(x))
+  if (anyNA(nms))
+    cli::cli_abort("Sheet names must not be NA.")
   nms[nms == ""] <- paste0("Sheet", which(nms == ""))
+  if (anyDuplicated(tolower(nms)))
+    cli::cli_abort("Sheet names must be unique (ignoring case).")
+  invalid <- nchar(nms) > 31L | grepl("[\\\\/?*\\[\\]:]", nms, perl = TRUE) |
+    grepl("^'|'$", nms)
+  if (any(invalid))
+    cli::cli_abort("Invalid Excel sheet name(s): {.val {nms[invalid]}}.")
   names(x) <- nms
   x
 }
@@ -182,7 +170,7 @@ append_excel <- function(
 }
 
 .xl_add_sheet <- function(wb, sheet_name, df, as_table, freeze_header,
-                          skip_fmt, detect_years) {
+                          skip_fmt, detect_years, digits) {
   df    <- as.data.frame(df)
   nrows <- nrow(df)
   ncols <- ncol(df)
@@ -197,9 +185,9 @@ append_excel <- function(
   wb <- openxlsx2::wb_add_worksheet(wb, sheet_name)
 
   if (as_table) {
-    wb <- openxlsx2::wb_add_data_table(wb, sheet_name, df)
+    wb <- openxlsx2::wb_add_data_table(wb, sheet_name, df, na = NULL)
   } else {
-    wb <- openxlsx2::wb_add_data(wb, sheet_name, df)
+    wb <- openxlsx2::wb_add_data(wb, sheet_name, df, na = NULL)
     wb <- openxlsx2::wb_add_font(
       wb, sheet_name,
       bold = TRUE,
@@ -210,10 +198,11 @@ append_excel <- function(
   if (freeze_header)
     wb <- openxlsx2::wb_freeze_pane(wb, sheet_name, first_row = TRUE)
 
-  if (nrows > 0) {
+  if (nrows > 0 && !is.null(digits)) {
+    number_format <- paste0("#,##0", if (digits > 0) paste0(".", strrep("0", digits)) else "")
     num_cols <- names(df)[vapply(df, is.numeric, logical(1))]
     num_cols <- num_cols[vapply(num_cols, function(col) {
-      max(abs(df[[col]]), na.rm = TRUE) >= 1000
+      any(abs(df[[col]]) >= 1000, na.rm = TRUE)
     }, logical(1))]
     fmt_cols <- setdiff(num_cols, skip_fmt %||% character(0))
     if (detect_years) {
@@ -225,7 +214,7 @@ append_excel <- function(
       wb <- openxlsx2::wb_add_numfmt(
         wb, sheet_name,
         dims   = openxlsx2::wb_dims(rows = seq(2, nrows + 1), cols = ci),
-        numfmt = "#,##0"
+        numfmt = number_format
       )
     }
   }

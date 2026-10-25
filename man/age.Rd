@@ -4,17 +4,21 @@
 \alias{age}
 \title{Specify an age calculation for CPR information}
 \usage{
-age(year, at = "primo", date)
+age(year, at = "primo", date, primo = "previous_ultimo")
 }
 \arguments{
 \item{year}{Numeric whole year(s), directly or as a column/expression in
-the input data. Defaults to 1 January of each year.}
+the input data. Defaults to 31 December of the previous year.}
 
-\item{at}{Point in the year: \code{"primo"} (1 January), \code{"medio"} (1 July),
+\item{at}{Point in the year: \code{"primo"} (uses the \code{primo} convention), \code{"medio"} (1 July),
 or \code{"ultimo"} (31 December). Only allowed with \code{year}.}
 
 \item{date}{A Date vector or strict ISO date strings (\code{YYYY-MM-DD}).
 Supply either \code{year} or \code{date}. With neither, uses \code{Sys.Date()}.}
+
+\item{primo}{Convention for \code{at = "primo"}: \code{"previous_ultimo"} (default)
+uses 31 December of \code{year - 1}; \code{"jan1"} uses 1 January of \code{year}.
+Only allowed with \code{year} and \code{at = "primo"} (including its default).}
 }
 \value{
 An age specification for \code{\link[=add_cpr_info]{add_cpr_info()}}.
@@ -27,9 +31,14 @@ This helper describes a calculation; it does not calculate an age itself.
 References may have length one or one value per input row.
 Missing references produce missing ages. Data columns take precedence
 over caller variables; \code{.env} and \code{.data} can make the source explicit.
+For population statistics where opening ages must equal the previous
+closing ages, use \code{age(year, primo = "previous_ultimo")}. This is equivalent
+to \code{age(year - 1L, "ultimo")} and excludes birthdays on 1 January of \code{year}.
+It changes the age reference only, not membership of the population.
 }
 \examples{
 df <- data.frame(pnr = "0101004007", year = 2025L)
 add_cpr_info(df, pnr, age(year), sex)
 add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
+add_cpr_info(df, pnr, primoalder = age(year, primo = "previous_ultimo"))
 }

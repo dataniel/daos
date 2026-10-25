@@ -2,6 +2,60 @@ skip_if_not_installed("openxlsx2")
 
 tmp <- function() tempfile(fileext = ".xlsx")
 
+test_that("digits controls display without rounding stored values", {
+  df <- data.frame(amount = c(1234.567, -2345.678), year = c(2020, 2021),
+                   period = c(202001, 202002), small = c(1.234, 2.345))
+  for (digits in list(0, 2, NULL)) {
+    path <- tmp()
+    write_excel(df, path, digits = digits, skip_fmt = "period")
+    wb <- openxlsx2::wb_load(path)
+    expect_equal(openxlsx2::wb_to_df(wb)$amount, df$amount)
+    cells <- wb$worksheets[[1]]$sheet_data$cc
+    styles <- cells$c_s[cells$c_r == "A" & cells$row_r != "1"]
+    if (is.null(digits)) {
+      expect_true(all(styles == "" | is.na(styles)))
+    } else {
+      folder <- tempfile()
+      dir.create(folder)
+      unzip(path, files = "xl/styles.xml", exdir = folder)
+      xml <- paste(readLines(file.path(folder, "xl/styles.xml"), warn = FALSE), collapse = "")
+      expected <- if (digits == 2) '#,##0.00' else '#,##0'
+      expect_true(grepl(paste0('formatCode="', expected, '"'), xml, fixed = TRUE))
+      expect_true(all(styles != "" & !is.na(styles)))
+    }
+    untouched <- cells$c_s[cells$c_r %in% c("B", "C", "D") & cells$row_r != "1"]
+    expect_true(all(untouched == "" | is.na(untouched)))
+  }
+  for (digits in list(-1, 1.5, NA_real_, Inf, 16, "2", c(1, 2)))
+    expect_error(write_excel(df, tmp(), digits = digits), "digits")
+})
+
+test_that("missing numeric values produce blank cells without warnings", {
+  for (as_table in c(FALSE, TRUE)) {
+    path <- tmp()
+    expect_no_warning(write_excel(data.frame(x = c(1, NA_real_), empty = c(NA_real_, NA_real_)),
+                                  path, as_table = as_table))
+    cells <- openxlsx2::wb_load(path)$worksheets[[1]]$sheet_data$cc
+    expect_false(any(cells$c_t == "e", na.rm = TRUE))
+    expect_false(any(cells$v == "#N/A", na.rm = TRUE))
+    expect_true(any(cells$r == "A2" & cells$v == "1"))
+  }
+})
+
+test_that("invalid sheet inputs fail before writing a workbook", {
+  path <- tmp()
+  for (nms in list(c("A", "A"), c("A", "a"), c("Sheet2", ""))) {
+    expect_error(write_excel(setNames(list(mtcars, iris), nms), path), "unique")
+    expect_false(file.exists(path))
+  }
+  for (nm in c("a/b", "a\\b", "a?b", "a*b", "a[b", "a]b", "a:b", "'a", "a'", strrep("a", 32))) {
+    expect_error(write_excel(setNames(list(mtcars), nm), path), "Invalid Excel")
+  }
+  expect_error(write_excel(list(), path), "non-empty")
+  expect_error(write_excel(list(A = 1:3), path), "data frames")
+  expect_error(write_excel(setNames(list(mtcars), NA_character_), path), "must not be NA")
+})
+
 test_that("creates a new file from a single data frame", {
   path <- tmp()
   write_excel(mtcars, path)
@@ -36,16 +90,16 @@ test_that("mixed named/unnamed list uses name where given", {
   expect_equal(wb$sheet_names, c("Hoved", "Sheet2"))
 })
 
-test_that("errors if file exists and overwrite = FALSE", {
+test_that("errors if file exists and mode is new", {
   path <- tmp()
   write_excel(mtcars, path)
   expect_error(write_excel(mtcars, path), "already exists")
 })
 
-test_that("overwrites file when overwrite = TRUE", {
+test_that("overwrites file in overwrite mode", {
   path <- tmp()
   write_excel(mtcars, path)
-  expect_no_error(write_excel(mtcars, path, overwrite = TRUE))
+  expect_no_error(write_excel(mtcars, path, mode = "overwrite"))
 })
 
 test_that("errors on a non-xlsx path", {
