@@ -357,23 +357,36 @@ columns.
 row per column, with the type in each dataset. Useful before a join, or
 before binding with `read_files(out = "bind")`.
 
+The `status` column says whether the frames would bind: `ok`,
+`coercible` (types differ but combine, like `int` + `dbl` or an all-`NA`
+column with anything), `missing` (absent somewhere, which `bind_rows()`
+fills with `NA`), or `conflict` (the bind fails).
+
 ```{r}
-df_a <- data.frame(x = 1L,  y = "a", z = TRUE)
-df_b <- data.frame(x = 1.0, y = "b", z = 1L)
+df_a <- data.frame(x = 1L,  y = "a", z = NA)
+df_b <- data.frame(x = 1.0, y = 2,   z = "b", w = 1)
 
 view_types(df_a, df_b)
 ```
 
 ```{r}
-# Only columns where types differ:
+# Only the columns that would break a bind:
 view_types(df_a, df_b, diff = TRUE)
 ```
 
-The `focus` argument checks that a specific column has an expected type
-and returns only the datasets where it does not:
+The output of `read_files()` can be passed directly, since a named list
+of data frames is unpacked:
+
+```{r, eval = FALSE}
+read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+  view_types(diff = TRUE)
+```
+
+The `focus` argument checks that specific columns have an expected type
+and returns only the datasets where they do not:
 
 ```{r}
-view_types(df_a, df_b, focus = c(x = "int"))
+view_types(df_a, df_b, focus = c(x = "int", y = "chr"))
 ```
 
 ---

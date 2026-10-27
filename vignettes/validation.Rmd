@@ -222,8 +222,10 @@ df_b <- tibble(cvr = 22222222,  amount = "100", note = "ok")
 view_types(df_a, df_b)
 ```
 
-With `diff = TRUE` only the disagreeing columns remain, so compatible
-frames produce an *empty* result, ready for a checkpoint:
+The `status` column separates real conflicts from harmless differences
+(`coercible` types such as `int` + `dbl`, or a column `missing` from one
+frame). With `diff = TRUE` only the conflicts remain, so frames that bind
+produce an *empty* result, ready for a checkpoint:
 
 ```{r}
 view_types(df_a, df_b, diff = TRUE) |>

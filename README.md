@@ -122,5 +122,5 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `tally_violations()` | Count violations for many rules at once (counts, never judges); filter and pipe into `expect_empty()` |
-| `view_types()` | Compare column types across multiple data frames |
+| `view_types()` | Compare column types across data frames (or a list from `read_files()`) and flag which would break a bind |
 | `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |

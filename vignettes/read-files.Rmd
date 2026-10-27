@@ -96,6 +96,8 @@ changed upstream, and the next step is to find out what.
 
 `view_types()` is `glimpse()` across multiple data frames at once: one
 row per column, one column per dataset, with abbreviated type strings.
+It takes the list from `read_files()` directly
+(`view_types(lst)`), or the data frames one by one:
 
 ```{r, eval = TRUE}
 dat2023 <- tibble(cvr = "11111111", name = "Firm A", amount = 100,    year = 2023L)
@@ -104,21 +106,26 @@ dat2024 <- tibble(cvr = 11111111,  name = "Firm B", amount = "1.000", turnover =
 view_types(dat2023, dat2024)
 ```
 
-The full listing already tells the story, but `diff = TRUE` cuts it down
-to the columns that actually disagree:
+Read the `status` column like this:
+
+- `conflict`: the types cannot be combined (`chr` vs `dbl` for `cvr`).
+  This is what makes `read_files()` fall back to character, and the
+  classic cause of a corrupted join key.
+- `missing`: the column does not exist in every dataset (`NA` in the
+  type column), typically a rename or a dropped column upstream. It does
+  not stop a bind, since `bind_rows()` fills it with `NA`, but it is
+  worth a look.
+- `coercible`: the types differ but combine without trouble, such as
+  `int` and `dbl`, or a column that is entirely `NA` (readr reads an
+  empty column as `lgl`).
+- `ok`: same type everywhere.
+
+`diff = TRUE` cuts the listing down to the conflicts, the columns that
+actually break the stack:
 
 ```{r, eval = TRUE}
 view_types(dat2023, dat2024, diff = TRUE)
 ```
-
-Read the output like this:
-
-- A row with two different type strings (`chr` vs `dbl` for `cvr`) is a
-  type mismatch, the classic cause of a failed bind or a corrupted
-  join key.
-- An `NA` means the column does not exist in that dataset at all
-  (`year` vs `turnover` above), typically a rename or a dropped column
-  upstream.
 
 The same overview is just as useful *before a join*: two frames that are
 about to be joined on `cvr` should agree on its type, and `view_types()`
@@ -126,13 +133,13 @@ answers that in one line instead of two `glimpse()` calls and a visual
 diff.
 
 For pipelines, the `focus` argument turns the inspection into a check:
-it returns only the datasets where a critical column does *not* have the
+it returns only the datasets where critical columns do *not* have the
 expected type, and an empty result on success. That plugs straight into
 the checkpoint pattern from `vignette("validation")`:
 
 ```{r, eval = TRUE}
-view_types(dat2023, dat2024, focus = c(amount = "dbl")) |>
-  expect_empty(warn_msg = "amount is not numeric everywhere")
+view_types(dat2023, dat2024, focus = c(cvr = "chr", amount = "dbl")) |>
+  expect_empty(warn_msg = "cvr or amount has the wrong type")
 ```
 
 ## Other shapes of output

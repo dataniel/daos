@@ -7,33 +7,67 @@
 view_types(..., diff = FALSE, focus = NULL)
 }
 \arguments{
-\item{...}{Data frames to compare (unquoted). Names are inferred from the
-expressions passed.}
+\item{...}{Data frames to compare (unquoted), or a single named list of
+data frames, such as the default output of \code{\link[=read_files]{read_files()}}. A list
+can also be spliced with \verb{!!!}. Names are inferred from the expressions
+passed, or taken from the list.}
 
-\item{diff}{Logical. If \code{TRUE}, only columns where types differ across
-datasets are shown. Default: \code{FALSE}.}
+\item{diff}{Logical. If \code{TRUE}, only columns with status \code{"conflict"} are
+shown, so frames that bind produce an empty result. To see every
+difference, filter on \code{status != "ok"} instead. Default: \code{FALSE}.}
 
-\item{focus}{A named length-1 character vector, e.g. \code{c(year = "int")}.
-When supplied, only the named column is shown, and only for datasets
-where the type does \strong{not} match the expected type. Returns an empty
-tibble (0 rows) when all types match, so it can be used in tests.}
+\item{focus}{A named character vector of expected types, e.g.
+\code{c(cvr = "chr", year = "int")}. When supplied, only the named columns
+are shown, and only for datasets where the type does \strong{not} match (an
+absent column counts as a mismatch). Returns an empty tibble (0 rows)
+when all types match, so it can be used in checkpoints. Takes
+precedence over \code{diff}.}
 }
 \value{
-A tibble with a \code{column} column and one column per input dataset
-showing an abbreviated type string (\code{"int"}, \code{"dbl"}, \code{"chr"}, \code{"fct"},
-\code{"date"}, \code{"dttm"}, ...).
+A tibble with a \code{column} column, a \code{status} column (see Details)
+and one column per input dataset showing an abbreviated type string
+(\code{"int"}, \code{"dbl"}, \code{"chr"}, \code{"fct"}, \code{"date"}, \code{"dttm"}, ...). \code{NA}
+means the column is absent from that dataset.
 }
 \description{
-Shows the column types of one or more data frames side-by-side. Useful
-for diagnosing type mismatches before a join or before binding with \code{\link[=read_files]{read_files()}}.
+Shows the column types of one or more data frames side-by-side, and
+classifies each column by whether the datasets could be row-bound as they
+are. Useful for diagnosing type mismatches before a join or before
+binding with \code{\link[=read_files]{read_files()}}.
+}
+\details{
+A type string alone does not say whether two data frames can be stacked:
+\code{int} and \code{dbl} bind without trouble, and so does a column that is
+entirely \code{NA} (readr reads an empty column as \code{lgl}). A column that is
+absent from one dataset is no obstacle either, since \code{\link[dplyr:bind_rows]{dplyr::bind_rows()}}
+fills it with \code{NA}. Only a real conflict such as \code{chr} vs \code{dbl} makes the
+bind fail, or forces \code{\link[=read_files]{read_files()}} to fall back to character. The
+\code{status} column therefore asks the question the function is called for:
+does it bind?
+\itemize{
+\item \code{"ok"}: present everywhere with the same type.
+\item \code{"coercible"}: present everywhere, types differ but bind without loss
+of structure (\code{int} + \code{dbl}, \code{fct} + \code{chr}, \code{date} + \code{dttm}, an all-\code{NA}
+\code{lgl} with anything).
+\item \code{"missing"}: absent from at least one dataset, no conflict among the
+rest. Typically a rename or a dropped column upstream.
+\item \code{"conflict"}: the types cannot be combined.
+}
+
+Compatibility is tested by binding zero-row slices of each column with
+\code{\link[dplyr:bind_rows]{dplyr::bind_rows()}}, so the classification follows the same rules as
+\code{read_files(out = "bind")}.
 }
 \examples{
-df1 <- data.frame(x = 1L, y = "a")
-df2 <- data.frame(x = 1.0, y = "b")
+df1 <- data.frame(x = 1L,  y = "a", z = NA)
+df2 <- data.frame(x = 1.0, y = 2,   z = "b")
 
 view_types(df1, df2)
 view_types(df1, df2, diff = TRUE)
-view_types(df1, df2, focus = c(x = "int"))
+view_types(df1, df2, focus = c(x = "int", y = "chr"))
+
+# A named list of data frames, e.g. from read_files():
+view_types(list(a = df1, b = df2))
 
 }
 \seealso{
