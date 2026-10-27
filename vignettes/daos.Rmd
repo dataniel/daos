@@ -425,12 +425,8 @@ dplyr::starwars |>
   expect_empty(warn_msg = "Unrealistic mass values")
 ```
 
-The message previews the first rows. `last_violations()` returns all
-rows of the latest failed check as a tibble:
-
-```{r}
-last_violations()
-```
+The message previews the first rows; `dump`, below, writes all of them to
+a file.
 
 ```{r, eval = FALSE}
 # Hard abort:

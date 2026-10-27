@@ -77,21 +77,16 @@ df |>
 #>   <dbl>  <dbl>
 #> 1    NA    120
 #> 2    NA     -4
-#> ℹ Run `daos::last_violations()` to get all rows.
 ```
 
 Messages are shown literally, so a regular expression such as
 `"CVR must match ^\\d{8}$"` is safe in a message.
 
-The message only shows the first five rows. The checkpoint returns what it
-was given, not the violations, so the rest would be lost once the warning
-has been shown. Instead the rows of the latest failed check are kept for
-the session, and `last_violations()` returns them as a tibble, in the
-spirit of `rlang::last_error()`:
-
-```{r}
-last_violations()
-```
+The message only shows the first five rows. To keep all of them, write
+them to a CSV file with `dump` (see *Unattended pipelines* below), or run
+the rule's own `filter()` when you want them in the session. The rows are
+deliberately not kept in memory after the check: on a population register
+a failed check can hold millions of rows.
 
 ## Checks in the middle of a pipeline: `expect_none()`
 

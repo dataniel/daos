@@ -43,10 +43,14 @@ A pipeline-friendly validation checkpoint. Express a rule as "the set of
 violations must be empty", build that set with an ordinary \code{filter()}, and
 pipe it in. Emits a success alert when the data frame has zero rows,
 otherwise warns or aborts with the number of offending rows and the first
-few printed as a tibble. \code{\link[=last_violations]{last_violations()}} returns all of them as a
-tibble afterwards, also when the check only warned.
+few printed as a tibble. To keep all of them, write them to disk with
+\code{dump} (see below).
 }
 \details{
+The rows are deliberately not kept in the session afterwards: on a
+population register a failed check can hold millions of rows, and they
+would stay in memory until the next failure.
+
 Messages are shown literally: braces are not interpolated, so regular
 expressions such as \code{"^\\\\d{8}$"} are safe to use in a message.
 
@@ -106,6 +110,5 @@ dplyr::starwars |>
 \seealso{
 \code{\link[=expect_none]{expect_none()}} to check a condition without leaving the
 pipeline, \code{\link[=expect_unique]{expect_unique()}} for keys, \code{\link[=tally_violations]{tally_violations()}} to run many
-rules at once, \code{\link[=last_violations]{last_violations()}} for the rows of a failed check, and
-\code{\link[=flag_duplicates]{flag_duplicates()}}.
+rules at once, and \code{\link[=flag_duplicates]{flag_duplicates()}}.
 }

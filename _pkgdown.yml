@@ -55,7 +55,6 @@ reference:
       - expect_unique
       - expect_balanced
       - expect_no_overlap
-      - last_violations
       - tally_violations
 
   - title: Interactive

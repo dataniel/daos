@@ -37,7 +37,11 @@ test_that("failure messages report the row count and preview rows", {
   cnd <- rlang::catch_cnd(expect_empty(big, warn_msg = "Many"))
   expect_match(conditionMessage(cnd), "12 rows found")
   expect_match(conditionMessage(cnd), "7 more rows")
-  expect_match(conditionMessage(cnd), "last_violations()", fixed = TRUE)
+  expect_match(conditionMessage(cnd), "daos.check_dump", fixed = TRUE)
+
+  # All rows are shown, so there is nothing to point to
+  few <- rlang::catch_cnd(expect_empty(data.frame(x = 1:3), warn_msg = "Few"))
+  expect_no_match(conditionMessage(few), "daos.check_dump", fixed = TRUE)
 })
 
 test_that("the preview keeps columns aligned and drops the tibble header", {
@@ -51,23 +55,6 @@ test_that("the preview keeps columns aligned and drops the tibble header", {
   expect_length(rows, 2)
   expect_equal(regexpr("a", rows[1]), regexpr("bbbbbbbb", rows[2]),
                ignore_attr = TRUE)
-})
-
-test_that("last_violations() returns the rows of the latest failed check", {
-  suppressWarnings(expect_empty(data.frame(x = 1:3), warn_msg = "First"))
-  expect_equal(last_violations(), tibble::tibble(x = 1:3))
-
-  try(expect_empty(data.frame(y = "a"), abort_msg = "Second"), silent = TRUE)
-  expect_equal(last_violations(), tibble::tibble(y = "a"))
-
-  # A passing check leaves the last failure in place
-  expect_empty(data.frame())
-  expect_equal(last_violations(), tibble::tibble(y = "a"))
-})
-
-test_that("last_violations() errors before any check has failed", {
-  local_mocked_bindings(the = new.env())
-  expect_error(last_violations(), "No checkpoint has failed")
 })
 
 test_that("messages are shown literally, braces included", {

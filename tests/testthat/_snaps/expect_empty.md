@@ -11,5 +11,4 @@
         1    NA a
         2     2 b
         3     3 <NA>
-      i Run `daos::last_violations()` to get all rows.
 
