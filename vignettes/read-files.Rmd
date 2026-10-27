@@ -52,7 +52,9 @@ Two things are easy to miss but matter in practice:
 
 - **Missing files fail fast and together.** One error lists every absent
   file up front, instead of the loop dying at file seven after five
-  minutes of reading.
+  minutes of reading. A file that exists but cannot be read does not
+  stop the rest either: all failures are reported in one error at the
+  end, each with its file name.
 - **Column names are lowercased by default**, which removes the most
   common cosmetic difference between deliveries before it becomes a
   problem (`.lowercase = FALSE` to opt out).
@@ -80,13 +82,14 @@ upstream. With the one-call-per-file pattern this surfaces, if at all,
 as a confusing `bind_rows()` error or a silently mistyped column.
 
 `read_files(out = "bind")` handles it instead. If the files cannot be
-bound as-is, it warns, coerces everything to character, re-types the
-result with `readr::type_convert()`, and points you to `view_types()`:
+bound as-is, it finds the columns whose types clash, converts only those
+to character, re-types them with `readr::parse_guess()`, and points you to
+`view_types()`. The rest of the columns keep the types they were read with:
 
 ```
-Warning: Column types differ across files -- coercing to character and
-re-typing with `readr::type_convert()`.
-i Use `daos::view_types` to inspect the differences.
+Warning: Column types differ across files for cvr, amount -- re-typed with
+`readr::parse_guess()`.
+i Use `daos::view_types()` to inspect the differences.
 ```
 
 The rule of thumb: if `read_files()` handles a set of files without

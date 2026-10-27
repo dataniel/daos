@@ -18,11 +18,12 @@ read_files(
 }
 \arguments{
 \item{paths}{A character vector of file paths. Glue syntax (\code{{}}) is
-supported for compact range expansion.}
+supported for compact range expansion. Elements may be named, which
+names the result, as long as each named element expands to one file.}
 
-\item{names}{Optional names for the result. Defaults to file names without
-extension. If numeric, the \code{.id} column (when \code{out = "bind"}) will also be
-numeric.}
+\item{names}{Optional names for the result. Defaults to the names of
+\code{paths}, then to file names without extension. If numeric, the \code{.id}
+column (when \code{out = "bind"}) will also be numeric.}
 
 \item{reader}{\code{"auto"} (default) to detect the format from the file
 extension, or a function \verb{\\(path, ...) ...} to use a custom reader.}
@@ -31,9 +32,11 @@ extension, or a function \verb{\\(path, ...) ...} to use a custom reader.}
 \itemize{
 \item \code{NULL} (default): the object directly for a single file; a named list
 for multiple files.
-\item \code{"bind"}: row-bind all data frames into a single tibble. If column
-types differ, a warning is issued and types are reconciled with
-\code{\link[readr:type_convert]{readr::type_convert()}}. A source column is added when \code{.id} is set.
+\item \code{"bind"}: row-bind all data frames into a single tibble. Columns whose
+types cannot be combined across files are converted to character and
+re-typed with \code{\link[readr:parse_guess]{readr::parse_guess()}}, with a warning naming them;
+every other column keeps the type it was read with. A source column is
+added when \code{.id} is set.
 \item \code{"unpack"}: assign each element as a named variable in \code{.envir}.
 }}
 
@@ -65,17 +68,9 @@ checks that every file exists, reads them with automatic format detection
 or a custom reader, and optionally row-binds or unpacks the result.
 }
 \details{
-\strong{Supported formats (when \code{reader = "auto"}):}
-
-\strong{Note on CSV:} uses \code{readr::read_csv2()} which expects semicolon-separated
-values and a comma as the decimal mark (Danish/European convention). For
-comma-separated files, pass a custom reader: \code{reader = readr::read_csv}.
-
-\strong{Note on Excel:} only the first sheet is read. If a workbook has several
-and you did not name one, a warning lists the others. Read a specific sheet
-by forwarding the argument: \code{read_files("x.xlsx", sheet = "Sheet2")}.\tabular{ll}{
+\strong{Supported formats (when \code{reader = "auto"}):}\tabular{ll}{
    Extension \tab Reader \cr
-   \code{csv} \tab \code{readr::read_csv2()} (semicolon-separated, European format) \cr
+   \code{csv} \tab \code{readr::read_delim()} (semicolon-separated, decimal comma) \cr
    \code{tsv} \tab \code{readr::read_tsv()} \cr
    \code{parquet}, \code{feather} \tab \code{arrow::read_parquet()} / \code{arrow::read_feather()} \cr
    \code{xlsx}, \code{xls} \tab \code{readxl::read_xlsx()} / \code{readxl::read_xls()} \cr
@@ -89,6 +84,25 @@ by forwarding the argument: \code{read_files("x.xlsx", sheet = "Sheet2")}.\tabul
 
 Packages for non-base formats (\code{arrow}, \code{haven}, \code{readxl}, \code{jsonlite},
 \code{yaml}) must be installed separately.
+
+\strong{Note on CSV:} reads semicolon-separated values with a comma as the
+decimal mark (Danish/European convention), the same rule as
+\code{readr::read_csv2()}: a \code{locale} you pass keeps its other settings (such as
+\code{encoding}) but gets the decimal comma unless it names its own decimal mark.
+Unlike \code{read_csv2()}, it does not print the locale and the column
+specification for every file; pass \code{show_col_types = TRUE} to see them. For
+comma-separated files, pass a custom reader: \code{reader = readr::read_csv}.
+
+\strong{Note on Excel:} only the first sheet is read. If workbooks have several
+and you did not name one, a single warning lists the other sheets of each.
+Read a specific sheet by forwarding the argument:
+\code{read_files("x.xlsx", sheet = "Sheet2")}.
+
+\strong{Problems are reported together, not one at a time.} Missing files and
+unsupported extensions are checked before anything is read. A file that
+fails to read does not stop the others: every failure is collected and
+reported in one error at the end, naming each file, so a broken delivery
+is diagnosed in one run instead of one rerun per file.
 }
 \examples{
 \dontrun{

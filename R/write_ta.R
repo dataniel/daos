@@ -86,14 +86,9 @@ ta_write <- function(x, path, widths, gaps, fn, reader,
                       is_str = col %in% str_cols, reader = reader)
   }))
   if (length(problems) > 0) {
-    # Escape braces so values are shown literally, not interpolated by cli.
-    shown <- gsub("([{}])", "\\1\\1", problems[seq_len(min(10, length(problems)))])
-    names(shown) <- rep("x", length(shown))
-    more <- length(problems) - length(shown)
     cli::cli_abort(c(
       "Cannot write {length(problems)} value{?s} so that {.fn {reader}} reads {cli::qty(length(problems))}{?it/them} back unchanged:",
-      shown,
-      if (more > 0) c(" " = "... and {more} more")
+      cap_bullets(problems)
     ), call = call)
   }
 

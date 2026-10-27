@@ -186,9 +186,10 @@ read_files(
 )
 ```
 
-If column types differ across files, a warning is issued and types are
-reconciled with `readr::type_convert()`. The `.id` column is always
-excluded from this reconciliation.
+If a column's types cannot be combined across files, a warning names the
+column, and only that column is converted to character and re-typed with
+`readr::parse_guess()`. Every other column, and the `.id` column, keeps
+the type it was read with.
 
 **Unpacking into individual variables**
 

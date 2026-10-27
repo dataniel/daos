@@ -68,13 +68,9 @@ read_ta2 <- function(path) {
     sprintf('%s, line %d: "%s" is not a number.', col, rows, raw[[col]][rows])
   }))
   if (length(problems) > 0) {
-    shown <- gsub("([{}])", "\\1\\1", problems[seq_len(min(10, length(problems)))])
-    names(shown) <- rep("x", length(shown))
-    more <- length(problems) - length(shown)
     cli::cli_abort(c(
       "Cannot read {length(problems)} numeric field{?s}:",
-      shown,
-      if (more > 0) c(" " = "... and {more} more")
+      cap_bullets(problems)
     ))
   }
 

@@ -1,5 +1,20 @@
 # daos (development version)
 
+* `read_files()` is quiet on success and reports problems together:
+  * CSV files no longer print the locale and column specification for every
+    file. The decimal comma is kept when you pass a `locale` for its
+    encoding.
+  * A file that fails to read no longer stops the rest; all failures are
+    reported in one error, each with its file. Unsupported extensions are
+    caught before anything is read, missing files are listed with their full
+    path (at most ten), and multi-sheet workbooks give one warning in all.
+  * `out = "bind"` re-types only the columns whose types clash, and names
+    them in the warning, instead of re-guessing every column. Files that do
+    not read as data frames give a clear error.
+  * Files that share a name give a warning, and an error with
+    `out = "unpack"`. A name in `paths` on a pattern that expands to several
+    files is an error instead of being silently dropped.
+
 * The validation checkpoints have moved to their own package, expectr:
   `expect_empty()`, `expect_none()`, `expect_unique()`, `expect_balanced()`,
   `expect_no_overlap()` and `tally_violations()`. daos forwards each of
