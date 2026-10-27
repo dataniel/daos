@@ -101,7 +101,11 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `convert_db07_to_db25()` / `convert_db25_to_db07()` | Convert full industry codes using DST's bundled keys; strict or simplified mapping |
 | `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
 | `drop_empty_cols()` | Drop entirely empty selected columns |
+| `expect_balanced()` | Checkpoint: every unit observed in every period, or no gaps (`gaps_only`) |
 | `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
+| `expect_no_overlap()` | Checkpoint: spells (addresses, employment) do not overlap within a unit |
+| `expect_none()` | Checkpoint: no row matches a condition; returns the full data for chaining |
+| `expect_unique()` | Checkpoint: key columns identify each row uniquely |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
@@ -117,5 +121,6 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
+| `tally_violations()` | Count violations for many rules at once (counts, never judges); filter and pipe into `expect_empty()` |
 | `view_types()` | Compare column types across multiple data frames |
 | `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |

@@ -6,17 +6,20 @@
 \usage{
 expect_empty(
   data,
-  success_msg = "The dataset is empty.",
+  success_msg = NULL,
   warn_msg = "The dataset is not empty.",
   abort_msg = NULL,
-  log = NULL
+  log = getOption("daos.check_log"),
+  dump = getOption("daos.check_dump")
 )
 }
 \arguments{
 \item{data}{A data frame or tibble.}
 
-\item{success_msg}{Message shown (and logged) when \code{data} is empty.
-Default: \code{"The dataset is empty."}.}
+\item{success_msg}{Message shown (and logged) when \code{data} is empty. If
+\code{NULL} (default), it is \code{"Check passed: <message>"} when \code{warn_msg} or
+\code{abort_msg} is given, so the log names every check that ran, and
+\code{"The dataset is empty."} otherwise.}
 
 \item{warn_msg}{Message shown (and logged) when \code{data} is not empty and no
 \code{abort_msg} is set. Default: \code{"The dataset is not empty."}.}
@@ -26,25 +29,62 @@ message when \code{data} is not empty. If \code{NULL} (default), a warning is
 issued instead.}
 
 \item{log}{Optional path to a log file. The directory is created
-automatically if it does not exist. Each entry is prefixed with a
-timestamp and a symbol (\verb{✔}, \verb{✖}, or \code{!}).}
+automatically. Defaults to \code{getOption("daos.check_log")}.}
+
+\item{dump}{Optional directory. When the check fails, the offending rows
+are written there as a timestamped CSV file (UTF-8 with BOM, so Excel
+reads æøå correctly). Defaults to \code{getOption("daos.check_dump")}.}
 }
 \value{
 \code{data} invisibly.
 }
 \description{
-A pipeline-friendly validation checkpoint. Emits a success alert when the
-data frame has zero rows, otherwise warns or aborts. Optionally appends a
-timestamped entry to a log file, which is useful for automated pipelines
-where you want a minimal audit trail without noise.
+A pipeline-friendly validation checkpoint. Express a rule as "the set of
+violations must be empty", build that set with an ordinary \code{filter()}, and
+pipe it in. Emits a success alert when the data frame has zero rows,
+otherwise warns or aborts with the number of offending rows and a preview
+of the first few.
+}
+\details{
+Messages are shown literally: braces are not interpolated, so regular
+expressions such as \code{"^\\\\d{8}$"} are safe to use in a message.
+
+A failed check signals a condition of class \code{daos_check_failure} (a warning
+or an error) that carries the offending rows in its \code{violations} field.
+Scheduled pipelines can catch it and keep the rows:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{tryCatch(
+  expect_empty(bad_rows, abort_msg = "Bad rows"),
+  daos_check_failure = \\(e) saveRDS(e$violations, "bad_rows.rds")
+)
+}\if{html}{\out{</div>}}
+\subsection{Logging and dumping}{
+
+\code{log} appends one line per check to a text file, and \code{dump} writes the
+offending rows to a CSV file in a directory. Both default to a global
+option, so a script can switch them on once at the top instead of
+repeating the path in every check:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{options(
+  daos.check_log  = f("log/\{nowf()\}_checks.log"),
+  daos.check_dump = "log/violations"
+)
+}\if{html}{\out{</div>}}
+
+A log line has the form \verb{time | symbol | message | rows [| dump file]}:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{2026-06-11 09:00:03 | ✔ | Check passed: NA ids | 0 rows
+2026-06-11 09:00:03 | ! | Negative amounts | 3 rows | log/violations/20260611_090003_Negative_amounts.csv
+}\if{html}{\out{</div>}}
+}
 }
 \examples{
 # Success: no rows
 data.frame() |> expect_empty()
 
 # Warning: unexpected rows
-dplyr::filter(ggplot2::mpg, cyl < 0) |>
-  expect_empty(warn_msg = "Negative cylinder counts found")
+dplyr::filter(ggplot2::mpg, cyl > 6) |>
+  expect_empty(warn_msg = "Eight-cylinder cars found")
 
 # Abort: treat unexpected rows as a hard error
 \dontrun{
@@ -52,16 +92,18 @@ dplyr::filter(dplyr::starwars, height < 0) |>
   expect_empty(abort_msg = "Impossible: negative height")
 }
 
-# With logging:
+# With logging, set once for the whole script:
 \dontrun{
-log_path <- f("log/{nowf()}/checks.log")
-checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
+options(daos.check_log = f("log/{nowf()}/checks.log"))
 
-dplyr::filter(dplyr::starwars, name == "Harry Potter") |>
-  checker(success_msg = "No Harry Potter rows")
+dplyr::starwars |>
+  dplyr::filter(name == "Harry Potter") |>
+  expect_empty(warn_msg = "Harry Potter rows")
 }
 
 }
 \seealso{
-\code{\link[=flag_duplicates]{flag_duplicates()}}
+\code{\link[=expect_none]{expect_none()}} to check a condition without leaving the
+pipeline, \code{\link[=expect_unique]{expect_unique()}} for keys, \code{\link[=tally_violations]{tally_violations()}} to run many
+rules at once, and \code{\link[=flag_duplicates]{flag_duplicates()}}.
 }

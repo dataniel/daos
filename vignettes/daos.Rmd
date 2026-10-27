@@ -419,21 +419,35 @@ dplyr::starwars |>
   expect_empty(abort_msg = "Unrealistic mass values")
 ```
 
-The `log` argument writes a timestamped entry to a file, so when a
-scheduled run misbehaves, the errors are already collected by the time
-you sit down to investigate:
+The `log` option writes a timestamped entry to a file, and `dump` saves
+the offending rows. When a scheduled run misbehaves, the errors are
+already collected by the time you sit down to investigate:
 
 ```{r, eval = FALSE}
-log_path <- f("log/{nowf()}/checks.log")
-checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
-
-dplyr::starwars |>
-  filter(name == "Harry Potter") |>
-  checker(success_msg = "No fictional characters")
+options(
+  daos.check_log  = f("log/{nowf()}/checks.log"),
+  daos.check_dump = "log/violations"
+)
 
 dplyr::starwars |>
   filter(height > 250) |>
-  checker(warn_msg = "Unusually tall characters")
+  expect_empty(warn_msg = "Unusually tall characters")
+```
+
+### `expect_none()` and friends: checks that keep the pipeline going
+
+`expect_empty()` returns the violation set it was given. `expect_none()`
+takes the condition instead and returns the full data, so checks can be
+chained. `expect_unique()`, `expect_balanced()` and `expect_no_overlap()`
+cover keys, panels and spells, the rules from register work that are
+awkward to write as a `filter()`. `tally_violations()` counts violations
+for many rules at once without judging them. See `vignette("validation")`.
+
+```{r}
+dplyr::starwars |>
+  expect_none(height < 0) |>
+  expect_unique(name) |>
+  nrow()
 ```
 
 ### `flag_duplicates()`: detect and label duplicate rows

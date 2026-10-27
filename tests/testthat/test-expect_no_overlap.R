@@ -1,0 +1,52 @@
+d <- function(x) as.Date(x)
+
+spells <- data.frame(
+  cpr   = c("a", "a", "b", "b", "c", "c", "c"),
+  start = d(c("2020-01-01", "2021-01-01", "2020-01-01", "2020-06-01",
+              "2020-01-01", "2020-03-01", "2020-05-01")),
+  end   = d(c("2020-12-31", NA,           "2020-06-30", "2021-12-31",
+              "2020-04-01", "2020-05-01", "2020-12-31"))
+)
+
+overlaps <- function(...) {
+  rlang::catch_cnd(expect_no_overlap(...), classes = "daos_check_failure")$violations
+}
+
+test_that("overlapping spells are reported with a shared overlap_id", {
+  v <- overlaps(spells, cpr, start, end)
+  expect_equal(v$cpr, c("b", "b", "c", "c", "c"))
+  # c's three spells overlap through a chain, so they form one group
+  expect_equal(v$overlap_id, c(1L, 1L, 2L, 2L, 2L))
+  expect_equal(names(v)[1], "overlap_id")
+})
+
+test_that("adjacent spells do not overlap, shared days do", {
+  adjacent <- data.frame(cpr = "a", start = d(c("2020-01-01", "2020-02-01")),
+                         end = d(c("2020-01-31", "2020-02-28")))
+  expect_message(expect_no_overlap(adjacent, cpr, start, end), "No overlapping spells")
+
+  touching <- data.frame(cpr = "a", start = d(c("2020-01-01", "2020-01-31")),
+                         end = d(c("2020-01-31", "2020-02-28")))
+  expect_equal(nrow(overlaps(touching, cpr, start, end)), 2)
+})
+
+test_that("a missing end is an ongoing spell", {
+  ongoing <- data.frame(cpr = "a", start = c(2010, 2015), end = c(NA, 2016))
+  expect_equal(nrow(overlaps(ongoing, cpr, start, end)), 2)
+})
+
+test_that("an earlier long spell overlaps a later one through a short one", {
+  nested <- data.frame(cpr = "a", start = c(1, 2, 5), end = c(10, 3, 6))
+  expect_equal(overlaps(nested, cpr, start, end)$overlap_id, c(1L, 1L, 1L))
+})
+
+test_that("rows with a missing start are ignored and data is returned", {
+  ok <- data.frame(cpr = c("a", "a"), start = c(NA, 2020), end = c(2025, 2021))
+  expect_message(out <- expect_no_overlap(ok, cpr, start, end), "No overlapping")
+  expect_equal(out, ok)
+})
+
+test_that("spells of different units never overlap", {
+  ok <- data.frame(cpr = c("a", "b"), start = c(2020, 2020), end = c(2021, 2021))
+  expect_no_warning(expect_no_overlap(ok, cpr, start, end))
+})

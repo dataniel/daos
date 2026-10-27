@@ -1,5 +1,26 @@
 # daos (development version)
 
+* Validation checkpoints are extended into a small family that shares one
+  engine (`vignette("validation")`):
+  * `expect_none()` checks a condition and returns the full data, so checks
+    can be chained mid-pipeline.
+  * `expect_unique()` checks keys, e.g. before a join.
+  * `expect_balanced()` checks that a register panel is balanced, or with
+    `gaps_only = TRUE` that units do not skip periods.
+  * `expect_no_overlap()` checks that spells (addresses, employment) do not
+    overlap within a unit.
+  * `tally_violations()` counts violations for many rules at once without
+    warning or aborting; filter and pipe it into `expect_empty()` to judge.
+
+* `expect_empty()` failure messages now give the row count and preview the
+  first rows. Messages are shown literally (braces are no longer
+  interpolated). With `warn_msg` or `abort_msg` set, the success message
+  defaults to `"Check passed: <message>"`, so the log names every check.
+  Failures signal class `daos_check_failure` with the rows in
+  `$violations`. Log lines now include the row count. New `dump` argument
+  writes offending rows to CSV; `log` and `dump` default to the options
+  `daos.check_log` and `daos.check_dump`.
+
 * `age(year)` defaults to `primo = "previous_ultimo"`: opening ages on
   31 December of the previous year. Use `primo = "jan1"` for 1 January ages.
 

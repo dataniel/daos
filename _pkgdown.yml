@@ -36,11 +36,24 @@ reference:
     contents:
       - view_types
       - flag_duplicates
-      - expect_empty
       - diagnose_timeseries
       - drop_empty_rows
       - drop_empty_cols
       - split_by
+
+  - title: Validation checkpoints
+    desc: >
+      State a rule as "the set of violations must be empty". The
+      `expect_*()` functions judge a rule and warn or abort;
+      `tally_violations()` only counts violations for many rules, so you
+      decide on severity afterwards. See `vignette("validation")`.
+    contents:
+      - expect_empty
+      - expect_none
+      - expect_unique
+      - expect_balanced
+      - expect_no_overlap
+      - tally_violations
 
   - title: Interactive
     contents:

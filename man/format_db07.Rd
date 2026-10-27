@@ -41,5 +41,5 @@ format_db07(c("011100", "01.11.00", "01 11 00"), format = "compact")
 
 }
 \seealso{
-\code{\link[daos:clean_cpr]{daos::clean_cpr()}}, \code{\link[daos:clean_cvr]{daos::clean_cvr()}}
+\code{\link[=clean_cpr]{clean_cpr()}}, \code{\link[=clean_cvr]{clean_cvr()}}
 }
