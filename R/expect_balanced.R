@@ -97,27 +97,46 @@ expect_balanced <- function(data, id, time,
 }
 
 # Unit-periods that should exist but don't, as a tibble of id + time columns.
+#
+# Nothing is sorted on the id columns, the expensive step on a population of
+# persons: units get integer ids (see group_ids()), periods their position,
+# and the counts, first and last periods per unit are vectorised. Only the
+# missing unit-periods, usually few, are sorted at the end.
 find_panel_gaps <- function(data, ids, time_col, periods, gaps_only) {
-  obs <- data.table::as.data.table(data)[, c(ids, time_col), with = FALSE]
-  obs <- obs[!is.na(obs[[time_col]])]
-  periods <- sort(unique(periods %||% obs[[time_col]]))
-  obs <- unique(obs[obs[[time_col]] %in% periods])
-  data.table::setorderv(obs, c(ids, time_col))
+  time <- data[[time_col]]
+  keep <- !is.na(time)
+  if (is.null(periods)) {
+    periods <- sort(unique(time[keep]))
+  } else {
+    periods <- sort(unique(periods))
+    keep <- keep & time %in% periods
+  }
+  rows    <- which(keep)
+  unit    <- group_ids(data, ids)
+  n_units <- attr(unit, "n")
+  unit    <- unit[rows]
+  pos     <- match(time[rows], periods)
 
-  # One group per unit; counting before expanding keeps the grid small
-  unit   <- data.table::rleidv(obs, cols = ids)
-  first  <- !duplicated(unit)
-  n_seen <- tabulate(unit)
-  pos    <- match(obs[[time_col]], periods)
-  lo     <- if (gaps_only) pos[first] else rep(1L, sum(first))
-  hi     <- if (gaps_only) pos[!duplicated(unit, fromLast = TRUE)] else rep(length(periods), sum(first))
-  bad    <- which(n_seen < hi - lo + 1L)
+  # A repeated unit-period counts once. Ids of units without kept rows have
+  # no count and are skipped.
+  pair    <- (unit - 1) * length(periods) + pos
+  n_seen  <- tabulate(unit[!duplicated(pair)], n_units)
 
-  units <- obs[first, ids, with = FALSE][bad]
-  span  <- hi[bad] - lo[bad] + 1L
-  grid  <- units[rep(seq_len(nrow(units)), times = span)]
-  data.table::set(grid, j = time_col,
-                  value = periods[sequence(span, from = lo[bad])])
+  lo  <- if (gaps_only) min_by(pos, unit, n_units) else rep(1L, n_units)
+  hi  <- if (gaps_only) max_by(pos, unit, n_units) else rep(length(periods), n_units)
+  bad <- which(n_seen > 0L & n_seen < hi - lo + 1L)
 
-  tibble::as_tibble(grid[!obs, on = c(ids, time_col)])
+  # The expected unit-periods of the incomplete units, minus those observed
+  span      <- hi[bad] - lo[bad] + 1L
+  want_unit <- rep(bad, times = span)
+  want_pos  <- sequence(span, from = lo[bad])
+  is_bad    <- logical(n_units)
+  is_bad[bad] <- TRUE
+  missing   <- !((want_unit - 1) * length(periods) + want_pos) %in% pair[is_bad[unit]]
+
+  first <- rows[first_row_by(unit, n_units)[want_unit[missing]]]
+  grid  <- data.table::setDT(lapply(unclass(data)[ids], `[`, first))
+  data.table::set(grid, j = time_col, value = periods[want_pos[missing]])
+  data.table::setorderv(grid, c(ids, time_col))
+  tibble::as_tibble(grid)
 }

@@ -17,7 +17,8 @@
 #' ```
 #'
 #' This is [flag_duplicates()] + `filter(isdup)` + [expect_empty()] in one
-#' step.
+#' step, but faster: the full rows are only touched when there are
+#' duplicates to report.
 #'
 #' @param data A data frame or tibble.
 #' @param ... Key columns (tidy-select). If omitted, all columns are used,
@@ -56,9 +57,12 @@ expect_unique <- function(data, ...,
   key_cols <- if (...length() > 0) names(dplyr::select(data, ...))
   keys <- if (is.null(key_cols)) "all columns" else paste(key_cols, collapse = ", ")
 
-  flagged <- flag_duplicates(data, ...)
-  dups <- flagged[flagged$isdup, setdiff(names(flagged), "isdup")]
-  dups <- dups[order(dups$dupid), ]
+  dupid <- dup_ids(data, dup_cols(data, ...))
+  rows  <- which(dupid > 0L)
+  rows  <- rows[order(dupid[rows])]
+  dups  <- tibble::as_tibble(data)[rows, ]
+  dups  <- tibble::add_column(dups[setdiff(names(dups), "dupid")],
+                              dupid = dupid[rows], .before = 1)
 
   label <- abort_msg %||% warn_msg
   report_check(

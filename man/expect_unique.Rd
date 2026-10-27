@@ -60,7 +60,8 @@ key first turns that into an explicit message:
 }\if{html}{\out{</div>}}
 
 This is \code{\link[=flag_duplicates]{flag_duplicates()}} + \code{filter(isdup)} + \code{\link[=expect_empty]{expect_empty()}} in one
-step.
+step, but faster: the full rows are only touched when there are
+duplicates to report.
 }
 \examples{
 # Success: one row per model

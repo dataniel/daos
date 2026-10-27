@@ -55,6 +55,20 @@ test_that("rows with a missing start are ignored and data is returned", {
   expect_equal(out, ok)
 })
 
+test_that("a long spell of one unit does not carry over to the next unit", {
+  ok <- data.frame(cpr = c("a", "b", "b"), start = c(1, 2, 5), end = c(NA, 3, 6))
+  expect_no_warning(expect_no_overlap(ok, cpr, start, end))
+})
+
+test_that("cummax_by() matches a grouped cummax()", {
+  set.seed(1)
+  unit <- sort(sample(1:30, 300, TRUE))
+  unit <- match(unit, unique(unit))
+  x <- sample(c(-5:20, Inf), 300, TRUE)
+  expect_identical(cummax_by(x, unit), ave(x, unit, FUN = cummax))
+  expect_identical(cummax_by(numeric(), integer()), numeric())
+})
+
 test_that("spells of different units never overlap", {
   ok <- data.frame(cpr = c("a", "b"), start = c(2020, 2020), end = c(2021, 2021))
   expect_no_warning(expect_no_overlap(ok, cpr, start, end))

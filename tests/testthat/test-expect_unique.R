@@ -27,6 +27,20 @@ test_that("expect_unique() without columns checks full rows", {
   expect_warning(expect_unique(df), "Duplicate rows on all columns")
 })
 
+test_that("expect_unique() orders the duplicates by group of first appearance", {
+  df <- data.frame(id = c("b", "a", "b", "c", "a"), row = 1:5)
+  cnd <- rlang::catch_cnd(expect_unique(df, id), classes = "daos_check_failure")
+  expect_equal(cnd$violations$row, c(1L, 3L, 2L, 5L))
+  expect_equal(cnd$violations$dupid, c(1L, 1L, 2L, 2L))
+})
+
+test_that("expect_unique() works on a data.table and leaves it untouched", {
+  dt <- data.table::data.table(id = c(2, 1, 2), y = 1:3)
+  before <- data.table::copy(dt)
+  expect_warning(expect_unique(dt, id), "Duplicate rows on id")
+  expect_identical(dt, before)
+})
+
 test_that("expect_unique() aborts with abort_msg", {
   expect_error(expect_unique(df, cvr, abort_msg = "Dup cvr"), "Dup cvr")
 })

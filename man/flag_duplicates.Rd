@@ -18,7 +18,10 @@ A tibble with \code{isdup} and \code{dupid} prepended.
 \description{
 Prepends two columns to a data frame: \code{isdup} (logical, \code{TRUE} when the row
 appears more than once) and \code{dupid} (integer group identifier, \code{0} for
-unique rows). Uses \code{data.table} internally for speed.
+unique rows). The duplicate groups are numbered \verb{1, 2, ...} in the order
+they first appear. The key columns are neither copied nor sorted: rows
+are grouped in one linear pass, which keeps it fast on full-population
+registers with a character key such as cpr.
 }
 \examples{
 # All columns

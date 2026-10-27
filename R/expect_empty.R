@@ -125,6 +125,67 @@ check_data_frame <- function(data, call = rlang::caller_env()) {
   }
 }
 
+# Group ids for the key columns, without sorting or copying them ----------
+#
+# Sorting a character key such as cpr is the expensive step on a population
+# register, and grouping does not need an order. R stores each distinct
+# string once, and data.table::chmatch() uses that to find, for every row,
+# the first row with the same string in one linear pass. The ids below are
+# built from that: dense integers 1..k in order of first appearance, with
+# NA as a value of its own, as in duplicated().
+
+# Dense ids from "index of the first row with this value", in one pass.
+dense_ids <- function(first) {
+  head <- first == seq_along(first)
+  map <- integer(length(first))
+  map[head] <- seq_len(sum(head))
+  map[first]
+}
+
+# Per row, the id of its combination of `cols`. Columns are combined by
+# arithmetic, `(id - 1) * k + code`, and only re-numbered through match()
+# when the id space would outgrow the data. The number of groups (or an
+# upper bound on it) is kept in the "n" attribute, for tabulate().
+group_ids <- function(data, cols) {
+  n  <- nrow(data)
+  id <- rep.int(1L, n)
+  k  <- 1
+  for (col in cols) {
+    x <- data[[col]]
+    if (is.factor(x)) x <- as.integer(x)
+    code <- dense_ids(if (is.character(x)) data.table::chmatch(x, x) else match(x, x))
+    kx   <- max(code, 0L)
+    if (k * kx <= 4 * n && k * kx <= .Machine$integer.max) {
+      id <- (id - 1L) * kx + code
+      k  <- k * kx
+    } else {
+      id <- (id - 1) * kx + code
+      id <- dense_ids(match(id, id))
+      k  <- max(id, 0L)
+    }
+  }
+  structure(id, n = k)
+}
+
+# Last write wins in `x[i] <- v`, so writing in descending order of `value`
+# leaves each group's minimum: a grouped min() without sorting the groups.
+min_by <- function(value, group, n_groups) {
+  o <- order(value, decreasing = TRUE, method = "radix")
+  out <- rep(NA_integer_, n_groups)
+  out[group[o]] <- value[o]
+  out
+}
+
+max_by <- function(value, group, n_groups) -min_by(-value, group, n_groups)
+
+# The first row of each group, by the same last-write-wins rule.
+first_row_by <- function(group, n_groups) {
+  out <- integer(n_groups)
+  rows <- rev(seq_along(group))
+  out[group[rows]] <- rows
+  out
+}
+
 # Session state: the rows of the latest failed check, for last_violations()
 the <- new.env(parent = emptyenv())
 
