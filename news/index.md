@@ -2,28 +2,52 @@
 
 ## daos (development version)
 
-- Validation checkpoints are extended into a small family that shares
-  one engine
-  ([`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md)):
+- The validation checkpoints have moved to their own package, expectr:
+  [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  and
+  [`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md).
+  daos forwards each of them to expectr and says so once per session;
+  the options `daos.check_log` and `daos.check_dump` and the condition
+  class `daos_check_failure` keep working. Use
+  [`library(expectr)`](https://dataniel.github.io/expectr) in new code.
+  In expectr, the checkpoints are much faster on population-sized data
+  and also check DuckDB and Arrow tables.
 
-  - [`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
+- [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
+  turns spell data (education, addresses) into a yearly, quarterly or
+  monthly panel with primo and ultimo status, and
+  [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
+  adds the same status to a panel you already have, or the status on a
+  date. Rows are never added or dropped, also when spells overlap; both
+  share one compiled lookup.
+
+- Validation checkpoints are extended into a small family that shares
+  one engine (`vignette("validation")`):
+
+  - [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     checks a condition and returns the full data, so checks can be
     chained mid-pipeline.
-  - [`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md)
+  - [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     checks keys, e.g. before a join.
-  - [`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
+  - [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     checks that a register panel is balanced, or with `gaps_only = TRUE`
     that units do not skip periods.
-  - [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
+  - [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     checks that spells (addresses, employment) do not overlap within a
     unit.
-  - [`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
+  - [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     counts violations for many rules at once without warning or
     aborting; filter and pipe it into
-    [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+    [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
     to judge.
 
-- [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+- [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
   failure messages now give the row count and preview the first rows.
   Messages are shown literally (braces are no longer interpolated). With
   `warn_msg` or `abort_msg` set, the success message defaults to

@@ -38,7 +38,6 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
-    <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
   </ul>
 </li>
       </ul>
@@ -81,7 +80,7 @@ them picks up an extra argument, a missing file is only discovered when
 its own line runs, and <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code> at the end either fails
 or, worse, succeeds while hiding a type change. This article is about
 replacing the block with one <code><a href="../reference/read_files.html">read_files()</a></code> call, and about
-using <code><a href="../reference/view_types.html">view_types()</a></code> when the files turn out not to be as
+using <code><a href="../reference/moved-to-expectr.html">view_types()</a></code> when the files turn out not to be as
 stackable as they looked.</p>
 <div class="section level2">
 <h2 id="one-call-many-files">One call, many files<a class="anchor" aria-label="anchor" href="#one-call-many-files"></a>
@@ -129,10 +128,10 @@ pattern this surfaces, if at all, as a confusing
 <p><code>read_files(out = "bind")</code> handles it instead. If the
 files cannot be bound as-is, it warns, coerces everything to character,
 re-types the result with <code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>, and points
-you to <code><a href="../reference/view_types.html">view_types()</a></code>:</p>
+you to <code><a href="../reference/moved-to-expectr.html">view_types()</a></code>:</p>
 <pre><code>Warning: Column types differ across files -- coercing to character and
 re-typing with `readr::type_convert()`.
-i Use `daos::view_types` to inspect the differences.</code></pre>
+i Use `expectr::view_types` to inspect the differences.</code></pre>
 <p>The rule of thumb: if <code><a href="../reference/read_files.html">read_files()</a></code> handles a set of
 files without warnings, the data production is consistent. When it
 warns, something changed upstream, and the next step is to find out
@@ -141,58 +140,70 @@ what.</p>
 <div class="section level2">
 <h2 id="finding-the-culprit-with-view_types">Finding the culprit with <code>view_types()</code><a class="anchor" aria-label="anchor" href="#finding-the-culprit-with-view_types"></a>
 </h2>
-<p><code><a href="../reference/view_types.html">view_types()</a></code> is <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across multiple
-data frames at once: one row per column, one column per dataset, with
-abbreviated type strings.</p>
+<p><code><a href="../reference/moved-to-expectr.html">view_types()</a></code>, from the expectr package, is
+<code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across multiple data frames at once: one row per
+column, one column per dataset, with abbreviated type strings. It takes
+the list from <code><a href="../reference/read_files.html">read_files()</a></code> directly
+(<code>view_types(lst)</code>), or the data frames one by one:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dat2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="st">"11111111"</span>, name <span class="op">=</span> <span class="st">"Firm A"</span>, amount <span class="op">=</span> <span class="fl">100</span>,    year <span class="op">=</span> <span class="fl">2023L</span><span class="op">)</span></span>
 <span><span class="va">dat2024</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="fl">11111111</span>,  name <span class="op">=</span> <span class="st">"Firm B"</span>, amount <span class="op">=</span> <span class="st">"1.000"</span>, turnover <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
-<span><span class="co">#&gt;   column   dat2023 dat2024</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cvr      chr     dbl    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> name     chr     chr    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> amount   dbl     chr    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> year     int     <span style="color: #BB0000;">NA</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> turnover <span style="color: #BB0000;">NA</span>      dbl</span></span></code></pre></div>
-<p>The full listing already tells the story, but
-<code>diff = TRUE</code> cuts it down to the columns that actually
-disagree:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
-<span><span class="co">#&gt;   column   dat2023 dat2024</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cvr      chr     dbl    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> amount   dbl     chr    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> year     int     <span style="color: #BB0000;">NA</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> turnover <span style="color: #BB0000;">NA</span>      dbl</span></span></code></pre></div>
-<p>Read the output like this:</p>
+<span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
+<span><span class="co">#&gt;   column   status   dat2023 dat2024</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cvr      conflict chr     dbl    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> name     ok       chr     chr    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> amount   conflict dbl     chr    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> year     missing  int     <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> turnover missing  <span style="color: #BB0000;">NA</span>      dbl</span></span></code></pre></div>
+<p>Read the <code>status</code> column like this:</p>
 <ul>
-<li>A row with two different type strings (<code>chr</code> vs
-<code>dbl</code> for <code>cvr</code>) is a type mismatch, the classic
-cause of a failed bind or a corrupted join key.</li>
-<li>An <code>NA</code> means the column does not exist in that dataset
-at all (<code>year</code> vs <code>turnover</code> above), typically a
-rename or a dropped column upstream.</li>
+<li>
+<code>conflict</code>: the types cannot be combined
+(<code>chr</code> vs <code>dbl</code> for <code>cvr</code>). This is
+what makes <code><a href="../reference/read_files.html">read_files()</a></code> fall back to character, and the
+classic cause of a corrupted join key.</li>
+<li>
+<code>missing</code>: the column does not exist in every dataset
+(<code>NA</code> in the type column), typically a rename or a dropped
+column upstream. It does not stop a bind, since <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code>
+fills it with <code>NA</code>, but it is worth a look.</li>
+<li>
+<code>coercible</code>: the types differ but combine without
+trouble, such as <code>int</code> and <code>dbl</code>, or a column that
+is entirely <code>NA</code> (readr reads an empty column as
+<code>lgl</code>).</li>
+<li>
+<code>ok</code>: same type everywhere.</li>
 </ul>
+<p><code>diff = TRUE</code> cuts the listing down to the conflicts, the
+columns that actually break the stack:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
+<span><span class="co">#&gt;   column status   dat2023 dat2024</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cvr    conflict chr     dbl    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> amount conflict dbl     chr</span></span></code></pre></div>
 <p>The same overview is just as useful <em>before a join</em>: two
 frames that are about to be joined on <code>cvr</code> should agree on
-its type, and <code><a href="../reference/view_types.html">view_types()</a></code> answers that in one line instead
+its type, and <code><a href="../reference/moved-to-expectr.html">view_types()</a></code> answers that in one line instead
 of two <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> calls and a visual diff.</p>
 <p>For pipelines, the <code>focus</code> argument turns the inspection
-into a check: it returns only the datasets where a critical column does
+into a check: it returns only the datasets where critical columns do
 <em>not</em> have the expected type, and an empty result on success.
-That plugs straight into the checkpoint pattern from
-<code><a href="../articles/validation.html">vignette("validation")</a></code>:</p>
+That plugs straight into the checkpoint pattern from expectr,</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"amount is not numeric everywhere"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in expect_empty(view_types(dat2023, dat2024, focus = c(amount = "dbl")), : amount is not numeric everywhere</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 1 row found:</span></span>
-<span><span class="co">#&gt;   column = "amount", dat2024 = "chr"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="st">"chr"</span>, amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/moved-to-expectr.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"cvr or amount has the wrong type"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in expect_empty(view_types(dat2023, dat2024, focus = c(cvr = "chr", : cvr or amount has the wrong type</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 2 rows found:</span></span>
+<span><span class="co">#&gt;     column status   dat2024</span></span>
+<span><span class="co">#&gt;     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt;   <span style="color: #BCBCBC;">1</span> cvr    conflict dbl</span></span>
+<span><span class="co">#&gt;   <span style="color: #BCBCBC;">2</span> amount conflict chr</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="other-shapes-of-output">Other shapes of output<a class="anchor" aria-label="anchor" href="#other-shapes-of-output"></a>

@@ -38,7 +38,6 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/read-files.html">Reading many files at once</a></li>
-    <li><a class="dropdown-item" href="../articles/validation.html">Lightweight data validation with checkpoints</a></li>
   </ul>
 </li>
       </ul>
@@ -107,7 +106,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261027"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-27 12:11"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-27 18:28"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -239,8 +238,9 @@ production is consistent: same formats, same column names, same types
 across files. If <code><a href="../reference/read_files.html">read_files()</a></code> handles a set of files
 without warnings, the workflow is in order. When it warns about type
 mismatches, something has changed upstream. There is a separate article
-about this way of working, and about using <code><a href="../reference/view_types.html">view_types()</a></code>
-when files refuse to stack: <code><a href="../articles/read-files.html">vignette("read-files")</a></code>.</p>
+about this way of working, and about using
+<code><a href="https://dataniel.github.io/expectr/reference/view_types.html" class="external-link">expectr::view_types()</a></code> when files refuse to stack:
+<code><a href="../articles/read-files.html">vignette("read-files")</a></code>.</p>
 <p>Supply a custom reader to override auto-detection or add
 arguments:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -431,193 +431,27 @@ columns.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="data-inspection">Data inspection<a class="anchor" aria-label="anchor" href="#data-inspection"></a>
+<h2 id="data-validation-the-expectr-package">Data validation: the expectr package<a class="anchor" aria-label="anchor" href="#data-validation-the-expectr-package"></a>
 </h2>
-<div class="section level3">
-<h3 id="view_types-compare-column-types-across-data-frames">
-<code>view_types()</code>: compare column types across data
-frames<a class="anchor" aria-label="anchor" href="#view_types-compare-column-types-across-data-frames"></a>
-</h3>
-<p><code><a href="../reference/view_types.html">view_types()</a></code> is <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across several
-data frames at once: one row per column, with the type in each dataset.
-Useful before a join, or before binding with
-<code>read_files(out = "bind")</code>.</p>
+<p>The validation checkpoints, <code><a href="../reference/moved-to-expectr.html">expect_empty()</a></code>,
+<code><a href="../reference/moved-to-expectr.html">expect_none()</a></code>, <code><a href="../reference/moved-to-expectr.html">expect_unique()</a></code>,
+<code><a href="../reference/moved-to-expectr.html">expect_balanced()</a></code>, <code><a href="../reference/moved-to-expectr.html">expect_no_overlap()</a></code> and
+<code><a href="../reference/moved-to-expectr.html">tally_violations()</a></code>, and the helpers
+<code><a href="../reference/moved-to-expectr.html">flag_duplicates()</a></code> and <code><a href="../reference/moved-to-expectr.html">view_types()</a></code> have moved
+to their own package, <a href="https://github.com/dataniel/expectr" class="external-link">expectr</a>. They share an
+engine and a contract the rest of daos does not: each states an
+expectation about data as “the set of violations must be empty”.</p>
+<p>daos still forwards each of them to expectr, so existing scripts keep
+working, old options such as <code>daos.check_log</code> included. New
+code should load expectr directly:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>,  y <span class="op">=</span> <span class="st">"a"</span>, z <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">df_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1.0</span>, y <span class="op">=</span> <span class="st">"b"</span>, z <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dataniel.github.io/expectr" class="external-link">expectr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
-<span><span class="co">#&gt;   column df_a  df_b </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      int   dbl  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> y      chr   chr  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> z      lgl   int</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Only columns where types differ:</span></span>
-<span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   column df_a  df_b </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      int   dbl  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> z      lgl   int</span></span></code></pre></div>
-<p>The <code>focus</code> argument checks that a specific column has an
-expected type and returns only the datasets where it does not:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">df_a</span>, <span class="va">df_b</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"int"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">#&gt;   column df_b </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> x      dbl</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>, names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2023</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span>diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/moved-to-expectr.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"The files do not bind"</span><span class="op">)</span></span></code></pre></div>
+<p>See <code><a href="https://dataniel.github.io/expectr/articles/expectr.html" class="external-link">vignette("expectr", package = "expectr")</a></code>.</p>
 <hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="data-validation">Data validation<a class="anchor" aria-label="anchor" href="#data-validation"></a>
-</h2>
-<p>The checkpoint pattern behind these two functions has its own
-article, <code><a href="../articles/validation.html">vignette("validation")</a></code>, which shows how to build
-lightweight validation into pipelines with them.</p>
-<div class="section level3">
-<h3 id="expect_empty-assert-a-data-frame-is-empty">
-<code>expect_empty()</code>: assert a data frame is empty<a class="anchor" aria-label="anchor" href="#expect_empty-assert-a-data-frame-is-empty"></a>
-</h3>
-<p>Often you want to assert that a filter finds nothing, and to hear
-about it right away when it does. Writing a custom
-<code>if (nrow(x) &gt; 0) cli::cli_abort(...)</code> every time gets
-repetitive. <code><a href="../reference/expect_empty.html">expect_empty()</a></code> does it in one step, fits into a
-pipeline, and can write to a log file.</p>
-<p>Filter for the rows that should not exist, pipe them in, and the
-offending rows are at hand the moment something goes wrong.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Success:</span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">name</span> <span class="op">==</span> <span class="st">"Harry Potter"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span></span>
-<span>    success_msg <span class="op">=</span> <span class="st">"No Harry Potter rows in starwars"</span>,</span>
-<span>    warn_msg    <span class="op">=</span> <span class="st">"Unexpected fictional character found"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No Harry Potter rows in starwars</span></span></code></pre></div>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Warning: rows found</span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Unrealistic mass values"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in expect_empty(filter(dplyr::starwars, mass &gt; 1000), warn_msg = "Unrealistic mass values"): Unrealistic mass values</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 1 row found:</span></span>
-<span><span class="co">#&gt;   name = "Jabba Desilijic Tiure", height = 175, mass = 1358, hair_color = NA,</span></span>
-<span><span class="co">#&gt;   skin_color = "green-t...</span></span></code></pre></div>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Hard abort:</span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mass</span> <span class="op">&gt;</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>abort_msg <span class="op">=</span> <span class="st">"Unrealistic mass values"</span><span class="op">)</span></span></code></pre></div>
-<p>The <code>log</code> option writes a timestamped entry to a file, and
-<code>dump</code> saves the offending rows. When a scheduled run
-misbehaves, the errors are already collected by the time you sit down to
-investigate:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span></span>
-<span>  daos.check_log  <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="st">"log/{nowf()}/checks.log"</span><span class="op">)</span>,</span>
-<span>  daos.check_dump <span class="op">=</span> <span class="st">"log/violations"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">height</span> <span class="op">&gt;</span> <span class="fl">250</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Unusually tall characters"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="expect_none-and-friends-checks-that-keep-the-pipeline-going">
-<code>expect_none()</code> and friends: checks that keep the
-pipeline going<a class="anchor" aria-label="anchor" href="#expect_none-and-friends-checks-that-keep-the-pipeline-going"></a>
-</h3>
-<p><code><a href="../reference/expect_empty.html">expect_empty()</a></code> returns the violation set it was given.
-<code><a href="../reference/expect_none.html">expect_none()</a></code> takes the condition instead and returns the
-full data, so checks can be chained. <code><a href="../reference/expect_unique.html">expect_unique()</a></code>,
-<code><a href="../reference/expect_balanced.html">expect_balanced()</a></code> and <code><a href="../reference/expect_no_overlap.html">expect_no_overlap()</a></code>
-cover keys, panels and spells, the rules from register work that are
-awkward to write as a <code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter()</a></code>.
-<code><a href="../reference/tally_violations.html">tally_violations()</a></code> counts violations for many rules at once
-without judging them. See <code><a href="../articles/validation.html">vignette("validation")</a></code>.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dplyr</span><span class="fu">::</span><span class="va"><a href="https://dplyr.tidyverse.org/reference/starwars.html" class="external-link">starwars</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_none.html">expect_none</a></span><span class="op">(</span><span class="va">height</span> <span class="op">&lt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_unique.html">expect_unique</a></span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No rows where height &lt; 0</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Unique on name</span></span>
-<span><span class="co">#&gt; [1] 87</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="flag_duplicates-detect-and-label-duplicate-rows">
-<code>flag_duplicates()</code>: detect and label duplicate rows<a class="anchor" aria-label="anchor" href="#flag_duplicates-detect-and-label-duplicate-rows"></a>
-</h3>
-<p>Base R’s <code><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated()</a></code> only marks the second occurrence
-of a duplicate. <code><a href="../reference/flag_duplicates.html">flag_duplicates()</a></code> marks all copies and
-gives them a shared group ID, so the whole group can be inspected
-together. The ID can also serve as an implicit record linkage key: if
-several respondents have reported the same information but background
-data is missing for one of them, the shared <code>dupid</code> reveals
-the connection.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 234 × 13</span></span></span>
-<span><span class="co">#&gt;    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> FALSE     0 audi         a4           1.8  <span style="text-decoration: underline;">1</span>999     4 auto… f        18    29</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> FALSE     0 audi         a4           1.8  <span style="text-decoration: underline;">1</span>999     4 manu… f        21    29</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> FALSE     0 audi         a4           2    <span style="text-decoration: underline;">2</span>008     4 manu… f        20    31</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> FALSE     0 audi         a4           2    <span style="text-decoration: underline;">2</span>008     4 auto… f        21    30</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> FALSE     0 audi         a4           2.8  <span style="text-decoration: underline;">1</span>999     6 auto… f        16    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> FALSE     0 audi         a4           2.8  <span style="text-decoration: underline;">1</span>999     6 manu… f        18    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> FALSE     0 audi         a4           3.1  <span style="text-decoration: underline;">2</span>008     6 auto… f        18    27</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> FALSE     0 audi         a4 quattro   1.8  <span style="text-decoration: underline;">1</span>999     4 manu… 4        18    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> FALSE     0 audi         a4 quattro   1.8  <span style="text-decoration: underline;">1</span>999     4 auto… 4        16    25</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> FALSE     0 audi         a4 quattro   2    <span style="text-decoration: underline;">2</span>008     4 manu… 4        20    28</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 224 more rows</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Check specific columns:</span></span>
-<span><span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span>, <span class="va">model</span>, <span class="va">year</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">dupid</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 227 × 13</span></span></span>
-<span><span class="co">#&gt;    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> TRUE      1 audi         a4           1.8  <span style="text-decoration: underline;">1</span>999     4 auto… f        18    29</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> TRUE      1 audi         a4           1.8  <span style="text-decoration: underline;">1</span>999     4 manu… f        21    29</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> TRUE      1 audi         a4           2.8  <span style="text-decoration: underline;">1</span>999     6 auto… f        16    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> TRUE      1 audi         a4           2.8  <span style="text-decoration: underline;">1</span>999     6 manu… f        18    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> TRUE      2 audi         a4           2    <span style="text-decoration: underline;">2</span>008     4 manu… f        20    31</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> TRUE      2 audi         a4           2    <span style="text-decoration: underline;">2</span>008     4 auto… f        21    30</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> TRUE      2 audi         a4           3.1  <span style="text-decoration: underline;">2</span>008     6 auto… f        18    27</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> TRUE      3 audi         a4 quattro   1.8  <span style="text-decoration: underline;">1</span>999     4 manu… 4        18    26</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> TRUE      3 audi         a4 quattro   1.8  <span style="text-decoration: underline;">1</span>999     4 auto… 4        16    25</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> TRUE      3 audi         a4 quattro   2.8  <span style="text-decoration: underline;">1</span>999     6 auto… 4        15    25</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 217 more rows</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: fl &lt;chr&gt;, class &lt;chr&gt;</span></span></span></code></pre></div>
-<p>Combine with <code><a href="../reference/expect_empty.html">expect_empty()</a></code> for a pipeline validation
-gate:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/flag_duplicates.html">flag_duplicates</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">isdup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"Duplicate rows detected"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in expect_empty(filter(flag_duplicates(ggplot2::mpg), isdup), warn_msg = "Duplicate rows detected"): Duplicate rows detected</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 18 rows found:</span></span>
-<span><span class="co">#&gt;   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban</span></span>
-<span><span class="co">#&gt;   2wd", displ = 5.3, ...</span></span>
-<span><span class="co">#&gt;   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban</span></span>
-<span><span class="co">#&gt;   2wd", displ = 5.3, ...</span></span>
-<span><span class="co">#&gt;   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",</span></span>
-<span><span class="co">#&gt;   displ = 3.3, year = 1999...</span></span>
-<span><span class="co">#&gt;   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",</span></span>
-<span><span class="co">#&gt;   displ = 3.3, year = 1999...</span></span>
-<span><span class="co">#&gt;   isdup = TRUE, dupid = 40, manufacturer = "dodge", model = "caravan 2wd",</span></span>
-<span><span class="co">#&gt;   displ = 3.3, year = 2008...</span></span>
-<span><span class="co">#&gt;   ... and 13 more</span></span></code></pre></div>
-<hr>
-</div>
 </div>
 <div class="section level2">
 <h2 id="data-manipulation">Data manipulation<a class="anchor" aria-label="anchor" href="#data-manipulation"></a>
@@ -632,7 +466,7 @@ metadata column does not keep an otherwise empty observation. Selection
 works like <code><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select()</a></code>: names, ranges,
 <code><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with()</a></code>, <code>where(is.numeric)</code>, and
 <code><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of()</a></code>. With no selection, every column is inspected.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
 <span>  score_a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
@@ -687,7 +521,7 @@ columns are removed.</p>
 <p><code><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">dplyr::group_split()</a></code> returns an unnamed list.
 <code><a href="../reference/split_by.html">split_by()</a></code> adds names derived from the grouping values,
 making it straightforward to index by group:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">manufacturer</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "audi"      "chevrolet" "dodge"     "ford"      "honda"</span></span>
@@ -702,10 +536,86 @@ making it straightforward to index by group:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 auto(l5)   f        16    26 p     compa…</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> audi         a4      2.8  <span style="text-decoration: underline;">1</span>999     6 manual(m5) f        18    26 p     compa…</span></span></code></pre></div>
 <p>Multiple grouping columns are joined with <code>.sep</code>:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_by.html">split_by</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="va"><a href="https://ggplot2.tidyverse.org/reference/mpg.html" class="external-link">mpg</a></span>, <span class="va">cyl</span>, <span class="va">drv</span>, .sep <span class="op">=</span> <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parts2</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "4-4" "4-f" "5-f" "6-4"</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="spells_to_panel-from-spells-to-a-yearly-panel">
+<code>spells_to_panel()</code>: from spells to a yearly panel<a class="anchor" aria-label="anchor" href="#spells_to_panel-from-spells-to-a-yearly-panel"></a>
+</h3>
+<p>Registers often store spells: one row per education, address or
+benefit period, with a start, an end and a status.
+<code><a href="../reference/spells_to_panel.html">spells_to_panel()</a></code> turns them into one row per unit and year
+(or <code>by = "quarter"</code>/<code>"month"</code>), with the status
+at primo and ultimo. By default primo is the previous ultimo, so primo
+2021 is the status on 31 December 2020.</p>
+<p>In an education register the status is the <em>outcome</em> of the
+spell, passed or dropped out. With <code>status_is = "outcome"</code>, a
+running spell shows as <code>ongoing</code> and the outcome applies from
+the end date until a new spell starts:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">education</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  cpr    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>,</span>
+<span>  start  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2018-08-15"</span>, <span class="st">"2021-08-15"</span>, <span class="st">"2019-08-15"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  end    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2021-06-20"</span>, <span class="cn">NA</span>,           <span class="st">"2020-03-01"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"passed"</span>, <span class="st">"in progress"</span>, <span class="st">"dropped out"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">education</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/spells_to_panel.html">spells_to_panel</a></span><span class="op">(</span><span class="va">cpr</span>, <span class="va">start</span>, <span class="va">end</span>, <span class="va">status</span>,</span>
+<span>                  from <span class="op">=</span> <span class="fl">2018</span>, to <span class="op">=</span> <span class="fl">2022</span>,</span>
+<span>                  status_is <span class="op">=</span> <span class="st">"outcome"</span>, ongoing <span class="op">=</span> <span class="st">"in progress"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 10 × 4</span></span></span>
+<span><span class="co">#&gt;    cpr    year primo       ultimo     </span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> a      <span style="text-decoration: underline;">2</span>018 <span style="color: #BB0000;">NA</span>          in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> a      <span style="text-decoration: underline;">2</span>019 in progress in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> a      <span style="text-decoration: underline;">2</span>020 in progress in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> a      <span style="text-decoration: underline;">2</span>021 in progress in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> a      <span style="text-decoration: underline;">2</span>022 in progress in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> b      <span style="text-decoration: underline;">2</span>018 <span style="color: #BB0000;">NA</span>          <span style="color: #BB0000;">NA</span>         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> b      <span style="text-decoration: underline;">2</span>019 <span style="color: #BB0000;">NA</span>          in progress</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> b      <span style="text-decoration: underline;">2</span>020 in progress dropped out</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> b      <span style="text-decoration: underline;">2</span>021 dropped out dropped out</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> b      <span style="text-decoration: underline;">2</span>022 dropped out dropped out</span></span></code></pre></div>
+<p>With the default <code>status_is = "state"</code>, the status holds
+for the whole spell (enrolled, on leave) and is <code>NA</code> outside
+spells. <code>from</code> and <code>to</code> give every unit the same
+window, which makes a balanced panel. Without them, each unit runs from
+its first start to its last end. Dates are handled as integer days, and
+one compiled pass over the sorted spells does the work, so millions of
+spells take seconds.</p>
+</div>
+<div class="section level3">
+<h3 id="add_spell_status-status-from-spells-on-a-panel-you-already-have">
+<code>add_spell_status()</code>: status from spells on a panel you
+already have<a class="anchor" aria-label="anchor" href="#add_spell_status-status-from-spells-on-a-panel-you-already-have"></a>
+</h3>
+<p>Often the panel exists already, e.g. a population with one row per
+person and year, and the spells should only add a status to it. A
+<code>left_join(join_by(between()))</code> does that until the data gets
+messy: overlapping spells duplicate rows, and an ongoing spell with no
+end matches nothing. <code><a href="../reference/add_spell_status.html">add_spell_status()</a></code> keeps the rows of
+the panel exactly as they are and uses the rules of
+<code><a href="../reference/spells_to_panel.html">spells_to_panel()</a></code>:</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">population</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>cpr  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"c"</span><span class="op">)</span>,</span>
+<span>                         year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2020</span>, <span class="fl">2021</span>, <span class="fl">2020</span>, <span class="fl">2020</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">population</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_spell_status.html">add_spell_status</a></span><span class="op">(</span><span class="va">education</span>, <span class="va">cpr</span>, <span class="va">year</span>, <span class="va">start</span>, <span class="va">end</span>, <span class="va">status</span>,</span>
+<span>                   status_is <span class="op">=</span> <span class="st">"outcome"</span>, ongoing <span class="op">=</span> <span class="st">"in progress"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   cpr year status_primo status_ultimo</span></span>
+<span><span class="co">#&gt; 1   a 2020  in progress   in progress</span></span>
+<span><span class="co">#&gt; 2   a 2021  in progress   in progress</span></span>
+<span><span class="co">#&gt; 3   b 2020  in progress   dropped out</span></span>
+<span><span class="co">#&gt; 4   c 2020         &lt;NA&gt;          &lt;NA&gt;</span></span></code></pre></div>
+<p>A Date column in <code>at</code> gives the status on that day
+instead, e.g. the day of a diagnosis. Use <code>when = "ultimo"</code>
+for a single column, <code>name</code> to choose its name, and
+<code>overlap = "error"</code> to stop when spells overlap.</p>
 <hr>
 </div>
 </div>
@@ -723,7 +633,7 @@ identifier columns<a class="anchor" aria-label="anchor" href="#clean_cpr-clean_c
 in Excel. Before a join, both sides need the same form, and that is all
 these two functions do. They take a vector and return a vector, so the
 natural place for them is inside a <code><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate()</a></code>:</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"111111-1118"</span>, <span class="st">"101004007"</span>, <span class="st">"1111111118"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "1111111118" "0101004007" "1111111118"</span></span>
 <span><span class="fu"><a href="../reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK12345678"</span>, <span class="st">"12 34 56 78"</span>, <span class="st">"12345678"</span><span class="op">)</span><span class="op">)</span></span>
@@ -736,7 +646,7 @@ told apart from a typo, and padding it would let a malformed number slip
 past a later <code>cvr %like% "^\\d{8}$"</code> checkpoint.</p>
 <p>Neither function validates. Malformed values come back cleaned but
 still visibly malformed. Validation is <code><a href="../reference/add_cpr_info.html">add_cpr_info()</a></code>’s job
-(below), or a checkpoint from <code><a href="../articles/validation.html">vignette("validation")</a></code>.</p>
+(below), or a checkpoint from expectr.</p>
 </div>
 <div class="section level3">
 <h3 id="format_db07-choose-the-format-of-db07-industry-codes">
@@ -749,7 +659,7 @@ codes<a class="anchor" aria-label="anchor" href="#format_db07-choose-the-format-
 whitespace, or digits only. Choose <code>"dotted"</code> (the default)
 or <code>"compact"</code> output without specifying the input format.
 Any aggregation level works:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/format_db07.html">format_db07</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "01.11.00" "01.11.00" "01.11"    "01.1"</span></span>
 <span><span class="fu"><a href="../reference/format_db07.html">format_db07</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.11.00"</span>, <span class="st">"01 11 00"</span><span class="op">)</span>, format <span class="op">=</span> <span class="st">"compact"</span><span class="op">)</span></span>
@@ -767,7 +677,7 @@ ambiguous (<code>111</code> could be group <code>11.1</code> or class
 Always specify <code>version = "DB07"</code> or
 <code>version = "DB25"</code>; identical codes can have different
 meanings in the two classifications.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>dbkode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011200"</span>, <span class="st">"01.49.10"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>branche_label <span class="op">=</span> <span class="fu"><a href="../reference/db_label.html">db_label</a></span><span class="op">(</span><span class="va">dbkode</span>, version <span class="op">=</span> <span class="st">"DB07"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     dbkode   branche_label</span></span>
@@ -788,7 +698,7 @@ codes.</p>
 <h3 id="convert-industry-codes-between-db07-and-db25">Convert industry codes between DB07 and DB25<a class="anchor" aria-label="anchor" href="#convert-industry-codes-between-db07-and-db25"></a>
 </h3>
 <p>For mixed data, inspect the source codes before converting:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/inspect_db.html">inspect_db</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"014910"</span>, <span class="st">"014800"</span>, <span class="st">"253000"</span>, <span class="st">"011200"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
 <span><span class="co">#&gt;   input  code   status    label_db07                                  label_db25</span></span>
@@ -810,7 +720,7 @@ rows. The inspection supports full six-digit codes only.</p>
 Denmark</a> (source page updated 26 February 2026), so no internet
 connection is needed. Both accept full six-digit codes with or without
 dots and whitespace:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db07_to_db25</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.49.10"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "01.11.00" "01.48.00" NA</span></span>
 <span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db25_to_db07</a></span><span class="op">(</span><span class="st">"25.30.00"</span>, format <span class="op">=</span> <span class="st">"compact"</span><span class="op">)</span></span>
@@ -818,7 +728,7 @@ dots and whitespace:</p>
 <p>By default, a code with multiple possible destinations returns
 <code>NA</code> with a warning. To choose DST’s simplified mapping
 explicitly:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db07_to_db25</a></span><span class="op">(</span><span class="st">"01.19.00"</span>, method <span class="op">=</span> <span class="st">"simple"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "01.19.00"</span></span>
 <span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db25_to_db07</a></span><span class="op">(</span><span class="st">"01.48.00"</span>, method <span class="op">=</span> <span class="st">"simple"</span><span class="op">)</span></span>
@@ -845,7 +755,7 @@ outputs, including multiple age calculations. You do not need a separate
 cleaning step just to calculate CPR information. Use an explicit
 cleaning step when the identifier will also be used for joins or
 export:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>pnr <span class="op">=</span> <span class="fu"><a href="../reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="va">pnr</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">pnr</span>, <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span>, <span class="va">sex</span>, <span class="va">bday</span><span class="op">)</span></span></code></pre></div>
@@ -856,7 +766,7 @@ replacement vector.</p>
 <code>age</code>, <code>sex</code>, <code>mod11</code>, and
 <code>valid</code>. Bare <code>age</code> and <code><a href="../reference/age.html">age()</a></code> use
 today’s date; explicit references make analysis reproducible.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  pnr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1111111118"</span>, <span class="st">"111111-1118"</span>, <span class="st">"111111118"</span><span class="op">)</span>,</span>
 <span>  year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2024L</span>, <span class="fl">2025L</span>, <span class="fl">2026L</span><span class="op">)</span></span>
@@ -874,7 +784,7 @@ today’s date; explicit references make analysis reproducible.</p>
 <p>Write <code>output_name = calculation</code> to rename a result. Each
 age calculation has its own reference, so several ages can be added in
 one call:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span></span>
 <span>    <span class="va">pnr</span>,</span>
@@ -895,7 +805,7 @@ year); <code>"medio"</code> means 1 July and <code>"ultimo"</code> means
 expression evaluated in the original input data.</p>
 <p>This default makes opening ages equal to the previous year’s closing
 ages. It can also be written explicitly:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, primoalder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span><span class="va">year</span>, primo <span class="op">=</span> <span class="st">"previous_ultimo"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           pnr year primoalder</span></span>
 <span><span class="co">#&gt; 1  1111111118 2024        112</span></span>
@@ -908,7 +818,7 @@ birthday and gives 1.</p>
 ISO date string. Supply one reference for all rows or one per row.
 Missing references give missing ages. Use <code>.env$name</code> to
 explicitly access a caller variable when a column has the same name.</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, alder <span class="op">=</span> <span class="fu"><a href="../reference/age.html">age</a></span><span class="op">(</span>date <span class="op">=</span> <span class="st">"2025-07-01"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           pnr year alder</span></span>
 <span><span class="co">#&gt; 1  1111111118 2024   113</span></span>
@@ -989,7 +899,7 @@ without writing any filtering code.</p>
 Requires <code>shiny</code> and <code>plotly</code>. Group row indices
 are prepared once, and plots are built directly with Plotly for fast
 navigation.</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  year    <span class="op">=</span> <span class="fl">2010</span><span class="op">:</span><span class="fl">2020</span>,</span>
 <span>  country <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK"</span>, <span class="st">"SE"</span>, <span class="st">"NO"</span>, <span class="st">"FI"</span><span class="op">)</span></span>
@@ -1033,7 +943,7 @@ navigation.</p>
 Y-axis bounds globally across all groups. The <code>.title</code>
 argument sets a title shown in the app header and in downloaded
 figures:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
@@ -1102,7 +1012,7 @@ corrections.</p>
 <p>The same diagnostic engine is available outside Shiny. Group
 explicitly by the columns identifying <strong>one</strong> time
 series:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/diagnose_timeseries.html">diagnose_timeseries</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">gdp</span>, .features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"stationarity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>

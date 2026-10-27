@@ -46,7 +46,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261027"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-27 12:11"
+#> [1] "2026-10-27 18:28"
 ```
 
 A typical use is timestamping an export file:
@@ -189,7 +189,7 @@ names, same types across files. If
 handles a set of files without warnings, the workflow is in order. When
 it warns about type mismatches, something has changed upstream. There is
 a separate article about this way of working, and about using
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+[`expectr::view_types()`](https://dataniel.github.io/expectr/reference/view_types.html)
 when files refuse to stack:
 [`vignette("read-files")`](https://dataniel.github.io/daos/articles/read-files.md).
 
@@ -400,217 +400,39 @@ never read into the wrong columns.
 
 ------------------------------------------------------------------------
 
-## Data inspection
+## Data validation: the expectr package
 
-### `view_types()`: compare column types across data frames
-
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-is [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
-several data frames at once: one row per column, with the type in each
-dataset. Useful before a join, or before binding with
-`read_files(out = "bind")`.
-
-``` r
-df_a <- data.frame(x = 1L,  y = "a", z = TRUE)
-df_b <- data.frame(x = 1.0, y = "b", z = 1L)
-
-view_types(df_a, df_b)
-#> # A tibble: 3 × 3
-#>   column df_a  df_b 
-#>   <chr>  <chr> <chr>
-#> 1 x      int   dbl  
-#> 2 y      chr   chr  
-#> 3 z      lgl   int
-```
-
-``` r
-# Only columns where types differ:
-view_types(df_a, df_b, diff = TRUE)
-#> # A tibble: 2 × 3
-#>   column df_a  df_b 
-#>   <chr>  <chr> <chr>
-#> 1 x      int   dbl  
-#> 2 z      lgl   int
-```
-
-The `focus` argument checks that a specific column has an expected type
-and returns only the datasets where it does not:
-
-``` r
-view_types(df_a, df_b, focus = c(x = "int"))
-#> # A tibble: 1 × 2
-#>   column df_b 
-#>   <chr>  <chr>
-#> 1 x      dbl
-```
-
-------------------------------------------------------------------------
-
-## Data validation
-
-The checkpoint pattern behind these two functions has its own article,
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md),
-which shows how to build lightweight validation into pipelines with
-them.
-
-### `expect_empty()`: assert a data frame is empty
-
-Often you want to assert that a filter finds nothing, and to hear about
-it right away when it does. Writing a custom
-`if (nrow(x) > 0) cli::cli_abort(...)` every time gets repetitive.
-[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-does it in one step, fits into a pipeline, and can write to a log file.
-
-Filter for the rows that should not exist, pipe them in, and the
-offending rows are at hand the moment something goes wrong.
-
-``` r
-# Success:
-dplyr::starwars |>
-  filter(name == "Harry Potter") |>
-  expect_empty(
-    success_msg = "No Harry Potter rows in starwars",
-    warn_msg    = "Unexpected fictional character found"
-  )
-#> ✔ No Harry Potter rows in starwars
-```
-
-``` r
-# Warning: rows found
-dplyr::starwars |>
-  filter(mass > 1000) |>
-  expect_empty(warn_msg = "Unrealistic mass values")
-#> Warning in expect_empty(filter(dplyr::starwars, mass > 1000), warn_msg = "Unrealistic mass values"): Unrealistic mass values
-#> ℹ 1 row found:
-#>   name = "Jabba Desilijic Tiure", height = 175, mass = 1358, hair_color = NA,
-#>   skin_color = "green-t...
-```
-
-``` r
-# Hard abort:
-dplyr::starwars |>
-  filter(mass > 1000) |>
-  expect_empty(abort_msg = "Unrealistic mass values")
-```
-
-The `log` option writes a timestamped entry to a file, and `dump` saves
-the offending rows. When a scheduled run misbehaves, the errors are
-already collected by the time you sit down to investigate:
-
-``` r
-options(
-  daos.check_log  = f("log/{nowf()}/checks.log"),
-  daos.check_dump = "log/violations"
-)
-
-dplyr::starwars |>
-  filter(height > 250) |>
-  expect_empty(warn_msg = "Unusually tall characters")
-```
-
-### `expect_none()` and friends: checks that keep the pipeline going
-
-[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-returns the violation set it was given.
-[`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
-takes the condition instead and returns the full data, so checks can be
-chained.
-[`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md),
-[`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
+The validation checkpoints,
+[`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+[`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+[`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+[`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+[`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
 and
-[`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
-cover keys, panels and spells, the rules from register work that are
-awkward to write as a
-[`filter()`](https://dplyr.tidyverse.org/reference/filter.html).
-[`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
-counts violations for many rules at once without judging them. See
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+[`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+and the helpers
+[`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+and
+[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+have moved to their own package,
+[expectr](https://github.com/dataniel/expectr). They share an engine and
+a contract the rest of daos does not: each states an expectation about
+data as “the set of violations must be empty”.
+
+daos still forwards each of them to expectr, so existing scripts keep
+working, old options such as `daos.check_log` included. New code should
+load expectr directly:
 
 ``` r
-dplyr::starwars |>
-  expect_none(height < 0) |>
-  expect_unique(name) |>
-  nrow()
-#> ✔ No rows where height < 0
-#> ✔ Unique on name
-#> [1] 87
+library(expectr)
+
+read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+  view_types(diff = TRUE) |>
+  expect_empty(warn_msg = "The files do not bind")
 ```
 
-### `flag_duplicates()`: detect and label duplicate rows
-
-Base R’s [`duplicated()`](https://rdrr.io/r/base/duplicated.html) only
-marks the second occurrence of a duplicate.
-[`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
-marks all copies and gives them a shared group ID, so the whole group
-can be inspected together. The ID can also serve as an implicit record
-linkage key: if several respondents have reported the same information
-but background data is missing for one of them, the shared `dupid`
-reveals the connection.
-
-``` r
-flag_duplicates(ggplot2::mpg)
-#> # A tibble: 234 × 13
-#>    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy
-#>    <lgl> <int> <chr>        <chr>      <dbl> <int> <int> <chr> <chr> <int> <int>
-#>  1 FALSE     0 audi         a4           1.8  1999     4 auto… f        18    29
-#>  2 FALSE     0 audi         a4           1.8  1999     4 manu… f        21    29
-#>  3 FALSE     0 audi         a4           2    2008     4 manu… f        20    31
-#>  4 FALSE     0 audi         a4           2    2008     4 auto… f        21    30
-#>  5 FALSE     0 audi         a4           2.8  1999     6 auto… f        16    26
-#>  6 FALSE     0 audi         a4           2.8  1999     6 manu… f        18    26
-#>  7 FALSE     0 audi         a4           3.1  2008     6 auto… f        18    27
-#>  8 FALSE     0 audi         a4 quattro   1.8  1999     4 manu… 4        18    26
-#>  9 FALSE     0 audi         a4 quattro   1.8  1999     4 auto… 4        16    25
-#> 10 FALSE     0 audi         a4 quattro   2    2008     4 manu… 4        20    28
-#> # ℹ 224 more rows
-#> # ℹ 2 more variables: fl <chr>, class <chr>
-```
-
-``` r
-# Check specific columns:
-flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
-  filter(isdup) |>
-  arrange(dupid)
-#> # A tibble: 227 × 13
-#>    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy
-#>    <lgl> <int> <chr>        <chr>      <dbl> <int> <int> <chr> <chr> <int> <int>
-#>  1 TRUE      1 audi         a4           1.8  1999     4 auto… f        18    29
-#>  2 TRUE      1 audi         a4           1.8  1999     4 manu… f        21    29
-#>  3 TRUE      1 audi         a4           2.8  1999     6 auto… f        16    26
-#>  4 TRUE      1 audi         a4           2.8  1999     6 manu… f        18    26
-#>  5 TRUE      2 audi         a4           2    2008     4 manu… f        20    31
-#>  6 TRUE      2 audi         a4           2    2008     4 auto… f        21    30
-#>  7 TRUE      2 audi         a4           3.1  2008     6 auto… f        18    27
-#>  8 TRUE      3 audi         a4 quattro   1.8  1999     4 manu… 4        18    26
-#>  9 TRUE      3 audi         a4 quattro   1.8  1999     4 auto… 4        16    25
-#> 10 TRUE      3 audi         a4 quattro   2.8  1999     6 auto… 4        15    25
-#> # ℹ 217 more rows
-#> # ℹ 2 more variables: fl <chr>, class <chr>
-```
-
-Combine with
-[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-for a pipeline validation gate:
-
-``` r
-ggplot2::mpg |>
-  flag_duplicates() |>
-  filter(isdup) |>
-  expect_empty(warn_msg = "Duplicate rows detected")
-#> Warning in expect_empty(filter(flag_duplicates(ggplot2::mpg), isdup), warn_msg = "Duplicate rows detected"): Duplicate rows detected
-#> ℹ 18 rows found:
-#>   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban
-#>   2wd", displ = 5.3, ...
-#>   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban
-#>   2wd", displ = 5.3, ...
-#>   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",
-#>   displ = 3.3, year = 1999...
-#>   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",
-#>   displ = 3.3, year = 1999...
-#>   isdup = TRUE, dupid = 40, manufacturer = "dodge", model = "caravan 2wd",
-#>   displ = 3.3, year = 2008...
-#>   ... and 13 more
-```
+See
+[`vignette("expectr", package = "expectr")`](https://dataniel.github.io/expectr/articles/expectr.html).
 
 ------------------------------------------------------------------------
 
@@ -710,6 +532,84 @@ names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
 ```
 
+### `spells_to_panel()`: from spells to a yearly panel
+
+Registers often store spells: one row per education, address or benefit
+period, with a start, an end and a status.
+[`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
+turns them into one row per unit and year (or
+`by = "quarter"`/`"month"`), with the status at primo and ultimo. By
+default primo is the previous ultimo, so primo 2021 is the status on 31
+December 2020.
+
+In an education register the status is the *outcome* of the spell,
+passed or dropped out. With `status_is = "outcome"`, a running spell
+shows as `ongoing` and the outcome applies from the end date until a new
+spell starts:
+
+``` r
+education <- data.frame(
+  cpr    = c("a", "a", "b"),
+  start  = as.Date(c("2018-08-15", "2021-08-15", "2019-08-15")),
+  end    = as.Date(c("2021-06-20", NA,           "2020-03-01")),
+  status = c("passed", "in progress", "dropped out")
+)
+
+education |>
+  spells_to_panel(cpr, start, end, status,
+                  from = 2018, to = 2022,
+                  status_is = "outcome", ongoing = "in progress")
+#> # A tibble: 10 × 4
+#>    cpr    year primo       ultimo     
+#>    <chr> <int> <chr>       <chr>      
+#>  1 a      2018 NA          in progress
+#>  2 a      2019 in progress in progress
+#>  3 a      2020 in progress in progress
+#>  4 a      2021 in progress in progress
+#>  5 a      2022 in progress in progress
+#>  6 b      2018 NA          NA         
+#>  7 b      2019 NA          in progress
+#>  8 b      2020 in progress dropped out
+#>  9 b      2021 dropped out dropped out
+#> 10 b      2022 dropped out dropped out
+```
+
+With the default `status_is = "state"`, the status holds for the whole
+spell (enrolled, on leave) and is `NA` outside spells. `from` and `to`
+give every unit the same window, which makes a balanced panel. Without
+them, each unit runs from its first start to its last end. Dates are
+handled as integer days, and one compiled pass over the sorted spells
+does the work, so millions of spells take seconds.
+
+### `add_spell_status()`: status from spells on a panel you already have
+
+Often the panel exists already, e.g. a population with one row per
+person and year, and the spells should only add a status to it. A
+`left_join(join_by(between()))` does that until the data gets messy:
+overlapping spells duplicate rows, and an ongoing spell with no end
+matches nothing.
+[`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
+keeps the rows of the panel exactly as they are and uses the rules of
+[`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md):
+
+``` r
+population <- data.frame(cpr  = c("a", "a", "b", "c"),
+                         year = c(2020, 2021, 2020, 2020))
+
+population |>
+  add_spell_status(education, cpr, year, start, end, status,
+                   status_is = "outcome", ongoing = "in progress")
+#>   cpr year status_primo status_ultimo
+#> 1   a 2020  in progress   in progress
+#> 2   a 2021  in progress   in progress
+#> 3   b 2020  in progress   dropped out
+#> 4   c 2020         <NA>          <NA>
+```
+
+A Date column in `at` gives the status on that day instead, e.g. the day
+of a diagnosis. Use `when = "ultimo"` for a single column, `name` to
+choose its name, and `overlap = "error"` to stop when spells overlap.
+
 ------------------------------------------------------------------------
 
 ## Domain-specific
@@ -742,8 +642,7 @@ and padding it would let a malformed number slip past a later
 Neither function validates. Malformed values come back cleaned but still
 visibly malformed. Validation is
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)’s
-job (below), or a checkpoint from
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+job (below), or a checkpoint from expectr.
 
 ### `format_db07()`: choose the format of DB07 industry codes
 

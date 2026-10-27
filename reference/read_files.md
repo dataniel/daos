@@ -123,7 +123,7 @@ Packages for non-base formats (`arrow`, `haven`, `readxl`, `jsonlite`,
 ## See also
 
 [`summon()`](https://dataniel.github.io/daos/reference/summon.md),
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+[`expectr::view_types()`](https://dataniel.github.io/expectr/reference/view_types.html)
 
 ## Examples
 

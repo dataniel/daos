@@ -29,8 +29,8 @@ This is standardisation only, not validation. Values that cannot be
 brought to 10 digits are returned cleaned but otherwise untouched, so a
 malformed number stays visibly malformed for downstream checks. Use
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-for validity, or pipe through a checkpoint (see
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md)).
+for validity, or pipe through a checkpoint from expectr (see
+[`vignette("expectr", package = "expectr")`](https://dataniel.github.io/expectr/articles/expectr.html)).
 
 [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
 applies this cleaning internally for its calculations, while preserving

@@ -35,10 +35,6 @@
 
 ## Data wrangling
 
-- [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-  : Compare column types across data frames
-- [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
-  : Flag duplicate rows
 - [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
   : Diagnose time series, optionally within dplyr groups
 - [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)
@@ -46,28 +42,25 @@
   : Drop rows or columns that are empty in selected columns
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
+- [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
+  : Turn spell data into a period panel with primo and ultimo status
+- [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
+  : Add status from spell data to a panel you already have
 
 ## Validation checkpoints
 
-State a rule as “the set of violations must be empty”. The `expect_*()`
-functions judge a rule and warn or abort;
-[`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
-only counts violations for many rules, so you decide on severity
-afterwards. See
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+The checkpoints and their helpers have moved to the expectr package.
+daos forwards them for existing scripts.
 
-- [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-  : Assert that a data frame is empty
-- [`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
-  : Assert that no rows match a condition
-- [`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md)
-  : Assert that key columns identify each row uniquely
-- [`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
-  : Assert that a panel is balanced, or has no gaps
-- [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
-  : Assert that spells do not overlap within a unit
-- [`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
-  : Count violations for several rules at once
+- [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  : Checkpoints, now in the expectr package
 
 ## Interactive
 

@@ -21,7 +21,7 @@ the end either fails or, worse, succeeds while hiding a type change.
 This article is about replacing the block with one
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
 call, and about using
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
 when the files turn out not to be as stackable as they looked.
 
 ## One call, many files
@@ -73,11 +73,11 @@ bound as-is, it warns, coerces everything to character, re-types the
 result with
 [`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html),
 and points you to
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md):
+[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md):
 
     Warning: Column types differ across files -- coercing to character and
     re-typing with `readr::type_convert()`.
-    i Use `daos::view_types` to inspect the differences.
+    i Use `expectr::view_types` to inspect the differences.
 
 The rule of thumb: if
 [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
@@ -87,67 +87,78 @@ is to find out what.
 
 ## Finding the culprit with `view_types()`
 
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-is [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
+[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
+from the expectr package, is
+[`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
 multiple data frames at once: one row per column, one column per
-dataset, with abbreviated type strings.
+dataset, with abbreviated type strings. It takes the list from
+[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+directly (`view_types(lst)`), or the data frames one by one:
 
 ``` r
 dat2023 <- tibble(cvr = "11111111", name = "Firm A", amount = 100,    year = 2023L)
 dat2024 <- tibble(cvr = 11111111,  name = "Firm B", amount = "1.000", turnover = 200)
 
 view_types(dat2023, dat2024)
-#> # A tibble: 5 × 3
-#>   column   dat2023 dat2024
-#>   <chr>    <chr>   <chr>  
-#> 1 cvr      chr     dbl    
-#> 2 name     chr     chr    
-#> 3 amount   dbl     chr    
-#> 4 year     int     NA     
-#> 5 turnover NA      dbl
+#> # A tibble: 5 × 4
+#>   column   status   dat2023 dat2024
+#>   <chr>    <chr>    <chr>   <chr>  
+#> 1 cvr      conflict chr     dbl    
+#> 2 name     ok       chr     chr    
+#> 3 amount   conflict dbl     chr    
+#> 4 year     missing  int     NA     
+#> 5 turnover missing  NA      dbl
 ```
 
-The full listing already tells the story, but `diff = TRUE` cuts it down
-to the columns that actually disagree:
+Read the `status` column like this:
+
+- `conflict`: the types cannot be combined (`chr` vs `dbl` for `cvr`).
+  This is what makes
+  [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
+  fall back to character, and the classic cause of a corrupted join key.
+- `missing`: the column does not exist in every dataset (`NA` in the
+  type column), typically a rename or a dropped column upstream. It does
+  not stop a bind, since
+  [`bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)
+  fills it with `NA`, but it is worth a look.
+- `coercible`: the types differ but combine without trouble, such as
+  `int` and `dbl`, or a column that is entirely `NA` (readr reads an
+  empty column as `lgl`).
+- `ok`: same type everywhere.
+
+`diff = TRUE` cuts the listing down to the conflicts, the columns that
+actually break the stack:
 
 ``` r
 view_types(dat2023, dat2024, diff = TRUE)
-#> # A tibble: 4 × 3
-#>   column   dat2023 dat2024
-#>   <chr>    <chr>   <chr>  
-#> 1 cvr      chr     dbl    
-#> 2 amount   dbl     chr    
-#> 3 year     int     NA     
-#> 4 turnover NA      dbl
+#> # A tibble: 2 × 4
+#>   column status   dat2023 dat2024
+#>   <chr>  <chr>    <chr>   <chr>  
+#> 1 cvr    conflict chr     dbl    
+#> 2 amount conflict dbl     chr
 ```
-
-Read the output like this:
-
-- A row with two different type strings (`chr` vs `dbl` for `cvr`) is a
-  type mismatch, the classic cause of a failed bind or a corrupted join
-  key.
-- An `NA` means the column does not exist in that dataset at all (`year`
-  vs `turnover` above), typically a rename or a dropped column upstream.
 
 The same overview is just as useful *before a join*: two frames that are
 about to be joined on `cvr` should agree on its type, and
-[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
 answers that in one line instead of two
 [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) calls and
 a visual diff.
 
 For pipelines, the `focus` argument turns the inspection into a check:
-it returns only the datasets where a critical column does *not* have the
+it returns only the datasets where critical columns do *not* have the
 expected type, and an empty result on success. That plugs straight into
-the checkpoint pattern from
-[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md):
+the checkpoint pattern from expectr,
 
 ``` r
-view_types(dat2023, dat2024, focus = c(amount = "dbl")) |>
-  expect_empty(warn_msg = "amount is not numeric everywhere")
-#> Warning in expect_empty(view_types(dat2023, dat2024, focus = c(amount = "dbl")), : amount is not numeric everywhere
-#> ℹ 1 row found:
-#>   column = "amount", dat2024 = "chr"
+view_types(dat2023, dat2024, focus = c(cvr = "chr", amount = "dbl")) |>
+  expect_empty(warn_msg = "cvr or amount has the wrong type")
+#> Warning in expect_empty(view_types(dat2023, dat2024, focus = c(cvr = "chr", : cvr or amount has the wrong type
+#> ℹ 2 rows found:
+#>     column status   dat2024
+#>     <chr>  <chr>    <chr>
+#>   1 cvr    conflict dbl
+#>   2 amount conflict chr
 ```
 
 ## Other shapes of output
