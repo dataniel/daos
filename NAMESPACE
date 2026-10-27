@@ -3,6 +3,7 @@
 export("%??%")
 export("%like%")
 export(add_cpr_info)
+export(add_spell_status)
 export(age)
 export(clean_cpr)
 export(clean_cvr)

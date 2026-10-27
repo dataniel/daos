@@ -593,6 +593,28 @@ unit runs from its first start to its last end. Dates are handled as integer
 days, and one compiled pass over the sorted spells does the work, so
 millions of spells take seconds.
 
+### `add_spell_status()`: status from spells on a panel you already have
+
+Often the panel exists already, e.g. a population with one row per person
+and year, and the spells should only add a status to it. A
+`left_join(join_by(between()))` does that until the data gets messy:
+overlapping spells duplicate rows, and an ongoing spell with no end matches
+nothing. `add_spell_status()` keeps the rows of the panel exactly as they
+are and uses the rules of `spells_to_panel()`:
+
+```{r}
+population <- data.frame(cpr  = c("a", "a", "b", "c"),
+                         year = c(2020, 2021, 2020, 2020))
+
+population |>
+  add_spell_status(education, cpr, year, start, end, status,
+                   status_is = "outcome", ongoing = "in progress")
+```
+
+A Date column in `at` gives the status on that day instead, e.g. the day of
+a diagnosis. Use `when = "ultimo"` for a single column, `name` to choose its
+name, and `overlap = "error"` to stop when spells overlap.
+
 ---
 
 ## Domain-specific

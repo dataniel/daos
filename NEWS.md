@@ -1,5 +1,11 @@
 # daos (development version)
 
+* `spells_to_panel()` turns spell data (education, addresses) into a
+  yearly, quarterly or monthly panel with primo and ultimo status, and
+  `add_spell_status()` adds the same status to a panel you already have, or
+  the status on a date. Rows are never added or dropped, also when spells
+  overlap; both share one compiled lookup.
+
 * Validation checkpoints are extended into a small family that shares one
   engine (`vignette("validation")`):
   * `expect_none()` checks a condition and returns the full data, so checks

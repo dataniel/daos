@@ -115,30 +115,12 @@ spells_to_panel <- function(data, id, start, end, status,
                      "i" = "{cli::qty(clash)}Rename {?it/them} first."))
   }
 
-  s <- spell_days(data[[start_col]], start_col)
-  e <- spell_days(data[[end_col]], end_col)
-
-  # Dates as integer days; the spell rows we keep, sorted by unit and start
-  keys <- data.table::as.data.table(data)[, ids, with = FALSE]
-  data.table::set(keys, j = ".start", value = s)
-  data.table::set(keys, j = ".end", value = e)
-  data.table::set(keys, j = ".row", value = seq_len(nrow(data)))
-  bad_start <- is.na(s)
-  bad_order <- !bad_start & !is.na(e) & e < s
-  if (any(bad_start)) {
-    cli::cli_alert_warning("Dropped {sum(bad_start)} spell{?s} with a missing {.var {start_col}}.")
-  }
-  if (any(bad_order)) {
-    cli::cli_alert_warning("Dropped {sum(bad_order)} spell{?s} where {.var {end_col}} is before {.var {start_col}}.")
-  }
-  keys <- keys[!(bad_start | bad_order)]
-  data.table::setorderv(keys, c(ids, ".start"))
-
-  n <- nrow(keys)
-  unit   <- data.table::rleidv(keys, cols = ids)
-  first  <- which(c(TRUE, unit[-1] != unit[-n]))
-  if (n == 0) first <- integer()
-  groups <- c(first, n + 1L) - 1L
+  prep   <- prepare_spells(data, ids, start_col, end_col)
+  keys   <- prep$keys
+  unit   <- prep$unit
+  first  <- prep$first
+  groups <- prep$groups
+  n      <- nrow(keys)
 
   # Period window per unit, as period codes (year * per_year + sub-period)
   last_day <- if (n) max(c(keys$.start, keys$.end), na.rm = TRUE) else NA_integer_
@@ -185,6 +167,35 @@ spells_to_panel <- function(data, id, start, end, status,
 
   out <- data.table::setDT(out)
   if (data.table::is.data.table(data)) out else tibble::as_tibble(out)
+}
+
+# Spell rows as integer days, without unusable rows, sorted by unit and
+# start: `first` is each unit's first row and `groups` the 0-based offsets
+# the C code walks
+prepare_spells <- function(data, ids, start_col, end_col) {
+  s <- spell_days(data[[start_col]], start_col)
+  e <- spell_days(data[[end_col]], end_col)
+
+  keys <- data.table::as.data.table(data)[, ids, with = FALSE]
+  data.table::set(keys, j = ".start", value = s)
+  data.table::set(keys, j = ".end", value = e)
+  data.table::set(keys, j = ".row", value = seq_len(nrow(data)))
+  bad_start <- is.na(s)
+  bad_order <- !bad_start & !is.na(e) & e < s
+  if (any(bad_start)) {
+    cli::cli_alert_warning("Dropped {sum(bad_start)} spell{?s} with a missing {.var {start_col}}.")
+  }
+  if (any(bad_order)) {
+    cli::cli_alert_warning("Dropped {sum(bad_order)} spell{?s} where {.var {end_col}} is before {.var {start_col}}.")
+  }
+  keys <- keys[!(bad_start | bad_order)]
+  data.table::setorderv(keys, c(ids, ".start"))
+
+  n     <- nrow(keys)
+  unit  <- data.table::rleidv(keys, cols = ids)
+  first <- which(c(TRUE, unit[-1] != unit[-n]))
+  if (n == 0) first <- integer()
+  list(keys = keys, unit = unit, first = first, groups = c(first, n + 1L) - 1L)
 }
 
 # Integer days since 1970-01-01 for a Date-like spell column

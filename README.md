@@ -92,6 +92,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
+| `add_spell_status()` | Add primo/ultimo status from spells to an existing panel, or the status on a date, without changing its rows |
 | `age()` | Choose the reference year or date for an age column in `add_cpr_info()` |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |

@@ -41,6 +41,23 @@ static int status_at(int t, int g0, int p, const int *e, const int *cm,
     return NA_INTEGER;
 }
 
+/* Ends with NA as INT_MAX, and the running maximum of ends per unit */
+static void running_max(const int *e_in, const int *g, R_xlen_t n_groups,
+                        int *e, int *cm, int *cmi) {
+    for (R_xlen_t k = 0; k < n_groups; k++) {
+        for (int i = g[k]; i < g[k + 1]; i++) {
+            e[i] = e_in[i] == NA_INTEGER ? INT_MAX : e_in[i];
+            if (i == g[k] || e[i] >= cm[i - 1]) {
+                cm[i] = e[i];
+                cmi[i] = i;
+            } else {
+                cm[i] = cm[i - 1];
+                cmi[i] = cmi[i - 1];
+            }
+        }
+    }
+}
+
 SEXP daos_spell_status(SEXP start, SEXP end, SEXP groups, SEXP lo, SEXP hi,
                        SEXP primo, SEXP ultimo, SEXP outcome_) {
     const int *s = INTEGER(start), *e_in = INTEGER(end), *g = INTEGER(groups);
@@ -58,18 +75,7 @@ SEXP daos_spell_status(SEXP start, SEXP end, SEXP groups, SEXP lo, SEXP hi,
     int *e  = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
     int *cm = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
     int *cmi = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
-    for (R_xlen_t k = 0; k < n_groups; k++) {
-        for (int i = g[k]; i < g[k + 1]; i++) {
-            e[i] = e_in[i] == NA_INTEGER ? INT_MAX : e_in[i];
-            if (i == g[k] || e[i] >= cm[i - 1]) {
-                cm[i] = e[i];
-                cmi[i] = i;
-            } else {
-                cm[i] = cm[i - 1];
-                cmi[i] = cmi[i - 1];
-            }
-        }
-    }
+    running_max(e_in, g, n_groups, e, cm, cmi);
 
     SEXP out = PROTECT(Rf_allocVector(VECSXP, 3));
     SEXP res_p = Rf_allocVector(INTSXP, n_out);
@@ -95,6 +101,43 @@ SEXP daos_spell_status(SEXP start, SEXP end, SEXP groups, SEXP lo, SEXP hi,
     }
 
     SET_VECTOR_ELT(out, 2, Rf_ScalarInteger(ambiguous));
+    UNPROTECT(1);
+    return out;
+}
+
+/* Status at arbitrary points, for add_spell_status(). Points arrive sorted
+   by (unit, day); qgroups[k] .. qgroups[k + 1] - 1 are unit k's points, in
+   the same unit order as the spell groups. Same pointer pass as above. */
+SEXP daos_spell_lookup(SEXP start, SEXP end, SEXP groups, SEXP qgroups,
+                       SEXP qday, SEXP outcome_) {
+    const int *s = INTEGER(start), *e_in = INTEGER(end), *g = INTEGER(groups);
+    const int *qg = INTEGER(qgroups), *qd = INTEGER(qday);
+    int outcome = Rf_asLogical(outcome_);
+    R_xlen_t n = XLENGTH(start);
+    R_xlen_t n_groups = XLENGTH(groups) - 1;
+
+    int *e  = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
+    int *cm = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
+    int *cmi = (int *) R_alloc(n > 0 ? n : 1, sizeof(int));
+    running_max(e_in, g, n_groups, e, cm, cmi);
+
+    SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+    SEXP res = Rf_allocVector(INTSXP, XLENGTH(qday));
+    SET_VECTOR_ELT(out, 0, res);
+    int *r = INTEGER(res);
+
+    int ambiguous = 0;
+    for (R_xlen_t k = 0; k < n_groups; k++) {
+        int g0 = g[k], g1 = g[k + 1], p = g0;
+        for (int j = qg[k]; j < qg[k + 1]; j++) {
+            int t = qd[j];
+            while (p < g1 && s[p] <= t) p++;
+            r[j] = status_at(t, g0, p, e, cm, cmi, outcome, &ambiguous);
+        }
+        if ((k & 1023) == 0) R_CheckUserInterrupt();
+    }
+
+    SET_VECTOR_ELT(out, 1, Rf_ScalarInteger(ambiguous));
     UNPROTECT(1);
     return out;
 }
