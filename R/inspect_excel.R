@@ -29,11 +29,11 @@
 #' do not report each other.
 #'
 #' Only cells with a value count; formatting, borders and empty strings do
-#' not. Only `.xlsx` and `.xlsm` files can be inspected, because the cell
-#' positions are read from the file's XML; `.xls` files have no such
-#' structure.
+#' not. The cells are found with `readxl` itself, reading the sheet once as
+#' text, so the check costs about one extra read and agrees with `readxl` on
+#' what is empty.
 #'
-#' @param path Path to an `.xlsx` or `.xlsm` file.
+#' @param path Path to an Excel file (`.xlsx`, `.xlsm` or `.xls`).
 #' @param sheet Sheet names or positions. `NULL` (default) means every sheet.
 #' @param range The area to read, where the default `NULL` finds the table on
 #'   each sheet. One range, such as `"B3:F40"` (with a single `sheet`) or
@@ -41,7 +41,8 @@
 #'   `c(Sheet1 = "B3:F40", Sheet2 = NA)`, where `NA` means find the table.
 #'   Sheets not named are found automatically.
 #' @param table Names of defined Excel tables (Insert > Table), or `TRUE` for
-#'   all of them. Cannot be combined with `sheet` or `range`.
+#'   all of them. Cannot be combined with `sheet` or `range`. `.xlsx` and
+#'   `.xlsm` only, and needs the `xml2` package.
 #' @param skip Rows at the top of each sheet to leave out before the table is
 #'   found, as in `readxl::read_excel()`. Not used for a given `range` or
 #'   `table`.
@@ -68,13 +69,6 @@
 #' @export
 inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip = 0) {
   .excel_check_path(path)
-  if (!.is_xlsx(path)) {
-    cli::cli_abort(c(
-      "Only {.file .xlsx} and {.file .xlsm} files can be inspected.",
-      "i" = "{.file {basename(path)}} is an {.file .{tools::file_ext(path)}} file."
-    ))
-  }
-  .excel_need_xml2("inspect an Excel file")
   plan <- .excel_plan(path, sheet, range, table)
   plan <- .excel_detect(path, plan, skip)
   .excel_inspect(path, plan)
@@ -104,7 +98,7 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
   }
 }
 
-# Cell positions and defined tables are read from the file's XML
+# Defined tables are read from the file's XML
 .excel_need_xml2 <- function(why, call = rlang::caller_env()) {
   if (!requireNamespace("xml2", quietly = TRUE)) {
     cli::cli_abort(c("Package {.pkg xml2} is required to {why}.", "i" = "Install it with {.code install.packages(\"xml2\")}."), call = call)
@@ -233,17 +227,15 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
   plan
 }
 
-# Fill in the ranges left NA with the table found on the sheet. Not possible
-# for .xls (no XML) or an empty sheet; those stay NA and are read whole.
+# Fill in the ranges left NA with the table found on the sheet. An empty
+# sheet stays NA and is read whole.
 .excel_detect <- function(path, plan, skip = 0) {
   attr(plan, "skip") <- skip
-  if (!.is_xlsx(path) || !anyNA(plan$range)) return(plan)
-  parts <- .xlsx_sheet_parts(path)
-  strings <- .xlsx_shared_strings(path)
-  # Keep the parsed cells for .excel_inspect(), so each sheet is parsed once
+  if (!anyNA(plan$range)) return(plan)
+  # Keep the cells for .excel_inspect(), so each sheet is scanned once
   cache <- list()
   for (i in which(is.na(plan$range))) {
-    cells <- .xlsx_cells(path, parts[[plan$sheet[i]]], strings)
+    cells <- .excel_cells(path, plan$sheet[i])
     cache[[plan$sheet[i]]] <- cells
     cells <- cells[cells$row > skip, ]
     if (nrow(cells) == 0) next
@@ -271,9 +263,7 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
 # Inspection ---------------------------------------------------------------
 
 .excel_inspect <- function(path, plan) {
-  mode  <- attr(plan, "mode")
-  parts <- .xlsx_sheet_parts(path)
-  strings <- .xlsx_shared_strings(path)
+  mode <- attr(plan, "mode")
   tabs <- if (mode == "table") .xlsx_tables(path)
 
   found <- lapply(unique(plan$sheet), function(sh) {
@@ -287,7 +277,7 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
       areas <- .range_rect(rng)
       areas$label <- rng
     }
-    cells <- attr(plan, "cells")[[sh]] %||% .xlsx_cells(path, parts[[sh]], strings)
+    cells <- attr(plan, "cells")[[sh]] %||% .excel_cells(path, sh)
     # Rows the caller skipped are left out on purpose, not by surprise
     if (any(plan$detected[plan$sheet == sh])) cells <- cells[cells$row > attr(plan, "skip"), ]
 
@@ -326,6 +316,24 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
   tibble::as_tibble(found[c("sheet", "area", "block", "position", "cells", "first")])
 }
 
+# Non-empty cells of one sheet: row, col and the value as text. readxl reads
+# the sheet as a text grid anchored at A1, so positions are absolute and
+# empty leading rows and columns are kept. This is readxl's own fast reader,
+# for .xlsx and .xls alike, and it agrees with readxl on what is empty.
+.excel_cells <- function(path, sheet) {
+  grid <- readxl::read_excel(
+    path, sheet = sheet, col_names = FALSE, col_types = "text",
+    range = readxl::cell_limits(c(1, 1), c(NA, NA)),
+    .name_repair = "minimal", progress = FALSE
+  )
+  filled <- lapply(grid, function(x) which(!is.na(x)))
+  data.frame(
+    row   = unlist(filled, use.names = FALSE),
+    col   = rep(seq_along(grid), lengths(filled)),
+    value = unlist(Map(`[`, grid, filled), use.names = FALSE) %||% character()
+  )
+}
+
 # Split cells into blocks at entirely empty rows, then entirely empty
 # columns, recursively (an XY-cut). Faster than connected components on a
 # sheet with millions of cells, and it matches how a person sees blocks: a
@@ -345,17 +353,15 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
   unname(cut(seq_along(r)))
 }
 
-# xlsx internals -------------------------------------------------------------
-# An .xlsx file is a zip of XML parts. readxl does not expose cell positions
-# or defined tables, so the few parts needed are read directly with xml2.
+# Defined tables ---------------------------------------------------------------
+# An .xlsx file is a zip of XML parts. readxl does not know defined tables,
+# so their names and ranges are read from the few parts involved with xml2.
 
 .xlsx_part <- function(path, part) xml2::read_xml(unz(path, part))
 
 # XPath by local element name, so it works whatever namespaces a part
-# declares. xml_ns_strip() would do the same by rewriting every node, which
-# takes minutes on a sheet with a few hundred thousand cells.
+# declares, without xml_ns_strip() rewriting every node.
 .xp <- function(...) paste0("*[local-name()='", c(...), "']", collapse = "/")
-.xp_cell_value <- "*[local-name()='v' or local-name()='is']"
 
 .xlsx_has_part <- function(path, part) part %in% utils::unzip(path, list = TRUE)$Name
 
@@ -392,11 +398,6 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
   stats::setNames(rels$part[match(ids, rels$id)], xml2::xml_attr(sheets, "name"))
 }
 
-.xlsx_shared_strings <- function(path) {
-  if (!.xlsx_has_part(path, "xl/sharedStrings.xml")) return(character())
-  xml2::xml_text(xml2::xml_find_all(.xlsx_part(path, "xl/sharedStrings.xml"), paste0("//", .xp("si"))))
-}
-
 # Defined tables: name, sheet, and the range to read. A totals row is part of
 # the table's ref but not data, so it is left out of the range.
 .xlsx_tables <- function(path) {
@@ -420,23 +421,6 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
 }
 
 `%|NA|%` <- function(x, y) if (is.na(x)) y else x
-
-# Non-empty cells of one worksheet: row, col and the value as text
-.xlsx_cells <- function(path, part, strings) {
-  doc <- .xlsx_part(path, part)
-  cell_path <- paste0("//", .xp("sheetData", "row", "c"), "[", .xp_cell_value, "]")
-  cells <- xml2::xml_find_all(doc, cell_path)
-  # A cell holds one <v> or <is>, so this lines up with `cells`, in one call
-  # instead of one xml_find_first() per cell
-  value <- xml2::xml_text(xml2::xml_find_all(doc, paste0(cell_path, "/", .xp_cell_value)))
-  type  <- xml2::xml_attr(cells, "t")
-  shared <- !is.na(type) & type == "s"
-  value[shared] <- strings[as.integer(value[shared]) + 1L]
-  ref <- xml2::xml_attr(cells, "r")
-  keep <- !is.na(value) & value != "" & !is.na(ref)
-  rc <- .ref_rc(ref[keep])
-  data.frame(row = rc$row, col = rc$col, value = value[keep])
-}
 
 # Cell references -------------------------------------------------------------
 

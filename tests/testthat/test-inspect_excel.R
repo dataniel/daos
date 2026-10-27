@@ -59,8 +59,11 @@ test_that("inspect_excel() converts between cell references and positions", {
   expect_equal(daos:::.col_letters(c(1, 26, 27, 16384)), c("A", "Z", "AA", "XFD"))
 })
 
-test_that("inspect_excel() rejects .xls files", {
-  path <- withr::local_tempfile(fileext = ".xls")
-  writeLines("x", path)
-  expect_snapshot(inspect_excel(path), error = TRUE, transform = \(x) sub("file[0-9a-f]+", "file", x))
+test_that("inspect_excel() and read_workbook() handle .xls files", {
+  skip_if_not_installed("readxl")
+  path <- readxl::readxl_example("datasets.xls")
+  expect_equal(nrow(inspect_excel(path)), 0)
+  res <- read_workbook(path)
+  expect_equal(names(res), readxl::excel_sheets(path))
+  expect_equal(res[[1]], readxl::read_excel(path, sheet = 1))
 })

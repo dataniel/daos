@@ -18,8 +18,11 @@
 #' and reads only that. Whatever lies outside is not read, and a warning
 #' lists it, except titles above the table, which are expected.
 #'
-#' Finding the table needs the file's XML, so `.xls` files are read whole,
-#' as `readxl` does, and without the check.
+#' **Speed.** Everything is read by `readxl`'s C++ reader: each sheet once as
+#' text to find the table, and once more for the table itself with proper
+#' column types. That is about twice a plain `readxl::read_excel()`, for
+#' `.xlsx` and `.xls` alike. Give `range` and `check = FALSE` to read with a
+#' single call.
 #'
 #' **Passwords.** A workbook with a password to open is encrypted, and
 #' `readxl` cannot read it; `read_workbook()` says so instead of failing with
@@ -71,7 +74,6 @@
 read_workbook <- function(path, sheet = NULL, range = NULL, table = NULL,
                           check = TRUE, ...) {
   .excel_check_path(path)
-  if (.is_xlsx(path)) .excel_need_xml2("find the table on each sheet")
   skip <- list(...)$skip %||% 0
   plan <- .excel_plan(path, sheet, range, table)
   plan <- .excel_detect(path, plan, skip)
@@ -92,7 +94,7 @@ read_workbook <- function(path, sheet = NULL, range = NULL, table = NULL,
   })
   names(result) <- plan$name
 
-  if (check && .is_xlsx(path)) .excel_warn_outside(path, plan)
+  if (check) .excel_warn_outside(path, plan)
 
   if (attr(plan, "single")) result[[1]] else result
 }

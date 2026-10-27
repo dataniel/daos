@@ -7,7 +7,7 @@
 inspect_excel(path, sheet = NULL, range = NULL, table = NULL, skip = 0)
 }
 \arguments{
-\item{path}{Path to an \code{.xlsx} or \code{.xlsm} file.}
+\item{path}{Path to an Excel file (\code{.xlsx}, \code{.xlsm} or \code{.xls}).}
 
 \item{sheet}{Sheet names or positions. \code{NULL} (default) means every sheet.}
 
@@ -18,7 +18,8 @@ each sheet. One range, such as \code{"B3:F40"} (with a single \code{sheet}) or
 Sheets not named are found automatically.}
 
 \item{table}{Names of defined Excel tables (Insert > Table), or \code{TRUE} for
-all of them. Cannot be combined with \code{sheet} or \code{range}.}
+all of them. Cannot be combined with \code{sheet} or \code{range}. \code{.xlsx} and
+\code{.xlsm} only, and needs the \code{xml2} package.}
 
 \item{skip}{Rows at the top of each sheet to leave out before the table is
 found, as in \code{readxl::read_excel()}. Not used for a given \code{range} or
@@ -63,9 +64,9 @@ defined table on the sheet are never reported, so two tables side by side
 do not report each other.
 
 Only cells with a value count; formatting, borders and empty strings do
-not. Only \code{.xlsx} and \code{.xlsm} files can be inspected, because the cell
-positions are read from the file's XML; \code{.xls} files have no such
-structure.
+not. The cells are found with \code{readxl} itself, reading the sheet once as
+text, so the check costs about one extra read and agrees with \code{readxl} on
+what is empty.
 }
 \examples{
 \dontrun{

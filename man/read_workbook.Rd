@@ -56,8 +56,11 @@ row or column, with title rows on top left out (see \code{\link[=inspect_excel]{
 and reads only that. Whatever lies outside is not read, and a warning
 lists it, except titles above the table, which are expected.
 
-Finding the table needs the file's XML, so \code{.xls} files are read whole,
-as \code{readxl} does, and without the check.
+\strong{Speed.} Everything is read by \code{readxl}'s C++ reader: each sheet once as
+text to find the table, and once more for the table itself with proper
+column types. That is about twice a plain \code{readxl::read_excel()}, for
+\code{.xlsx} and \code{.xls} alike. Give \code{range} and \code{check = FALSE} to read with a
+single call.
 
 \strong{Passwords.} A workbook with a password to open is encrypted, and
 \code{readxl} cannot read it; \code{read_workbook()} says so instead of failing with
