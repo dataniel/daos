@@ -19,7 +19,6 @@
 #' and spells that end before they start with
 #' [expect_none()]`(data, end < start)`.
 #'
-#' @param data A data frame or tibble.
 #' @param id Column(s) identifying the unit (tidy-select), e.g. `cpr`.
 #' @param start,end Columns with the first and last period of each spell
 #'   (dates, or integers such as years).
@@ -49,16 +48,20 @@ expect_no_overlap <- function(data, id, start, end,
                               log         = getOption("daos.check_log"),
                               dump        = getOption("daos.check_dump")) {
 
-  check_data_frame(data)
-  ids       <- names(dplyr::select(data, {{ id }}))
-  start_col <- names(dplyr::select(data, {{ start }}))
-  end_col   <- names(dplyr::select(data, {{ end }}))
+  tbl       <- check_table(data)
+  ids       <- select_names(tbl, {{ id }})
+  start_col <- select_names(tbl, {{ start }})
+  end_col   <- select_names(tbl, {{ end }})
   if (length(ids) == 0) cli::cli_abort("{.arg id} must select at least one column.")
   if (length(start_col) != 1 || length(end_col) != 1) {
     cli::cli_abort("{.arg start} and {.arg end} must each select exactly one column.")
   }
 
-  overlaps <- find_overlaps(data, ids, start_col, end_col)
+  overlaps <- if (is_remote(tbl)) {
+    remote_overlaps(tbl, ids, start_col, end_col)
+  } else {
+    find_overlaps(data, ids, start_col, end_col)
+  }
 
   label <- abort_msg %||% warn_msg
   report_check(

@@ -15,7 +15,8 @@ expect_none(
 )
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A data frame or tibble, a database table (dbplyr, e.g.
+DuckDB) or an Arrow table or dataset; see \emph{Database and Arrow tables}.}
 
 \item{...}{Conditions that describe a violating row, as in
 \code{\link[dplyr:filter]{dplyr::filter()}}.}

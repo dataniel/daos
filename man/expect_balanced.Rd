@@ -18,7 +18,8 @@ expect_balanced(
 )
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A data frame or tibble, a database table (dbplyr, e.g.
+DuckDB) or an Arrow table or dataset; see \emph{Database and Arrow tables}.}
 
 \item{id}{Column(s) identifying the unit (tidy-select), e.g. \code{cpr} or
 \code{c(cvr, lbnr)}.}

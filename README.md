@@ -72,6 +72,10 @@ sales |>
   expect_empty(warn_msg = "Negative amounts", log = "checks.log")
 ```
 
+The checkpoints are built for full-population registers: in memory they
+check a million persons over five years in under a second, and a DuckDB
+or Arrow table is checked in the database, without loading it into R.
+
 **Danish and Greenlandic identifiers, and a file a colleague can read.**
 
 ```r

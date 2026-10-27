@@ -46,7 +46,35 @@
 #' 2026-06-11 09:00:03 | ! | Negative amounts | 3 rows | log/violations/20260611_090003_Negative_amounts.csv
 #' ```
 #'
-#' @param data A data frame or tibble.
+#' ## Database and Arrow tables
+#'
+#' Every checkpoint also takes a database table from dbplyr, such as a
+#' DuckDB table, and an Arrow table or dataset, and checks it where it
+#' lives. The violation set is built as a query, and only its size and the
+#' preview rows are fetched into R, so a check on a register too large for
+#' memory still works. Arrow data is queried through DuckDB with
+#' `arrow::to_duckdb()`. This needs the dbplyr package, and duckdb for
+#' Arrow.
+#'
+#' ```r
+#' con <- DBI::dbConnect(duckdb::duckdb(), "register.duckdb")
+#'
+#' dplyr::tbl(con, "persons") |>
+#'   expect_none(is.na(cpr), abort_msg = "Persons without a cpr") |>
+#'   expect_unique(cpr, year)
+#' ```
+#'
+#' A checkpoint returns the table it was given, still unevaluated, so the
+#' pipeline continues in the database. On a failure the condition's
+#' `violations` field holds the violation set as a query: `collect()` it to
+#' get the rows. `dump` fetches and writes all of them. Two things differ
+#' from data frames, because a database table has no row order:
+#' [expect_unique()] numbers `dupid` in the order of the key instead of
+#' first appearance, and spells starting on the same day are ordered by
+#' their end in [expect_no_overlap()].
+#'
+#' @param data A data frame or tibble, a database table (dbplyr, e.g.
+#'   DuckDB) or an Arrow table or dataset; see *Database and Arrow tables*.
 #' @param success_msg Message shown (and logged) when `data` is empty. If
 #'   `NULL` (default), it is `"Check passed: <message>"` when `warn_msg` or
 #'   `abort_msg` is given, so the log names every check that ran, and
@@ -99,14 +127,14 @@ expect_empty <- function(data,
                          log         = getOption("daos.check_log"),
                          dump        = getOption("daos.check_dump")) {
 
-  check_data_frame(data)
+  tbl <- check_table(data)
 
   label <- abort_msg %||% if (!missing(warn_msg)) warn_msg
   success_msg <- success_msg %||%
     if (is.null(label)) "The dataset is empty." else paste0("Check passed: ", label)
 
   report_check(
-    violations  = data,
+    violations  = tbl,
     success_msg = success_msg,
     fail_msg    = abort_msg %||% warn_msg,
     abort       = !is.null(abort_msg),
@@ -195,11 +223,16 @@ first_row_by <- function(group, n_groups) {
 # cuts the other columns, not these. `group` names a column grouping the rows
 # (`dupid`, `overlap_id`), counted in the summary. `call` defaults to the
 # exported checkpoint that called this, so errors name that function.
+#
+# `violations` may be a lazy table (see check_table()). It is then counted
+# and previewed by queries, only fetched in full for `dump`, and carried on
+# the condition as the query itself.
 report_check <- function(violations, success_msg, fail_msg, abort,
                          log = NULL, dump = NULL,
                          key = character(), group = NULL,
                          call = rlang::caller_env()) {
-  n <- nrow(violations)
+  remote <- is_remote(violations)
+  n <- if (remote) remote_nrow(violations) else nrow(violations)
 
   if (n == 0) {
     cli::cli_alert_success("{success_msg}")
@@ -207,19 +240,32 @@ report_check <- function(violations, success_msg, fail_msg, abort,
     return(invisible(TRUE))
   }
 
-  violations <- tibble::as_tibble(violations)
-  violations <- violations[c(intersect(c(group, key), names(violations)),
-                             setdiff(names(violations), c(group, key)))]
+  n_groups <- if (!is.null(group)) {
+    if (remote) remote_nrow(dplyr::distinct(violations, .data[[group]]))
+    else length(unique(violations[[group]]))
+  }
+
+  if (remote) {
+    # Sorted only now, for the rows that are fetched; see sort_by()
+    order <- attr(violations, "daos_order")
+    violations <- dplyr::relocate(violations, dplyr::any_of(c(group, key)))
+    if (length(order) > 0) violations <- dplyr::arrange(violations, !!!order)
+    shown <- dplyr::collect(utils::head(violations, preview_n))
+  } else {
+    violations <- tibble::as_tibble(violations)
+    violations <- violations[c(intersect(c(group, key), names(violations)),
+                               setdiff(names(violations), c(group, key)))]
+    shown <- violations
+  }
 
   dump_file <- dump_violations(violations, dump, fail_msg)
   write_check_log(log, if (abort) "✖" else "!", fail_msg, n, dump_file)
 
-  n_groups <- if (!is.null(group)) length(unique(violations[[group]]))
   bullets <- c(
     "{fail_msg}",
     "i" = if (is.null(n_groups)) "{n} row{?s} found:"
           else "{n} row{?s} in {n_groups} group{?s}:",
-    preview_rows(violations, n = preview_n),
+    preview_rows(shown, n = preview_n),
     if (!is.null(dump_file)) c("i" = "All rows written to {.path {dump_file}}.")
     else if (n > preview_n) c("i" = "Set {.arg dump} or {.code options(daos.check_dump = )} to write all rows to a CSV file.")
   )
@@ -251,6 +297,7 @@ dump_violations <- function(violations, dump, msg) {
   dir.create(dump, recursive = TRUE, showWarnings = FALSE)
   slug <- substr(gsub("^_+|_+$", "", gsub("[^[:alnum:]]+", "_", msg)), 1, 60)
   file <- file.path(dump, paste0(nowf("%Y%m%d_%H%M%S"), "_", slug, ".csv"))
+  if (is_remote(violations)) violations <- dplyr::collect(violations)
   data.table::fwrite(violations, file, bom = TRUE)
   file
 }

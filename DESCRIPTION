@@ -25,6 +25,8 @@ Imports:
 Suggests:
     arrow,
     DBI,
+    dbplyr,
+    duckdb,
     odbc,
     openxlsx2,
     writexl,

@@ -7,15 +7,16 @@
 tally_violations(data, ...)
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A data frame or tibble, a database table (dbplyr, e.g.
+DuckDB) or an Arrow table or dataset; see \emph{Database and Arrow tables}.}
 
 \item{...}{Rules that describe a violating row. Name them; an unnamed rule
 is named after its expression.}
 }
 \value{
 A tibble with one row per rule and the columns \code{rule} (name),
-\code{n} (number of violating rows) and \code{rows} (list of their row numbers in
-\code{data}, for \code{data[rows[[i]], ]}).
+\code{n} (number of violating rows) and, for a data frame, \code{rows} (list of
+their row numbers in \code{data}, for \code{data[rows[[i]], ]}).
 }
 \description{
 Evaluates a set of named rules and returns one row per rule with the
@@ -53,6 +54,10 @@ the data, e.g. with \code{\link[=write_excel]{write_excel()}} after dropping the
 Rules follow \code{\link[dplyr:filter]{dplyr::filter()}} semantics: each must give \code{TRUE} for a
 violating row, and \code{NA} counts as no violation. Rules are evaluated with
 \code{\link[dplyr:mutate]{dplyr::mutate()}}, so \code{if_any()}, \code{across()} and grouped data work.
+
+A database or Arrow table (see \code{\link[=expect_empty]{expect_empty()}}) is tallied in a single
+query for all rules. Rows in a database have no numbers, so the result
+then has no \code{rows} column.
 }
 }
 \examples{

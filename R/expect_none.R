@@ -21,7 +21,6 @@
 #' (`"Found rows where amount < 0"`), which is often clear enough during
 #' exploration. Write your own message for checks that stay in production.
 #'
-#' @param data A data frame or tibble.
 #' @param ... Conditions that describe a violating row, as in
 #'   [dplyr::filter()].
 #' @inheritParams expect_empty
@@ -51,7 +50,7 @@ expect_none <- function(data, ...,
                         log         = getOption("daos.check_log"),
                         dump        = getOption("daos.check_dump")) {
 
-  check_data_frame(data)
+  tbl <- check_table(data)
   conditions <- rlang::enquos(...)
   if (length(conditions) == 0) {
     cli::cli_abort("Supply at least one condition in {.arg ...}.")
@@ -61,7 +60,7 @@ expect_none <- function(data, ...,
   rule  <- paste(vapply(conditions, rlang::as_label, character(1)), collapse = " & ")
 
   report_check(
-    violations  = dplyr::filter(data, !!!conditions),
+    violations  = dplyr::filter(tbl, !!!conditions),
     success_msg = success_msg %||%
       if (is.null(label)) paste0("No rows where ", rule) else paste0("Check passed: ", label),
     fail_msg    = label %||% paste0("Found rows where ", rule),

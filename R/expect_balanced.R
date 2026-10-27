@@ -27,7 +27,6 @@
 #' The check scales to full-population registers: the unit-period grid is
 #' only built for units that actually lack a period.
 #'
-#' @param data A data frame or tibble.
 #' @param id Column(s) identifying the unit (tidy-select), e.g. `cpr` or
 #'   `c(cvr, lbnr)`.
 #' @param time The period column (one column), e.g. `year`. Any type that
@@ -71,13 +70,17 @@ expect_balanced <- function(data, id, time,
                             log         = getOption("daos.check_log"),
                             dump        = getOption("daos.check_dump")) {
 
-  check_data_frame(data)
-  ids      <- names(dplyr::select(data, {{ id }}))
-  time_col <- names(dplyr::select(data, {{ time }}))
+  tbl      <- check_table(data)
+  ids      <- select_names(tbl, {{ id }})
+  time_col <- select_names(tbl, {{ time }})
   if (length(ids) == 0) cli::cli_abort("{.arg id} must select at least one column.")
   if (length(time_col) != 1) cli::cli_abort("{.arg time} must select exactly one column.")
 
-  missing_periods <- find_panel_gaps(data, ids, time_col, periods, gaps_only)
+  missing_periods <- if (is_remote(tbl)) {
+    remote_panel_gaps(tbl, ids, time_col, periods, gaps_only)
+  } else {
+    find_panel_gaps(data, ids, time_col, periods, gaps_only)
+  }
 
   what  <- if (gaps_only) "Gaps in panel" else "Panel is not balanced"
   label <- abort_msg %||% warn_msg

@@ -20,7 +20,6 @@
 #' step, but faster: the full rows are only touched when there are
 #' duplicates to report.
 #'
-#' @param data A data frame or tibble.
 #' @param ... Key columns (tidy-select). If omitted, all columns are used,
 #'   which checks for fully duplicated rows.
 #' @inheritParams expect_empty
@@ -53,16 +52,20 @@ expect_unique <- function(data, ...,
                           log         = getOption("daos.check_log"),
                           dump        = getOption("daos.check_dump")) {
 
-  check_data_frame(data)
-  key_cols <- if (...length() > 0) names(dplyr::select(data, ...))
+  tbl <- check_table(data)
+  key_cols <- if (...length() > 0) select_names(tbl, ...)
   keys <- if (is.null(key_cols)) "all columns" else paste(key_cols, collapse = ", ")
 
-  dupid <- dup_ids(data, dup_cols(data, ...))
-  rows  <- which(dupid > 0L)
-  rows  <- rows[order(dupid[rows])]
-  dups  <- tibble::as_tibble(data)[rows, ]
-  dups  <- tibble::add_column(dups[setdiff(names(dups), "dupid")],
-                              dupid = dupid[rows], .before = 1)
+  if (is_remote(tbl)) {
+    dups <- remote_duplicates(tbl, key_cols %||% colnames(tbl))
+  } else {
+    dupid <- dup_ids(data, dup_cols(data, ...))
+    rows  <- which(dupid > 0L)
+    rows  <- rows[order(dupid[rows])]
+    dups  <- tibble::as_tibble(data)[rows, ]
+    dups  <- tibble::add_column(dups[setdiff(names(dups), "dupid")],
+                                dupid = dupid[rows], .before = 1)
+  }
 
   label <- abort_msg %||% warn_msg
   report_check(

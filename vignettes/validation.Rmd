@@ -320,6 +320,39 @@ tryCatch(
 )
 ```
 
+## Data too large for memory: DuckDB and Arrow
+
+Every checkpoint, and `tally_violations()`, also takes a database table
+from dbplyr, such as DuckDB, and an Arrow table or dataset. The check runs
+where the data lives: the violation set is a query, and only its size and
+the first rows travel into R. Arrow data goes through DuckDB.
+
+```{r, eval = FALSE}
+con <- DBI::dbConnect(duckdb::duckdb(), "register.duckdb")
+
+tbl(con, "persons") |>
+  expect_none(is.na(cpr), abort_msg = "Persons without a cpr") |>
+  expect_unique(cpr, year) |>
+  expect_balanced(cpr, year, gaps_only = TRUE)
+
+arrow::open_dataset("register/") |>
+  tally_violations(
+    "Missing cpr"     = is.na(cpr),
+    "Negative income" = income < 0
+  )
+```
+
+Each checkpoint returns the table unevaluated, so the pipeline stays in
+the database. A failure carries its violation set as a query in
+`$violations`; `collect()` fetches the rows, and `dump` writes them all to
+a CSV file. A database has no row order, so `dupid` follows the key
+rather than first appearance, and `tally_violations()` has no `rows`
+column.
+
+For data that fits in memory, the in-memory checks are fast as well:
+they group keys such as cpr in one linear pass instead of sorting them,
+and check a million persons over five years in under a second.
+
 ## The same idea inside the package
 
 `read_files()` uses exactly this philosophy internally: every path is

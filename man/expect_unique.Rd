@@ -15,7 +15,8 @@ expect_unique(
 )
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A data frame or tibble, a database table (dbplyr, e.g.
+DuckDB) or an Arrow table or dataset; see \emph{Database and Arrow tables}.}
 
 \item{...}{Key columns (tidy-select). If omitted, all columns are used,
 which checks for fully duplicated rows.}

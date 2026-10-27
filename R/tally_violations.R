@@ -36,13 +36,17 @@
 #' violating row, and `NA` counts as no violation. Rules are evaluated with
 #' [dplyr::mutate()], so `if_any()`, `across()` and grouped data work.
 #'
-#' @param data A data frame or tibble.
+#' A database or Arrow table (see [expect_empty()]) is tallied in a single
+#' query for all rules. Rows in a database have no numbers, so the result
+#' then has no `rows` column.
+#'
+#' @inheritParams expect_empty
 #' @param ... Rules that describe a violating row. Name them; an unnamed rule
 #'   is named after its expression.
 #'
 #' @return A tibble with one row per rule and the columns `rule` (name),
-#'   `n` (number of violating rows) and `rows` (list of their row numbers in
-#'   `data`, for `data[rows[[i]], ]`).
+#'   `n` (number of violating rows) and, for a data frame, `rows` (list of
+#'   their row numbers in `data`, for `data[rows[[i]], ]`).
 #'
 #' @examples
 #' tally_violations(ggplot2::mpg,
@@ -55,13 +59,14 @@
 #'
 #' @export
 tally_violations <- function(data, ...) {
-  check_data_frame(data)
+  tbl <- check_table(data)
   rules <- rlang::enquos(..., .named = TRUE)
   if (length(rules) == 0) {
     cli::cli_abort("Supply at least one rule in {.arg ...}.")
   }
 
   call <- rlang::current_env()
+  if (is_remote(tbl)) return(remote_tally(tbl, rules, call))
   rows <- lapply(names(rules), function(name) {
     hit <- tryCatch(
       dplyr::mutate(data, .daos_rule = !!rules[[name]], .keep = "none")$.daos_rule,

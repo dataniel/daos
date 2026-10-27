@@ -14,7 +14,8 @@ expect_empty(
 )
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A data frame or tibble, a database table (dbplyr, e.g.
+DuckDB) or an Arrow table or dataset; see \emph{Database and Arrow tables}.}
 
 \item{success_msg}{Message shown (and logged) when \code{data} is empty. If
 \code{NULL} (default), it is \code{"Check passed: <message>"} when \code{warn_msg} or
@@ -81,6 +82,33 @@ A log line has the form \verb{time | symbol | message | rows [| dump file]}:
 \if{html}{\out{<div class="sourceCode">}}\preformatted{2026-06-11 09:00:03 | ✔ | Check passed: NA ids | 0 rows
 2026-06-11 09:00:03 | ! | Negative amounts | 3 rows | log/violations/20260611_090003_Negative_amounts.csv
 }\if{html}{\out{</div>}}
+}
+
+\subsection{Database and Arrow tables}{
+
+Every checkpoint also takes a database table from dbplyr, such as a
+DuckDB table, and an Arrow table or dataset, and checks it where it
+lives. The violation set is built as a query, and only its size and the
+preview rows are fetched into R, so a check on a register too large for
+memory still works. Arrow data is queried through DuckDB with
+\code{arrow::to_duckdb()}. This needs the dbplyr package, and duckdb for
+Arrow.
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{con <- DBI::dbConnect(duckdb::duckdb(), "register.duckdb")
+
+dplyr::tbl(con, "persons") |>
+  expect_none(is.na(cpr), abort_msg = "Persons without a cpr") |>
+  expect_unique(cpr, year)
+}\if{html}{\out{</div>}}
+
+A checkpoint returns the table it was given, still unevaluated, so the
+pipeline continues in the database. On a failure the condition's
+\code{violations} field holds the violation set as a query: \code{collect()} it to
+get the rows. \code{dump} fetches and writes all of them. Two things differ
+from data frames, because a database table has no row order:
+\code{\link[=expect_unique]{expect_unique()}} numbers \code{dupid} in the order of the key instead of
+first appearance, and spells starting on the same day are ordered by
+their end in \code{\link[=expect_no_overlap]{expect_no_overlap()}}.
 }
 }
 \examples{
