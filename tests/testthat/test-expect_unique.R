@@ -14,6 +14,12 @@ test_that("expect_unique() reports duplicated rows grouped by dupid", {
   expect_equal(nrow(cnd$violations), 2)
   expect_true("dupid" %in% names(cnd$violations))
   expect_false("isdup" %in% names(cnd$violations))
+  expect_match(conditionMessage(cnd), "2 rows in 1 group:")
+})
+
+test_that("expect_unique() puts dupid and the key columns first", {
+  cnd <- rlang::catch_cnd(expect_unique(df, year, cvr), classes = "daos_check_failure")
+  expect_equal(names(cnd$violations), c("dupid", "year", "cvr"))
 })
 
 test_that("expect_unique() without columns checks full rows", {

@@ -20,6 +20,15 @@ test_that("overlapping spells are reported with a shared overlap_id", {
   expect_equal(names(v)[1], "overlap_id")
 })
 
+test_that("the rule's columns come first and groups are counted", {
+  wide <- cbind(note = "x", spells, kom = 101L)
+  cnd <- rlang::catch_cnd(expect_no_overlap(wide, cpr, start, end),
+                          classes = "daos_check_failure")
+  expect_equal(names(cnd$violations),
+               c("overlap_id", "cpr", "start", "end", "note", "kom"))
+  expect_match(conditionMessage(cnd), "5 rows in 2 groups")
+})
+
 test_that("adjacent spells do not overlap, shared days do", {
   adjacent <- data.frame(cpr = "a", start = d(c("2020-01-01", "2020-02-01")),
                          end = d(c("2020-01-31", "2020-02-28")))

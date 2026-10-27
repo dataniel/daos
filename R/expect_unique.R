@@ -53,8 +53,8 @@ expect_unique <- function(data, ...,
                           dump        = getOption("daos.check_dump")) {
 
   check_data_frame(data)
-  keys <- if (...length() == 0) "all columns" else
-    paste(names(dplyr::select(data, ...)), collapse = ", ")
+  key_cols <- if (...length() > 0) names(dplyr::select(data, ...))
+  keys <- if (is.null(key_cols)) "all columns" else paste(key_cols, collapse = ", ")
 
   flagged <- flag_duplicates(data, ...)
   dups <- flagged[flagged$isdup, setdiff(names(flagged), "isdup")]
@@ -68,7 +68,9 @@ expect_unique <- function(data, ...,
     fail_msg    = label %||% paste0("Duplicate rows on ", keys),
     abort       = !is.null(abort_msg),
     log         = log,
-    dump        = dump
+    dump        = dump,
+    key         = key_cols,
+    group       = "dupid"
   )
   invisible(data)
 }

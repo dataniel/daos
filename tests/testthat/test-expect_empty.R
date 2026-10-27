@@ -36,7 +36,38 @@ test_that("failure messages report the row count and preview rows", {
   big <- data.frame(x = 1:12)
   cnd <- rlang::catch_cnd(expect_empty(big, warn_msg = "Many"))
   expect_match(conditionMessage(cnd), "12 rows found")
-  expect_match(conditionMessage(cnd), "and 7 more")
+  expect_match(conditionMessage(cnd), "7 more rows")
+  expect_match(conditionMessage(cnd), "last_violations()", fixed = TRUE)
+})
+
+test_that("the preview keeps columns aligned and drops the tibble header", {
+  df <- data.frame(id = c(1, 22222), name = c("a", "bbbbbbbb"))
+  cnd <- rlang::catch_cnd(expect_empty(df, warn_msg = "Bad rows"))
+  msg <- cli::ansi_strip(conditionMessage(cnd))
+  expect_no_match(msg, "A tibble")
+  expect_no_match(msg, "print(n = ", fixed = TRUE)
+
+  rows <- grep("^\\s+[12]\\s", strsplit(msg, "\n")[[1]], value = TRUE)
+  expect_length(rows, 2)
+  expect_equal(regexpr("a", rows[1]), regexpr("bbbbbbbb", rows[2]),
+               ignore_attr = TRUE)
+})
+
+test_that("last_violations() returns the rows of the latest failed check", {
+  suppressWarnings(expect_empty(data.frame(x = 1:3), warn_msg = "First"))
+  expect_equal(last_violations(), tibble::tibble(x = 1:3))
+
+  try(expect_empty(data.frame(y = "a"), abort_msg = "Second"), silent = TRUE)
+  expect_equal(last_violations(), tibble::tibble(y = "a"))
+
+  # A passing check leaves the last failure in place
+  expect_empty(data.frame())
+  expect_equal(last_violations(), tibble::tibble(y = "a"))
+})
+
+test_that("last_violations() errors before any check has failed", {
+  local_mocked_bindings(the = new.env())
+  expect_error(last_violations(), "No checkpoint has failed")
 })
 
 test_that("messages are shown literally, braces included", {
@@ -59,11 +90,11 @@ test_that("failures carry the violations in a classed condition", {
   df <- data.frame(x = 1:2)
   w <- rlang::catch_cnd(expect_empty(df), classes = "daos_check_failure")
   expect_s3_class(w, "warning")
-  expect_equal(w$violations, df)
+  expect_equal(w$violations, tibble::as_tibble(df))
 
   e <- rlang::catch_cnd(expect_empty(df, abort_msg = "stop"), classes = "daos_check_failure")
   expect_s3_class(e, "error")
-  expect_equal(e$violations, df)
+  expect_equal(e$violations, tibble::as_tibble(df))
 })
 
 test_that("expect_empty() logs success, warning and abort", {

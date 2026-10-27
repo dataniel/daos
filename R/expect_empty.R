@@ -3,8 +3,9 @@
 #' A pipeline-friendly validation checkpoint. Express a rule as "the set of
 #' violations must be empty", build that set with an ordinary `filter()`, and
 #' pipe it in. Emits a success alert when the data frame has zero rows,
-#' otherwise warns or aborts with the number of offending rows and a preview
-#' of the first few.
+#' otherwise warns or aborts with the number of offending rows and the first
+#' few printed as a tibble. [last_violations()] returns all of them as a
+#' tibble afterwards, also when the check only warned.
 #'
 #' Messages are shown literally: braces are not interpolated, so regular
 #' expressions such as `"^\\d{8}$"` are safe to use in a message.
@@ -84,7 +85,8 @@
 #'
 #' @seealso [expect_none()] to check a condition without leaving the
 #'   pipeline, [expect_unique()] for keys, [tally_violations()] to run many
-#'   rules at once, and [flag_duplicates()].
+#'   rules at once, [last_violations()] for the rows of a failed check, and
+#'   [flag_duplicates()].
 #'
 #' @export
 expect_empty <- function(data,
@@ -123,11 +125,18 @@ check_data_frame <- function(data, call = rlang::caller_env()) {
   }
 }
 
+# Session state: the rows of the latest failed check, for last_violations()
+the <- new.env(parent = emptyenv())
+
 # Reports a violation set: success alert when empty, otherwise warning or
-# error of class `daos_check_failure` carrying the rows. `call` defaults to
-# the exported checkpoint that called this, so errors name that function.
+# error of class `daos_check_failure` carrying the rows. `key` names the
+# columns the rule is about; they are moved to the front so a narrow console
+# cuts the other columns, not these. `group` names a column grouping the rows
+# (`dupid`, `overlap_id`), counted in the summary. `call` defaults to the
+# exported checkpoint that called this, so errors name that function.
 report_check <- function(violations, success_msg, fail_msg, abort,
                          log = NULL, dump = NULL,
+                         key = character(), group = NULL,
                          call = rlang::caller_env()) {
   n <- nrow(violations)
 
@@ -137,13 +146,21 @@ report_check <- function(violations, success_msg, fail_msg, abort,
     return(invisible(TRUE))
   }
 
+  violations <- tibble::as_tibble(violations)
+  violations <- violations[c(intersect(c(group, key), names(violations)),
+                             setdiff(names(violations), c(group, key)))]
+  the$last_violations <- violations
+
   dump_file <- dump_violations(violations, dump, fail_msg)
   write_check_log(log, if (abort) "✖" else "!", fail_msg, n, dump_file)
 
+  n_groups <- if (!is.null(group)) length(unique(violations[[group]]))
   bullets <- c(
     "{fail_msg}",
-    "i" = "{n} row{?s} found:",
+    "i" = if (is.null(n_groups)) "{n} row{?s} found:"
+          else "{n} row{?s} in {n_groups} group{?s}:",
     preview_rows(violations),
+    "i" = "Run {.run daos::last_violations()} to get all rows.",
     if (!is.null(dump_file)) c("i" = "All rows written to {.path {dump_file}}.")
   )
 
@@ -175,39 +192,60 @@ dump_violations <- function(violations, dump, msg) {
   file
 }
 
-# The first rows as escaped cli bullets: `col = value, col = value`.
-preview_rows <- function(data, n = 5, width = 100) {
+# The first rows as a tibble printout, one escaped cli bullet per line. The
+# "# A tibble" header repeats the summary bullet and the "print(n = ...)"
+# hint does not apply to a message, so both are dropped. Spaces become
+# non-breaking, because cli would otherwise collapse the column alignment.
+preview_rows <- function(data, n = 5, width = cli::console_width() - 2) {
   if (ncol(data) == 0) return(character())
-  shown <- utils::head(as.data.frame(data), n)
-
-  cells <- lapply(shown, format_cells)
-  lines <- vapply(seq_len(nrow(shown)), function(i) {
-    paste0(names(cells), " = ", vapply(cells, `[[`, "", i), collapse = ", ")
-  }, character(1))
-
-  too_wide <- nchar(lines) > width
-  lines[too_wide] <- paste0(substr(lines[too_wide], 1, width - 3), "...")
-
-  out <- stats::setNames(cli_escape(lines), rep(" ", length(lines)))
-  if (nrow(data) > n) out <- c(out, " " = paste0("... and ", nrow(data) - n, " more"))
-  out
-}
-
-format_cells <- function(x) {
-  if (is.list(x)) {
-    return(vapply(x, function(el) {
-      if (!is.atomic(el)) return(paste0("<", class(el)[1], ">"))
-      shown <- paste(utils::head(el, 5), collapse = ", ")
-      paste0("[", shown, if (length(el) > 5) ", ...", "]")
-    }, character(1)))
-  }
-  if (is.character(x) || is.factor(x)) {
-    return(encodeString(as.character(x), quote = "\""))
-  }
-  # Element-wise, so one value's decimals don't pad the others
-  vapply(seq_along(x), function(i) format(x[i], trim = TRUE, digits = 6), character(1))
+  lines <- format(tibble::as_tibble(data), n = n, width = width)
+  lines <- lines[!grepl("^# A tibble|print\\(n = ", cli::ansi_strip(lines))]
+  lines <- gsub(" ", " ", cli_escape(sub("\\s+$", "", lines)), fixed = TRUE)
+  stats::setNames(lines, rep(" ", length(lines)))
 }
 
 cli_escape <- function(x) {
   gsub("}", "}}", gsub("{", "{{", x, fixed = TRUE), fixed = TRUE)
+}
+
+
+#' Get the rows of the last failed checkpoint
+#'
+#' The `expect_*()` checkpoints return `data`, so a pipeline continues after
+#' a warning, and the failure message only previews the first rows. The
+#' offending rows are kept for the rest of the session, and
+#' `last_violations()` returns them, in the spirit of [rlang::last_error()]:
+#'
+#' ```r
+#' df |>
+#'   expect_unique(cpr, year)
+#' #> Warning: Duplicate rows on cpr, year
+#' #> ℹ 1,204 rows in 598 groups: ...
+#'
+#' last_violations() |>
+#'   count(year)
+#' ```
+#'
+#' Only the latest failure is kept, and it is replaced by the next one; a
+#' check that passes leaves it in place. Nothing survives the session: for
+#' unattended pipelines, write the rows to disk with the `dump` argument or
+#' `options(daos.check_dump = ...)`, see [expect_empty()].
+#'
+#' @return A tibble with the offending rows of the most recent failed check,
+#'   with the columns the rule is about first (e.g. `dupid` and the key
+#'   columns for [expect_unique()]).
+#'
+#' @examples
+#' df <- data.frame(id = c(1, 1, 2), year = 2024)
+#' expect_unique(df, id, year)
+#' last_violations()
+#'
+#' @seealso [expect_empty()] and the other checkpoints.
+#'
+#' @export
+last_violations <- function() {
+  if (is.null(the$last_violations)) {
+    cli::cli_abort("No checkpoint has failed in this session.")
+  }
+  the$last_violations
 }

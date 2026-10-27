@@ -73,12 +73,25 @@ df |>
 #> Error in `expect_empty()`:
 #> ! Rows without an id, cannot continue
 #> ℹ 2 rows found:
-#>   id = NA, amount = 120
-#>   id = NA, amount = -4
+#>      id amount
+#>   <dbl>  <dbl>
+#> 1    NA    120
+#> 2    NA     -4
+#> ℹ Run `daos::last_violations()` to get all rows.
 ```
 
 Messages are shown literally, so a regular expression such as
 `"CVR must match ^\\d{8}$"` is safe in a message.
+
+The message only shows the first five rows. The checkpoint returns what it
+was given, not the violations, so the rest would be lost once the warning
+has been shown. Instead the rows of the latest failed check are kept for
+the session, and `last_violations()` returns them as a tibble, in the
+spirit of `rlang::last_error()`:
+
+```{r}
+last_violations()
+```
 
 ## Checks in the middle of a pipeline: `expect_none()`
 
@@ -207,7 +220,9 @@ expect_no_overlap(addresses, cpr, start, end)
 
 Spells are closed intervals, and a missing end means the spell is
 ongoing. The reported rows carry an `overlap_id` that groups spells
-overlapping each other, the same idea as `dupid`.
+overlapping each other, the same idea as `dupid`. As in every checkpoint
+with a key, the columns the rule is about come first, so a wide data
+frame cuts its other columns from the message, not these.
 
 ## Column types: `view_types()` + `expect_empty()`
 

@@ -109,6 +109,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
+| `last_violations()` | All offending rows of the last failed checkpoint, as a tibble |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |

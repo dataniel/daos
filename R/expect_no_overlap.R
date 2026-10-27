@@ -69,7 +69,9 @@ expect_no_overlap <- function(data, id, start, end,
     fail_msg    = label %||% paste0("Overlapping spells per ", toString(ids)),
     abort       = !is.null(abort_msg),
     log         = log,
-    dump        = dump
+    dump        = dump,
+    key         = c(ids, start_col, end_col),
+    group       = "overlap_id"
   )
   invisible(data)
 }
