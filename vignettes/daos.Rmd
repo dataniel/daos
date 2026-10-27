@@ -559,6 +559,40 @@ parts2 <- split_by(ggplot2::mpg, cyl, drv, .sep = "-")
 names(parts2)[1:4]
 ```
 
+### `spells_to_panel()`: from spells to a yearly panel
+
+Registers often store spells: one row per education, address or benefit
+period, with a start, an end and a status. `spells_to_panel()` turns them
+into one row per unit and year (or `by = "quarter"`/`"month"`), with the
+status at primo and ultimo. By default primo is the previous ultimo, so
+primo 2021 is the status on 31 December 2020.
+
+In an education register the status is the *outcome* of the spell, passed
+or dropped out. With `status_is = "outcome"`, a running spell shows as
+`ongoing` and the outcome applies from the end date until a new spell
+starts:
+
+```{r}
+education <- data.frame(
+  cpr    = c("a", "a", "b"),
+  start  = as.Date(c("2018-08-15", "2021-08-15", "2019-08-15")),
+  end    = as.Date(c("2021-06-20", NA,           "2020-03-01")),
+  status = c("passed", "in progress", "dropped out")
+)
+
+education |>
+  spells_to_panel(cpr, start, end, status,
+                  from = 2018, to = 2022,
+                  status_is = "outcome", ongoing = "in progress")
+```
+
+With the default `status_is = "state"`, the status holds for the whole spell
+(enrolled, on leave) and is `NA` outside spells. `from` and `to` give every
+unit the same window, which makes a balanced panel. Without them, each
+unit runs from its first start to its last end. Dates are handled as integer
+days, and one compiled pass over the sorted spells does the work, so
+millions of spells take seconds.
+
 ---
 
 ## Domain-specific

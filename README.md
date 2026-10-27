@@ -121,6 +121,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
+| `spells_to_panel()` | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `tally_violations()` | Count violations for many rules at once (counts, never judges); filter and pipe into `expect_empty()` |
 | `view_types()` | Compare column types across data frames (or a list from `read_files()`) and flag which would break a bind |

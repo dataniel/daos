@@ -217,9 +217,12 @@ SEXP daos_cpr_info(SEXP x, SEXP codes, SEXP references) {
     return out;
 }
 
+SEXP daos_spell_status(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+
 static const R_CallMethodDef call_methods[] = {
     {"daos_clean_cpr", (DL_FUNC) &daos_clean_cpr, 1},
     {"daos_cpr_info", (DL_FUNC) &daos_cpr_info, 3},
+    {"daos_spell_status", (DL_FUNC) &daos_spell_status, 8},
     {NULL, NULL, 0}
 };
 
