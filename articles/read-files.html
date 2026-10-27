@@ -190,7 +190,9 @@ That plugs straight into the checkpoint pattern from
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/expect_empty.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"amount is not numeric everywhere"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: amount is not numeric everywhere</span></span></code></pre></div>
+<span><span class="co">#&gt; Warning in expect_empty(view_types(dat2023, dat2024, focus = c(amount = "dbl")), : amount is not numeric everywhere</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 1 row found:</span></span>
+<span><span class="co">#&gt;   column = "amount", dat2024 = "chr"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="other-shapes-of-output">Other shapes of output<a class="anchor" aria-label="anchor" href="#other-shapes-of-output"></a>

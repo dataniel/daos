@@ -1,16 +1,17 @@
-# Format DB07 industry codes with dots
+# Format DB07 industry codes
 
 Danish DB07 industry codes (Dansk Branchekode 2007) appear in data both
 with and without dots: `"011100"` in one register, `"01.11.00"` in a
-classification table. `clean_db07()` normalises to the dotted form by
-stripping any existing dots and spaces and inserting a dot after every
-second digit. It works at any aggregation level (`"01.1"`, `"01.11"`,
-`"01.11.00"`) and is idempotent, so mixed input comes out uniform.
+classification table. `format_db07()` automatically handles these
+formats, including partially dotted codes and whitespace, within the
+same vector. Choose dotted or compact output with `format`; no input
+format is needed. Dotted output inserts a dot after every second digit.
+Any aggregation level is supported (`"01.1"`, `"01.11"`, `"01.11.00"`).
 
 ## Usage
 
 ``` r
-clean_db07(x)
+format_db07(x, format = c("dotted", "compact"))
 ```
 
 ## Arguments
@@ -20,14 +21,16 @@ clean_db07(x)
   A character vector of DB07 codes. Numeric vectors are converted with
   [`as.character()`](https://rdrr.io/r/base/character.html) first.
 
+- format:
+
+  Output format: `"dotted"` (default, e.g. `"01.11.00"`) or `"compact"`
+  (digits without separators, e.g. `"011100"`).
+
 ## Value
 
 A character vector of the same length.
 
 ## Details
-
-The inverse (the bare-digit form) is simply `gsub("[.]", "", x)`, so it
-has no function of its own.
 
 No digits are invented: a code that lost its leading zero in Excel (e.g.
 `11100` for `"011100"`) cannot be repaired safely, because a 3- or
@@ -42,9 +45,11 @@ codes as character columns to avoid the problem at the source.
 ## Examples
 
 ``` r
-clean_db07(c("011100", "01.1100", "0111", "011", NA))
+format_db07(c("011100", "01.1100", "0111", "011", NA))
 #> [1] "01.11.00" "01.11.00" "01.11"    "01.1"     NA        
+format_db07(c("011100", "01.11.00", "01 11 00"), format = "compact")
+#> [1] "011100" "011100" "011100"
 
 # Typical use: match register data to a classification table
-# df |> dplyr::mutate(branche = clean_db07(branche))
+# df |> dplyr::mutate(branche = format_db07(branche, "compact"))
 ```

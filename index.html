@@ -178,80 +178,115 @@
 <td>Standardise CVR numbers: strip separators and the DK VAT prefix</td>
 </tr>
 <tr class="odd">
-<td><code><a href="reference/clean_db07.html">clean_db07()</a></code></td>
-<td>Format DB07 industry codes with dots (<code>011100</code> → <code>01.11.00</code>)</td>
+<td><code><a href="reference/format_db07.html">format_db07()</a></code></td>
+<td>Automatically handle mixed DB07 input; choose dotted (<code>01.11.00</code>) or compact (<code>011100</code>) output</td>
 </tr>
 <tr class="even">
+<td><code><a href="reference/db_label.html">db_label()</a></code></td>
+<td>Look up Danish industry labels with an explicit DB07 or DB25 version</td>
+</tr>
+<tr class="odd">
+<td><code><a href="reference/inspect_db.html">inspect_db()</a></code></td>
+<td>Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="reference/convert_db07_to_db25.html">convert_db07_to_db25()</a></code> / <code><a href="reference/convert_db07_to_db25.html">convert_db25_to_db07()</a></code>
+</td>
+<td>Convert full industry codes using DST’s bundled keys; strict or simplified mapping</td>
+</tr>
+<tr class="odd">
 <td><code><a href="reference/drop_empty_rows.html">drop_empty_rows()</a></code></td>
 <td>Drop rows empty across selected columns; optionally include blank text</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/drop_empty_rows.html">drop_empty_cols()</a></code></td>
 <td>Drop entirely empty selected columns</td>
+</tr>
+<tr class="odd">
+<td><code><a href="reference/expect_balanced.html">expect_balanced()</a></code></td>
+<td>Checkpoint: every unit observed in every period, or no gaps (<code>gaps_only</code>)</td>
 </tr>
 <tr class="even">
 <td><code><a href="reference/expect_empty.html">expect_empty()</a></code></td>
 <td>Pipeline checkpoint that warns or aborts if a data frame is non-empty</td>
 </tr>
 <tr class="odd">
+<td><code><a href="reference/expect_no_overlap.html">expect_no_overlap()</a></code></td>
+<td>Checkpoint: spells (addresses, employment) do not overlap within a unit</td>
+</tr>
+<tr class="even">
+<td><code><a href="reference/expect_none.html">expect_none()</a></code></td>
+<td>Checkpoint: no row matches a condition; returns the full data for chaining</td>
+</tr>
+<tr class="odd">
+<td><code><a href="reference/expect_unique.html">expect_unique()</a></code></td>
+<td>Checkpoint: key columns identify each row uniquely</td>
+</tr>
+<tr class="even">
 <td><code><a href="reference/f.html">f()</a></code></td>
 <td>String interpolation shorthand (<code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue</a></code> alias)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/flag_duplicates.html">flag_duplicates()</a></code></td>
 <td>Prepend <code>isdup</code>/<code>dupid</code> columns to mark duplicate rows</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/is_blank.html">is_blank()</a></code></td>
 <td>Test whether a value is blank in the broadest sense</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/nowf.html">nowf()</a></code></td>
 <td>Formatted current timestamp, e.g. for file names</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/read_access.html">read_access()</a></code></td>
 <td>Read data from a Microsoft Access database via ODBC</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/read_files.html">read_files()</a></code></td>
 <td>Validate paths, read files (auto or custom reader), and optionally bind or unpack</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/read_ta.html">read_ta()</a></code></td>
 <td>Read Greenlandic TA files (old layout)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/write_ta.html">write_ta()</a></code></td>
 <td>Write Greenlandic TA files (old layout)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/read_ta2.html">read_ta2()</a></code></td>
 <td>Read Greenlandic TA files (new 140-character layout)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/write_ta2.html">write_ta2()</a></code></td>
 <td>Write Greenlandic TA files (new 140-character layout)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/screen_timeseries.html">screen_timeseries()</a></code></td>
 <td>Fast interactive time-series screening with optional in-app diagnostics and seasonal plots</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/diagnose_timeseries.html">diagnose_timeseries()</a></code></td>
 <td>Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/shh.html">shh()</a></code></td>
 <td>Suppress messages and warnings during evaluation</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/split_by.html">split_by()</a></code></td>
 <td>Split a data frame into a named list by grouping columns</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/summon.html">summon()</a></code></td>
 <td>Retrieve objects matching a regex pattern from an environment</td>
+</tr>
+<tr class="odd">
+<td><code><a href="reference/tally_violations.html">tally_violations()</a></code></td>
+<td>Count violations for many rules at once (counts, never judges); filter and pipe into <code><a href="reference/expect_empty.html">expect_empty()</a></code>
+</td>
 </tr>
 <tr class="even">
 <td><code><a href="reference/view_types.html">view_types()</a></code></td>
@@ -259,11 +294,7 @@
 </tr>
 <tr class="odd">
 <td><code><a href="reference/write_excel.html">write_excel()</a></code></td>
-<td>Write data frames to a presentable xlsx: bold frozen header, thousand separators, blank NAs</td>
-</tr>
-<tr class="even">
-<td><code><a href="reference/append_excel.html">append_excel()</a></code></td>
-<td>Append formatted sheets to an existing xlsx file</td>
+<td>Format xlsx with configurable <code>digits</code>; choose <code>new</code>, <code>append</code>, <code>replace</code> (sheets), or <code>overwrite</code> (whole file)</td>
 </tr>
 </tbody>
 </table>

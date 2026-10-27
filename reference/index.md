@@ -32,8 +32,6 @@
   Retrieve objects matching a pattern from an environment
 - [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
   : Write data frames to a presentable Excel file
-- [`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)
-  : Append sheets to an existing Excel file
 
 ## Data wrangling
 
@@ -41,8 +39,6 @@
   : Compare column types across data frames
 - [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
   : Flag duplicate rows
-- [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
-  : Assert that a data frame is empty
 - [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
   : Diagnose time series, optionally within dplyr groups
 - [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)
@@ -50,6 +46,28 @@
   : Drop rows or columns that are empty in selected columns
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
+
+## Validation checkpoints
+
+State a rule as “the set of violations must be empty”. The `expect_*()`
+functions judge a rule and warn or abort;
+[`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
+only counts violations for many rules, so you decide on severity
+afterwards. See
+[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+
+- [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+  : Assert that a data frame is empty
+- [`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
+  : Assert that no rows match a condition
+- [`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md)
+  : Assert that key columns identify each row uniquely
+- [`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
+  : Assert that a panel is balanced, or has no gaps
+- [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
+  : Assert that spells do not overlap within a unit
+- [`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
+  : Count violations for several rules at once
 
 ## Interactive
 
@@ -66,8 +84,17 @@
   an age calculation for CPR information
 - [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   : Standardise CVR numbers
-- [`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
-  : Format DB07 industry codes with dots
+- [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)
+  : Format DB07 industry codes
+- [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+  [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+  : Convert industry codes between DB07 and DB25 using Statistics
+  Denmark's keys
+- [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)
+  : Look up Danish industry labels for DB07 or DB25 codes
+- [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)
+  : Inspect possible classifications of mixed DB07 and DB25 industry
+  codes
 - [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
   Read a Greenlandic TA file
 - [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)

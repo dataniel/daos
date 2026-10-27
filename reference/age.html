@@ -47,7 +47,7 @@ This helper describes a calculation; it does not calculate an age itself.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">age</span><span class="op">(</span><span class="va">year</span>, at <span class="op">=</span> <span class="st">"primo"</span>, <span class="va">date</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">age</span><span class="op">(</span><span class="va">year</span>, at <span class="op">=</span> <span class="st">"primo"</span>, <span class="va">date</span>, primo <span class="op">=</span> <span class="st">"previous_ultimo"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -56,17 +56,23 @@ This helper describes a calculation; it does not calculate an age itself.</p>
 
 <dl><dt id="arg-year">year<a class="anchor" aria-label="anchor" href="#arg-year"></a></dt>
 <dd><p>Numeric whole year(s), directly or as a column/expression in
-the input data. Defaults to 1 January of each year.</p></dd>
+the input data. Defaults to 31 December of the previous year.</p></dd>
 
 
 <dt id="arg-at">at<a class="anchor" aria-label="anchor" href="#arg-at"></a></dt>
-<dd><p>Point in the year: <code>"primo"</code> (1 January), <code>"medio"</code> (1 July),
+<dd><p>Point in the year: <code>"primo"</code> (uses the <code>primo</code> convention), <code>"medio"</code> (1 July),
 or <code>"ultimo"</code> (31 December). Only allowed with <code>year</code>.</p></dd>
 
 
 <dt id="arg-date">date<a class="anchor" aria-label="anchor" href="#arg-date"></a></dt>
 <dd><p>A Date vector or strict ISO date strings (<code>YYYY-MM-DD</code>).
 Supply either <code>year</code> or <code>date</code>. With neither, uses <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date()</a></code>.</p></dd>
+
+
+<dt id="arg-primo">primo<a class="anchor" aria-label="anchor" href="#arg-primo"></a></dt>
+<dd><p>Convention for <code>at = "primo"</code>: <code>"previous_ultimo"</code> (default)
+uses 31 December of <code>year - 1</code>; <code>"jan1"</code> uses 1 January of <code>year</code>.
+Only allowed with <code>year</code> and <code>at = "primo"</code> (including its default).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -77,7 +83,11 @@ Supply either <code>year</code> or <code>date</code>. With neither, uses <code><
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>References may have length one or one value per input row.
 Missing references produce missing ages. Data columns take precedence
-over caller variables; <code>.env</code> and <code>.data</code> can make the source explicit.</p>
+over caller variables; <code>.env</code> and <code>.data</code> can make the source explicit.
+For population statistics where opening ages must equal the previous
+closing ages, use <code>age(year, primo = "previous_ultimo")</code>. This is equivalent
+to <code>age(year - 1L, "ultimo")</code> and excludes birthdays on 1 January of <code>year</code>.
+It changes the age reference only, not membership of the population.</p>
     </div>
 
     <div class="section level2">
@@ -85,10 +95,13 @@ over caller variables; <code>.env</code> and <code>.data</code> can make the sou
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pnr <span class="op">=</span> <span class="st">"0101004007"</span>, year <span class="op">=</span> <span class="fl">2025L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, <span class="fu">age</span><span class="op">(</span><span class="va">year</span><span class="op">)</span>, <span class="va">sex</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year age sex</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0101004007 2025  25   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0101004007 2025  24   1</span>
 <span class="r-in"><span><span class="fu"><a href="add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, alder <span class="op">=</span> <span class="fu">age</span><span class="op">(</span>date <span class="op">=</span> <span class="st">"2025-07-01"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year alder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 0101004007 2025    25</span>
+<span class="r-in"><span><span class="fu"><a href="add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pnr</span>, primoalder <span class="op">=</span> <span class="fu">age</span><span class="op">(</span><span class="va">year</span>, primo <span class="op">=</span> <span class="st">"previous_ultimo"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          pnr year primoalder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0101004007 2025         24</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

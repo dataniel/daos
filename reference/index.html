@@ -124,13 +124,6 @@
 
         </dt>
         <dd>Write data frames to a presentable Excel file</dd>
-
-        <dt>
-
-          <code><a href="append_excel.html">append_excel()</a></code>
-
-        </dt>
-        <dd>Append sheets to an existing Excel file</dd>
       </dl></div><div class="section level2">
       <h2 id="data-wrangling">Data wrangling<a class="anchor" aria-label="anchor" href="#data-wrangling"></a></h2>
 
@@ -157,13 +150,6 @@
 
         <dt>
 
-          <code><a href="expect_empty.html">expect_empty()</a></code>
-
-        </dt>
-        <dd>Assert that a data frame is empty</dd>
-
-        <dt>
-
           <code><a href="diagnose_timeseries.html">diagnose_timeseries()</a></code>
 
         </dt>
@@ -182,6 +168,57 @@
 
         </dt>
         <dd>Split a data frame into a named list by grouping columns</dd>
+      </dl></div><div class="section level2">
+      <h2 id="validation-checkpoints">Validation checkpoints<a class="anchor" aria-label="anchor" href="#validation-checkpoints"></a></h2>
+
+      <div class="section-desc"><p>State a rule as “the set of violations must be empty”. The <code>expect_*()</code> functions judge a rule and warn or abort; <code><a href="../reference/tally_violations.html">tally_violations()</a></code> only counts violations for many rules, so you decide on severity afterwards. See <code><a href="../articles/validation.html">vignette("validation")</a></code>.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="expect_empty.html">expect_empty()</a></code>
+
+        </dt>
+        <dd>Assert that a data frame is empty</dd>
+
+        <dt>
+
+          <code><a href="expect_none.html">expect_none()</a></code>
+
+        </dt>
+        <dd>Assert that no rows match a condition</dd>
+
+        <dt>
+
+          <code><a href="expect_unique.html">expect_unique()</a></code>
+
+        </dt>
+        <dd>Assert that key columns identify each row uniquely</dd>
+
+        <dt>
+
+          <code><a href="expect_balanced.html">expect_balanced()</a></code>
+
+        </dt>
+        <dd>Assert that a panel is balanced, or has no gaps</dd>
+
+        <dt>
+
+          <code><a href="expect_no_overlap.html">expect_no_overlap()</a></code>
+
+        </dt>
+        <dd>Assert that spells do not overlap within a unit</dd>
+
+        <dt>
+
+          <code><a href="tally_violations.html">tally_violations()</a></code>
+
+        </dt>
+        <dd>Count violations for several rules at once</dd>
       </dl></div><div class="section level2">
       <h2 id="interactive">Interactive<a class="anchor" aria-label="anchor" href="#interactive"></a></h2>
 
@@ -238,10 +275,31 @@
 
         <dt>
 
-          <code><a href="clean_db07.html">clean_db07()</a></code>
+          <code><a href="format_db07.html">format_db07()</a></code>
 
         </dt>
-        <dd>Format DB07 industry codes with dots</dd>
+        <dd>Format DB07 industry codes</dd>
+
+        <dt>
+
+          <code><a href="convert_db07_to_db25.html">convert_db07_to_db25()</a></code> <code><a href="convert_db07_to_db25.html">convert_db25_to_db07()</a></code>
+
+        </dt>
+        <dd>Convert industry codes between DB07 and DB25 using Statistics Denmark's keys</dd>
+
+        <dt>
+
+          <code><a href="db_label.html">db_label()</a></code>
+
+        </dt>
+        <dd>Look up Danish industry labels for DB07 or DB25 codes</dd>
+
+        <dt>
+
+          <code><a href="inspect_db.html">inspect_db()</a></code>
+
+        </dt>
+        <dd>Inspect possible classifications of mixed DB07 and DB25 industry codes</dd>
 
         <dt>
 

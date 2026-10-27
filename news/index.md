@@ -2,14 +2,87 @@
 
 ## daos (development version)
 
+- Validation checkpoints are extended into a small family that shares
+  one engine
+  ([`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md)):
+
+  - [`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
+    checks a condition and returns the full data, so checks can be
+    chained mid-pipeline.
+  - [`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md)
+    checks keys, e.g. before a join.
+  - [`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
+    checks that a register panel is balanced, or with `gaps_only = TRUE`
+    that units do not skip periods.
+  - [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
+    checks that spells (addresses, employment) do not overlap within a
+    unit.
+  - [`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
+    counts violations for many rules at once without warning or
+    aborting; filter and pipe it into
+    [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+    to judge.
+
+- [`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+  failure messages now give the row count and preview the first rows.
+  Messages are shown literally (braces are no longer interpolated). With
+  `warn_msg` or `abort_msg` set, the success message defaults to
+  `"Check passed: <message>"`, so the log names every check. Failures
+  signal class `daos_check_failure` with the rows in `$violations`. Log
+  lines now include the row count. New `dump` argument writes offending
+  rows to CSV; `log` and `dump` default to the options `daos.check_log`
+  and `daos.check_dump`.
+
+- `age(year)` defaults to `primo = "previous_ultimo"`: opening ages on
+  31 December of the previous year. Use `primo = "jan1"` for 1 January
+  ages.
+
+- [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
+  gains `digits`: keep zero displayed decimals by default, choose a
+  different precision, or use `NULL` to disable automatic numeric
+  formatting. Stored values are unchanged.
+
+- Consolidate Excel writing in `write_excel(mode = ...)`: `new`
+  (default), `append`, `replace` (matching sheets), and `overwrite`
+  (entire workbook). Remove `append_excel()` and the former `overwrite`
+  argument.
+
+- Excel exports now write numeric missing values as blank cells and
+  handle all-missing numeric columns without warnings. Invalid or
+  duplicate sheet names and invalid list inputs are rejected before
+  writing. `mode = "replace"` matches sheet names ignoring case and
+  preserves replaced sheets’ positions.
+
+- Add
+  [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)
+  to diagnose mixed full DB07/DB25 codes, returning key membership and
+  both labels. Shared codes remain unresolved, even if labels match;
+  unknown and missing codes receive explicit statuses.
+
+- Add
+  [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)
+  to look up Danish industry titles from bundled DST tables for DB25 or
+  DB07, including hierarchy codes. Requires an explicit `version`.
+  Accepts dotted or compact input; unknown codes warn and return `NA`.
+
+- Add
+  [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+  and
+  [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+  using bundled DST keys (source page updated 26 February 2026). Both
+  accept mixed code formatting and offer dotted or compact output. The
+  default strict method warns and returns `NA` for splits;
+  `method = "simple"` uses DST’s separate approximate matrix for each
+  direction. Invalid or unknown full codes also warn and return `NA`.
+
 - [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
   now accepts selections such as `sex`, `bday`, and
   `alder = age(year, "ultimo")`. Multiple age references work in one
   call. This replaces the `add`, `ref_date`, `year`, and `at` arguments.
 
-- `age(year)` uses 1 January; `age(date = ...)` accepts an explicit
-  date. Bare `age` uses today. Default output still includes all five
-  information types.
+- `age(year)` uses the previous 31 December; `age(date = ...)` accepts
+  an explicit date. Bare `age` uses today. Default output still includes
+  all five information types.
 
 - [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
   preserves the source CPR column. Use

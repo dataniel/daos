@@ -86,7 +86,7 @@ add_cpr_info(df, pnr, sex, birth_date = bday)
 add_cpr_info(df, pnr,
   primoalder = age(year), ultimoalder = age(year, "ultimo"), sex)
 #>           pnr year primoalder ultimoalder sex
-#> 1  0101004007 2024         24          24   1
+#> 1  0101004007 2024         23          24   1
 #> 2 111111-1118 2025        113         114   0
 add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
 #>           pnr year alder

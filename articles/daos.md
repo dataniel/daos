@@ -44,9 +44,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20261024"
+#> [1] "20261027"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-24 11:20"
+#> [1] "2026-10-27 12:11"
 ```
 
 A typical use is timestamping an export file:
@@ -286,11 +286,11 @@ files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
 results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
 ```
 
-### `write_excel()` / `append_excel()`: write presentable Excel files
+### `write_excel()`: write presentable Excel files
 
-These two functions exist because a plain data export is hard to read
-for the people the file is meant for. The complaint from a colleague who
-works with macroeconomic statistics was concrete: no frozen header, no
+This function exists because a plain data export is hard to read for the
+people the file is meant for. The complaint from a colleague who works
+with macroeconomic statistics was concrete: no frozen header, no
 thousand separators, no rounding.
 [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
 is fast but writes exactly such unformatted files, and `openxlsx2` can
@@ -301,7 +301,9 @@ sits in between: one call, with defaults that make the file presentable.
 
 - Numeric columns with at least one value ≥ 1,000 are formatted with a
   thousand separator and no displayed decimals (`#,##0`); the underlying
-  values are preserved.
+  values are preserved. Use `digits = 2` for two displayed decimals, or
+  `digits = NULL` to disable automatic numeric formatting. This applies
+  to columns with an absolute value of at least 1,000.
 - Year-like columns are excluded automatically: a numeric column where
   every value is a whole number between 1800 and 2200 is assumed to hold
   years, so `2020` is not displayed as `2.020`. Disable with
@@ -318,8 +320,9 @@ file Excel will complain about.
 
 **Writing a new file**
 
-Pass a data frame or a named list of data frames. Requires
-`overwrite = TRUE` if the file already exists.
+Pass a data frame or a named list of data frames. The default
+`mode = "new"` fails if the file already exists. Use
+`mode = "overwrite"` to replace the entire workbook.
 
 ``` r
 # Single data frame: sheet name defaults to "Sheet1"
@@ -344,14 +347,16 @@ write_excel(list(Hoved = mtcars, iris), "output.xlsx")
 
 **Appending sheets to an existing file**
 
-[`append_excel()`](https://dataniel.github.io/daos/reference/append_excel.md)
-adds sheets without touching the existing content. The file must already
-exist, and `overwrite = TRUE` is required if a sheet of the same name is
-already present.
+`mode = "append"` adds sheets to an existing file and fails on name
+collisions. Use `mode = "replace"` to replace matching sheets and add
+any new ones. Names are matched ignoring case; replaced sheets keep
+their position, and other sheets are retained. Both modes require an
+existing file and operate on whole sheets, not individual rows.
 
 ``` r
 write_excel(list(Hoved = mtcars), "output.xlsx")
-append_excel(list(Bilag = iris), "output.xlsx")
+write_excel(list(Bilag = iris), "output.xlsx", mode = "append")
+write_excel(list(Hoved = mtcars), "output.xlsx", mode = "replace")
 ```
 
 **Other options**
@@ -475,7 +480,10 @@ dplyr::starwars |>
 dplyr::starwars |>
   filter(mass > 1000) |>
   expect_empty(warn_msg = "Unrealistic mass values")
-#> Warning: Unrealistic mass values
+#> Warning in expect_empty(filter(dplyr::starwars, mass > 1000), warn_msg = "Unrealistic mass values"): Unrealistic mass values
+#> ℹ 1 row found:
+#>   name = "Jabba Desilijic Tiure", height = 175, mass = 1358, hair_color = NA,
+#>   skin_color = "green-t...
 ```
 
 ``` r
@@ -485,21 +493,47 @@ dplyr::starwars |>
   expect_empty(abort_msg = "Unrealistic mass values")
 ```
 
-The `log` argument writes a timestamped entry to a file, so when a
-scheduled run misbehaves, the errors are already collected by the time
-you sit down to investigate:
+The `log` option writes a timestamped entry to a file, and `dump` saves
+the offending rows. When a scheduled run misbehaves, the errors are
+already collected by the time you sit down to investigate:
 
 ``` r
-log_path <- f("log/{nowf()}/checks.log")
-checker  <- \(data, ...) expect_empty(data, ..., log = log_path)
-
-dplyr::starwars |>
-  filter(name == "Harry Potter") |>
-  checker(success_msg = "No fictional characters")
+options(
+  daos.check_log  = f("log/{nowf()}/checks.log"),
+  daos.check_dump = "log/violations"
+)
 
 dplyr::starwars |>
   filter(height > 250) |>
-  checker(warn_msg = "Unusually tall characters")
+  expect_empty(warn_msg = "Unusually tall characters")
+```
+
+### `expect_none()` and friends: checks that keep the pipeline going
+
+[`expect_empty()`](https://dataniel.github.io/daos/reference/expect_empty.md)
+returns the violation set it was given.
+[`expect_none()`](https://dataniel.github.io/daos/reference/expect_none.md)
+takes the condition instead and returns the full data, so checks can be
+chained.
+[`expect_unique()`](https://dataniel.github.io/daos/reference/expect_unique.md),
+[`expect_balanced()`](https://dataniel.github.io/daos/reference/expect_balanced.md)
+and
+[`expect_no_overlap()`](https://dataniel.github.io/daos/reference/expect_no_overlap.md)
+cover keys, panels and spells, the rules from register work that are
+awkward to write as a
+[`filter()`](https://dplyr.tidyverse.org/reference/filter.html).
+[`tally_violations()`](https://dataniel.github.io/daos/reference/tally_violations.md)
+counts violations for many rules at once without judging them. See
+[`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
+
+``` r
+dplyr::starwars |>
+  expect_none(height < 0) |>
+  expect_unique(name) |>
+  nrow()
+#> ✔ No rows where height < 0
+#> ✔ Unique on name
+#> [1] 87
 ```
 
 ### `flag_duplicates()`: detect and label duplicate rows
@@ -563,7 +597,19 @@ ggplot2::mpg |>
   flag_duplicates() |>
   filter(isdup) |>
   expect_empty(warn_msg = "Duplicate rows detected")
-#> Warning: Duplicate rows detected
+#> Warning in expect_empty(filter(flag_duplicates(ggplot2::mpg), isdup), warn_msg = "Duplicate rows detected"): Duplicate rows detected
+#> ℹ 18 rows found:
+#>   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban
+#>   2wd", displ = 5.3, ...
+#>   isdup = TRUE, dupid = 19, manufacturer = "chevrolet", model = "c1500 suburban
+#>   2wd", displ = 5.3, ...
+#>   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",
+#>   displ = 3.3, year = 1999...
+#>   isdup = TRUE, dupid = 39, manufacturer = "dodge", model = "caravan 2wd",
+#>   displ = 3.3, year = 1999...
+#>   isdup = TRUE, dupid = 40, manufacturer = "dodge", model = "caravan 2wd",
+#>   displ = 3.3, year = 2008...
+#>   ... and 13 more
 ```
 
 ------------------------------------------------------------------------
@@ -699,26 +745,109 @@ visibly malformed. Validation is
 job (below), or a checkpoint from
 [`vignette("validation")`](https://dataniel.github.io/daos/articles/validation.md).
 
-### `clean_db07()`: format DB07 industry codes with dots
+### `format_db07()`: choose the format of DB07 industry codes
 
 DB07 industry codes appear both as `011100` and `01.11.00` depending on
 the source.
-[`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
-normalises to the dotted form. Existing dots are stripped first, so
-mixed input comes out uniform and running it twice changes nothing. Any
-aggregation level works:
+[`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)
+automatically handles mixed input with dots, whitespace, or digits only.
+Choose `"dotted"` (the default) or `"compact"` output without specifying
+the input format. Any aggregation level works:
 
 ``` r
-clean_db07(c("011100", "01.1100", "0111", "011"))
+format_db07(c("011100", "01.1100", "0111", "011"))
 #> [1] "01.11.00" "01.11.00" "01.11"    "01.1"
+format_db07(c("011100", "01.11.00", "01 11 00"), format = "compact")
+#> [1] "011100" "011100" "011100"
 ```
 
-The bare-digit inverse is just `gsub("[.]", "", x)`. Like the `clean_*`
-functions,
-[`clean_db07()`](https://dataniel.github.io/daos/reference/clean_db07.md)
+Like the `clean_*` functions,
+[`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)
 never invents digits: a code that lost its leading zero in Excel is
 ambiguous (`111` could be group `11.1` or class `01.11`), so keep
 industry codes as character columns.
+
+### `db_label()`: add Danish industry labels
+
+Use
+[`db_label()`](https://dataniel.github.io/daos/reference/db_label.md) to
+add a label column from a DB code. Always specify `version = "DB07"` or
+`version = "DB25"`; identical codes can have different meanings in the
+two classifications.
+
+``` r
+df <- data.frame(dbkode = c("011200", "01.49.10", NA))
+df |> dplyr::mutate(branche_label = db_label(dbkode, version = "DB07"))
+#>     dbkode   branche_label
+#> 1   011200 Dyrkning af ris
+#> 2 01.49.10        Kenneler
+#> 3     <NA>            <NA>
+db_label(c("A", "01", "01.1", "01.11"), version = "DB25")
+#> [1] "LANDBRUG, JAGT, SKOVBRUG OG FISKERI"                              
+#> [2] "Plante- og husdyravl, jagt og serviceydelser i forbindelse hermed"
+#> [3] "Dyrkning af etårige afgrøder"                                     
+#> [4] "Dyrkning af korn (undtagen ris), bælgfrugter og olieholdige frø"
+```
+
+Labels come from the bundled DST tables and work offline. Input can
+contain dots or whitespace. Unknown codes return `NA` with a warning;
+missing values stay missing. Keep leading zeroes in character codes.
+
+### Convert industry codes between DB07 and DB25
+
+For mixed data, inspect the source codes before converting:
+
+``` r
+inspect_db(c("014910", "014800", "253000", "011200", NA))
+#> # A tibble: 5 × 5
+#>   input  code   status    label_db07                                  label_db25
+#>   <chr>  <chr>  <chr>     <chr>                                       <chr>     
+#> 1 014910 014910 db07_only Kenneler                                    NA        
+#> 2 014800 014800 db25_only NA                                          Avl af an…
+#> 3 253000 253000 both      Fremstilling af dampkedler undtagen centra… Fremstill…
+#> 4 011200 011200 both      Dyrkning af ris                             Dyrkning …
+#> 5 NA     NA     missing   NA                                          NA
+```
+
+`db07_only` and `db25_only` indicate membership in just one
+classification. `both` means the version cannot be determined from the
+code alone: `253000` has different meanings in DB07 and DB25. Both
+labels are returned for review. Identical labels also leave the version
+unresolved. Use source metadata and the original industry text and time
+context to investigate these rows. The inspection supports full
+six-digit codes only.
+
+[`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+and
+[`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
+use bundled keys from [Statistics
+Denmark](https://www.dst.dk/da/Statistik/dokumentation/dansk-branchekode-er-gaeldende)
+(source page updated 26 February 2026), so no internet connection is
+needed. Both accept full six-digit codes with or without dots and
+whitespace:
+
+``` r
+convert_db07_to_db25(c("011100", "01.49.10", NA))
+#> [1] "01.11.00" "01.48.00" NA
+convert_db25_to_db07("25.30.00", format = "compact")
+#> [1] "254000"
+```
+
+By default, a code with multiple possible destinations returns `NA` with
+a warning. To choose DST’s simplified mapping explicitly:
+
+``` r
+convert_db07_to_db25("01.19.00", method = "simple")
+#> [1] "01.19.00"
+convert_db25_to_db07("01.48.00", method = "simple")
+#> [1] "01.49.10"
+```
+
+The simplified matrices are specific to each direction and use numbers
+of units, not economic activity. They are approximate and should not be
+used as weights to distribute turnover. A round trip need not recover
+the original code. Invalid lengths and unknown codes return `NA` with a
+warning; missing values remain missing. Leading zeroes are not guessed.
 
 ### `add_cpr_info()`: add birth date, age, sex, and validity
 
@@ -788,9 +917,25 @@ df |>
 #> 3   111111118 2026        114        114         115   0 1911-11-01
 ```
 
-`age(year)` defaults to `"primo"` (1 January); `"medio"` means 1 July
-and `"ultimo"` means 31 December. `year` can be a scalar, a column, or
-an expression evaluated in the original input data.
+`age(year)` defaults to `"primo"` with `primo = "previous_ultimo"` (31
+December of the previous year); `"medio"` means 1 July and `"ultimo"`
+means 31 December. `year` can be a scalar, a column, or an expression
+evaluated in the original input data.
+
+This default makes opening ages equal to the previous year’s closing
+ages. It can also be written explicitly:
+
+``` r
+add_cpr_info(df, pnr, primoalder = age(year, primo = "previous_ultimo"))
+#>           pnr year primoalder
+#> 1  1111111118 2024        112
+#> 2 111111-1118 2025        113
+#> 3   111111118 2026        114
+```
+
+Someone born on 1 January 2000 is then 0 in counting year 2001;
+`age(year, primo = "jan1")` instead includes that day’s birthday and
+gives 1.
 
 For a specific date, use `age(date = ...)` with a Date or ISO date
 string. Supply one reference for all rows or one per row. Missing
@@ -840,7 +985,7 @@ years and on 1 March in non-leap years. For a birth date of 29 February
 | 2025-02-28     |  24 |
 | 2025-03-01     |  25 |
 
-`age(2024)` means age on 1 January 2024. by default, giving age 23 in
+`age(2024)` means age on 31 December 2023. by default, giving age 23 in
 this example.
 
 ## Interactive tools

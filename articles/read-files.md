@@ -145,7 +145,9 @@ the checkpoint pattern from
 ``` r
 view_types(dat2023, dat2024, focus = c(amount = "dbl")) |>
   expect_empty(warn_msg = "amount is not numeric everywhere")
-#> Warning: amount is not numeric everywhere
+#> Warning in expect_empty(view_types(dat2023, dat2024, focus = c(amount = "dbl")), : amount is not numeric everywhere
+#> ℹ 1 row found:
+#>   column = "amount", dat2024 = "chr"
 ```
 
 ## Other shapes of output
