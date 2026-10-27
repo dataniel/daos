@@ -42,6 +42,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     urca,
+    xml2,
     yaml,
     knitr,
     rmarkdown,

@@ -201,6 +201,43 @@ already exists. Set `.overwrite = TRUE` to allow overwriting.
 read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
 ```
 
+### `read_workbook()`: every sheet, and only the table on each
+
+`readxl::read_excel()` reads one sheet, and on that sheet the smallest
+rectangle around *every* non-empty cell. In a published workbook that
+means the title becomes the header, the source note becomes a row of `NA`
+and text, and a comment to the right becomes a column named `...7`.
+`read_workbook()` reads all sheets into a named list and finds the table
+on each: the largest block of cells not split by an empty row or column,
+with title rows on top left out.
+
+```{r, eval = FALSE}
+sheets <- read_workbook("data/report.xlsx")
+```
+
+Whatever lies outside the table is not read, and one warning says what
+and where, so nothing disappears silently:
+
+```
+Warning: 'report.xlsx': cells outside the area read on 1 sheet were not read:
+* Report: F4 right of B3:C6 ("note")
+* Report: B9 below B3:C6 ("Source: DST")
+```
+
+When the table is not the one you want, choose it yourself: one range, a
+range per sheet (`NA` keeps the automatic one), or a defined Excel table,
+which keeps its range when rows are added:
+
+```{r, eval = FALSE}
+df     <- read_workbook("data/report.xlsx", range = "Report!B3:F40")
+sheets <- read_workbook("data/report.xlsx", range = c(Report = "B3:F40", Notes = NA))
+sales  <- read_workbook("data/report.xlsx", table = "Sales")
+```
+
+`inspect_excel()` runs the same check without reading and returns the
+blocks as a tibble, empty when the layout is clean, so it can also serve
+as a checkpoint before a scheduled read.
+
 ### `summon()`: retrieve objects by name pattern
 
 A regex-based alternative to `ls()` + `mget()`:

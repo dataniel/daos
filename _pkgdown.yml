@@ -28,6 +28,8 @@ reference:
   - title: File workflow
     contents:
       - read_files
+      - read_workbook
+      - inspect_excel
       - read_access
       - summon
       - write_excel

@@ -108,6 +108,8 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
 | `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
+| `read_workbook()` | Read every sheet (or chosen ranges or Excel tables) into a named list, finding the table on each sheet and warning about cells left outside |
+| `inspect_excel()` | List blocks of cells outside the table in an Excel workbook: titles, notes, totals, stray comments |
 | `read_ta()` | Read Greenlandic TA files (old layout) |
 | `write_ta()` | Write Greenlandic TA files (old layout) |
 | `read_ta2()` | Read Greenlandic TA files (new 140-character layout) |

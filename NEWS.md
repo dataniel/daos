@@ -1,5 +1,15 @@
 # daos (development version)
 
+* `read_workbook()` reads every sheet of an Excel workbook into a named
+  list, finding the table on each sheet instead of reading every non-empty
+  cell: titles, source notes and stray comments are left out, and one
+  warning lists what was left behind. Choose the area yourself with
+  `range`, one per sheet if needed, or read defined Excel tables by name
+  with `table`. A password-protected workbook gives a clear error.
+
+* `inspect_excel()` lists the blocks of cells outside the table as a
+  tibble, empty when the layout is clean.
+
 * `read_files()` is quiet on success and reports problems together:
   * CSV files no longer print the locale and column specification for every
     file. The decimal comma is kept when you pass a `locale` for its
