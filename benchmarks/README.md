@@ -101,3 +101,44 @@ measurements, not universal guarantees. For a separate million-row mixed-input
 allocation test, all standard outputs allocated 23.5 MiB versus 1,661 MiB in
 the baseline. These are total R allocations, not peak memory. Cleaning an
 already canonical vector allocated no new R memory in that measurement.
+
+
+## Key-based checkpoints on population-sized data
+
+`benchmark-checkpoints.R` compares `expect_unique()`, `flag_duplicates()`,
+`expect_balanced()` and `expect_no_overlap()` before the speed-up
+(`baseline-checkpoints.R`, a frozen copy from commit b9e3fa4) with the
+current implementation, in memory.
+
+```sh
+Rscript benchmarks/benchmark-checkpoints.R
+# Or select the number of persons (five years each):
+Rscript benchmarks/benchmark-checkpoints.R 200000
+```
+
+The data is synthetic: one million 10-digit cpr strings over five years,
+5 million rows in random order, with ten numeric columns and spell dates.
+Variants add 10,000 duplicated keys or remove 10,000 person-years. Before
+timing, every case checks that both implementations report the same
+violations (for `dupid`, the same grouping, since groups are now numbered
+by first appearance). Results are in `checkpoints-results.csv`, with
+session details in `checkpoints-session.txt`.
+
+### Local results: 5 million rows
+
+Median seconds, three alternating repetitions, on the Windows/R system
+recorded in `checkpoints-session.txt` (R 4.6.1).
+
+| Case | Before | After | Speedup |
+| --- | ---: | ---: | ---: |
+| `expect_unique(cpr, year)`, no duplicates | 5.92 | 0.49 | 12x |
+| `expect_unique(cpr, year)`, 10,000 duplicates | 6.65 | 0.70 | 9.5x |
+| `flag_duplicates(cpr, year)` | 6.33 | 0.57 | 11x |
+| `expect_balanced(cpr, year)`, 10,000 gaps | 3.00 | 0.92 | 3.3x |
+| `expect_balanced(gaps_only = TRUE)`, 10,000 gaps | 3.24 | 1.04 | 3.1x |
+| `expect_no_overlap(cpr, start, end)` | 2.17 | 1.11 | 2.0x |
+
+The gain comes from not sorting the character key: rows are grouped in
+one linear pass with `data.table::chmatch(x, x)`, and only the reported
+rows are sorted. Times are local measurements, not universal guarantees.
+The checks on DuckDB tables are not part of this script.
