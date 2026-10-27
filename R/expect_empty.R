@@ -236,7 +236,7 @@ report_check <- function(violations, success_msg, fail_msg, abort,
 
   if (n == 0) {
     cli::cli_alert_success("{success_msg}")
-    write_check_log(log, "✔", success_msg, n)
+    write_check_log(log, "\u2714", success_msg, n)
     return(invisible(TRUE))
   }
 
@@ -259,7 +259,7 @@ report_check <- function(violations, success_msg, fail_msg, abort,
   }
 
   dump_file <- dump_violations(violations, dump, fail_msg)
-  write_check_log(log, if (abort) "✖" else "!", fail_msg, n, dump_file)
+  write_check_log(log, if (abort) "\u2716" else "!", fail_msg, n, dump_file)
 
   bullets <- c(
     "{fail_msg}",
@@ -310,7 +310,7 @@ preview_rows <- function(data, n = 5, width = cli::console_width() - 2) {
   if (ncol(data) == 0) return(character())
   lines <- format(tibble::as_tibble(data), n = n, width = width)
   lines <- lines[!grepl("^# A tibble|print\\(n = ", cli::ansi_strip(lines))]
-  lines <- gsub(" ", " ", cli_escape(sub("\\s+$", "", lines)), fixed = TRUE)
+  lines <- gsub(" ", "\u00a0", cli_escape(sub("\\s+$", "", lines)), fixed = TRUE)
   stats::setNames(lines, rep(" ", length(lines)))
 }
 
