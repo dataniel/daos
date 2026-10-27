@@ -74,7 +74,7 @@
 #'                  name = "education")
 #'
 #' @seealso [spells_to_panel()] to build the panel from the spells,
-#'   [expect_no_overlap()] to check the spells first.
+#'   [expectr::expect_no_overlap()] to check the spells first.
 #'
 #' @export
 add_spell_status <- function(data, spells, id, at, start, end, status,
@@ -154,9 +154,9 @@ add_spell_status <- function(data, spells, id, at, start, end, status,
   if (status_is == "state" && ambiguous > 0) {
     msg <- "{ambiguous} point{?s} fell in overlapping spells"
     if (overlap == "error") {
-      cli::cli_abort(c(paste0(msg, "."), "i" = "Find the spells with {.fn expect_no_overlap}."))
+      cli::cli_abort(c(paste0(msg, "."), "i" = "Find the spells with {.fn expectr::expect_no_overlap}."))
     }
-    cli::cli_alert_warning(paste0(msg, "; the latest start was used. See {.fn expect_no_overlap}."))
+    cli::cli_alert_warning(paste0(msg, "; the latest start was used. See {.fn expectr::expect_no_overlap}."))
   }
 
   result <- if (data.table::is.data.table(data)) data.table::copy(data) else data

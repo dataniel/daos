@@ -25,7 +25,7 @@ This is standardisation only, not validation. Values that cannot be
 brought to 10 digits are returned cleaned but otherwise untouched, so a
 malformed number stays visibly malformed for downstream checks. Use
 \code{\link[=add_cpr_info]{add_cpr_info()}} for validity, or pipe through a checkpoint
-(see \code{vignette("validation")}).
+from expectr (see \code{vignette("expectr", package = "expectr")}).
 
 \code{\link[=add_cpr_info]{add_cpr_info()}} applies this cleaning internally for its
 calculations, while preserving the original CPR column in its output.

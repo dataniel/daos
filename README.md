@@ -56,25 +56,21 @@ panel <- read_files(
 
 If it handles a set of files without warnings, the production upstream is
 consistent. When it warns about type mismatches, something changed — and
-`view_types()` shows which column, in which file.
+`expectr::view_types()` shows which column, in which file.
 
-**Checkpoints instead of silent assumptions.** Filter for the rows that
-should not exist and pipe them into `expect_empty()`. If any turn up, you
-get the offending rows and a message in your own words, not a stack trace.
+**Checkpoints instead of silent assumptions** now live in their own package,
+[expectr](https://github.com/dataniel/expectr): `expect_empty()`,
+`expect_none()`, `expect_unique()`, `expect_balanced()`,
+`expect_no_overlap()`, `tally_violations()`, `flag_duplicates()` and
+`view_types()`. daos forwards them, so existing scripts keep working.
 
 ```r
-sales |>
-  dplyr::filter(is.na(customer_id)) |>
-  expect_empty(abort_msg = "Sales rows without a customer id")
+library(expectr)
 
 sales |>
-  dplyr::filter(amount < 0) |>
-  expect_empty(warn_msg = "Negative amounts", log = "checks.log")
+  expect_none(is.na(customer_id), abort_msg = "Sales without a customer id") |>
+  expect_unique(order_id)
 ```
-
-The checkpoints are built for full-population registers: in memory they
-check a million persons over five years in under a second, and a DuckDB
-or Arrow table is checked in the database, without loading it into R.
 
 **Danish and Greenlandic identifiers, and a file a colleague can read.**
 
@@ -106,13 +102,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `convert_db07_to_db25()` / `convert_db25_to_db07()` | Convert full industry codes using DST's bundled keys; strict or simplified mapping |
 | `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
 | `drop_empty_cols()` | Drop entirely empty selected columns |
-| `expect_balanced()` | Checkpoint: every unit observed in every period, or no gaps (`gaps_only`) |
-| `expect_empty()` | Pipeline checkpoint that warns or aborts if a data frame is non-empty |
-| `expect_no_overlap()` | Checkpoint: spells (addresses, employment) do not overlap within a unit |
-| `expect_none()` | Checkpoint: no row matches a condition; returns the full data for chaining |
-| `expect_unique()` | Checkpoint: key columns identify each row uniquely |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
-| `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
@@ -127,6 +117,4 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `spells_to_panel()` | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
-| `tally_violations()` | Count violations for many rules at once (counts, never judges); filter and pipe into `expect_empty()` |
-| `view_types()` | Compare column types across data frames (or a list from `read_files()`) and flag which would break a bind |
 | `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |

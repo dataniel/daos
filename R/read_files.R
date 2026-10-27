@@ -81,7 +81,7 @@
 #' summon("^dat\\d+$")
 #' }
 #'
-#' @seealso [daos::summon()], [daos::view_types()]
+#' @seealso [daos::summon()], [expectr::view_types()]
 #'
 #' @importFrom glue glue
 #' @importFrom cli cli_abort cli_warn cli_progress_bar cli_progress_update cli_progress_done
@@ -172,7 +172,7 @@ read_files <- function(paths, names = NULL, reader = "auto", out = NULL,
     if (!inherits(bound, "error")) return(coerce_id(bound))
     cli::cli_warn(c(
       "Column types differ across files -- coercing to character and re-typing with {.fun readr::type_convert}.",
-      "i" = "Use {.fun daos::view_types} to inspect the differences."
+      "i" = "Use {.fun expectr::view_types} to inspect the differences."
     ))
     id_col_spec <- if (!is.null(.id)) {
       do.call(readr::cols, stats::setNames(list(readr::col_character()), .id))

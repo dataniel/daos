@@ -114,5 +114,5 @@ summon("^dat\\\\d+$")
 
 }
 \seealso{
-\code{\link[=summon]{summon()}}, \code{\link[=view_types]{view_types()}}
+\code{\link[=summon]{summon()}}, \code{\link[expectr:view_types]{expectr::view_types()}}
 }

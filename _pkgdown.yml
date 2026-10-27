@@ -34,8 +34,6 @@ reference:
 
   - title: Data wrangling
     contents:
-      - view_types
-      - flag_duplicates
       - diagnose_timeseries
       - drop_empty_rows
       - drop_empty_cols
@@ -45,17 +43,10 @@ reference:
 
   - title: Validation checkpoints
     desc: >
-      State a rule as "the set of violations must be empty". The
-      `expect_*()` functions judge a rule and warn or abort;
-      `tally_violations()` only counts violations for many rules, so you
-      decide on severity afterwards. See `vignette("validation")`.
+      The checkpoints and their helpers have moved to the expectr package.
+      daos forwards them for existing scripts.
     contents:
-      - expect_empty
-      - expect_none
-      - expect_unique
-      - expect_balanced
-      - expect_no_overlap
-      - tally_violations
+      - moved-to-expectr
 
   - title: Interactive
     contents:
@@ -87,4 +78,3 @@ articles:
     navbar: Guides
     contents:
       - read-files
-      - validation

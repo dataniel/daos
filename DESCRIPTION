@@ -4,10 +4,11 @@ Version: 0.2.0
 Authors@R: person("Daniel", "Madsen", email = "danielmadsen@live.dk",
     role = c("aut", "cre"))
 Description: A collection of utility functions for day-to-day statistical
-    work. Includes helpers for file I/O across many formats, data
-    validation checkpoints, duplicate detection, Danish identifier
-    cleaning, interactive time-series screening, and various convenience
-    shortcuts for common tidyverse patterns.
+    work. Includes helpers for file I/O across many formats, Danish
+    identifier cleaning, register spell and panel data, interactive
+    time-series screening, and various convenience shortcuts for common
+    tidyverse patterns. The data validation checkpoints have moved to the
+    expectr package; daos forwards them for existing scripts.
 License: MIT + file LICENSE
 URL: https://dataniel.github.io/daos, https://github.com/dataniel/daos
 BugReports: https://github.com/dataniel/daos/issues
@@ -17,6 +18,7 @@ Imports:
     cli,
     data.table,
     dplyr,
+    expectr,
     glue,
     readr,
     rlang,
@@ -25,8 +27,6 @@ Imports:
 Suggests:
     arrow,
     DBI,
-    dbplyr,
-    duckdb,
     odbc,
     openxlsx2,
     writexl,
@@ -46,6 +46,8 @@ Suggests:
     knitr,
     rmarkdown,
     pkgdown
+Remotes:
+    dataniel/expectr
 Config/Needs/website: pkgdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr

@@ -153,7 +153,7 @@ consistent: same formats, same column names, same types across files.
 If `read_files()` handles a set of files without warnings, the workflow
 is in order. When it warns about type mismatches, something has changed
 upstream. There is a separate article about this way of working, and
-about using `view_types()` when files refuse to stack:
+about using `expectr::view_types()` when files refuse to stack:
 `vignette("read-files")`.
 
 Supply a custom reader to override auto-detection or add arguments:
@@ -349,151 +349,29 @@ columns.
 
 ---
 
-## Data inspection
+## Data validation: the expectr package
 
-### `view_types()`: compare column types across data frames
+The validation checkpoints, `expect_empty()`, `expect_none()`,
+`expect_unique()`, `expect_balanced()`, `expect_no_overlap()` and
+`tally_violations()`, and the helpers `flag_duplicates()` and
+`view_types()` have moved to their own package,
+[expectr](https://github.com/dataniel/expectr). They share an engine and
+a contract the rest of daos does not: each states an expectation about
+data as "the set of violations must be empty".
 
-`view_types()` is `glimpse()` across several data frames at once: one
-row per column, with the type in each dataset. Useful before a join, or
-before binding with `read_files(out = "bind")`.
-
-The `status` column says whether the frames would bind: `ok`,
-`coercible` (types differ but combine, like `int` + `dbl` or an all-`NA`
-column with anything), `missing` (absent somewhere, which `bind_rows()`
-fills with `NA`), or `conflict` (the bind fails).
-
-```{r}
-df_a <- data.frame(x = 1L,  y = "a", z = NA)
-df_b <- data.frame(x = 1.0, y = 2,   z = "b", w = 1)
-
-view_types(df_a, df_b)
-```
-
-```{r}
-# Only the columns that would break a bind:
-view_types(df_a, df_b, diff = TRUE)
-```
-
-The output of `read_files()` can be passed directly, since a named list
-of data frames is unpacked:
+daos still forwards each of them to expectr, so existing scripts keep
+working, old options such as `daos.check_log` included. New code should
+load expectr directly:
 
 ```{r, eval = FALSE}
+library(expectr)
+
 read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
-  view_types(diff = TRUE)
+  view_types(diff = TRUE) |>
+  expect_empty(warn_msg = "The files do not bind")
 ```
 
-The `focus` argument checks that specific columns have an expected type
-and returns only the datasets where they do not:
-
-```{r}
-view_types(df_a, df_b, focus = c(x = "int", y = "chr"))
-```
-
----
-
-## Data validation
-
-The checkpoint pattern behind these two functions has its own article,
-`vignette("validation")`, which shows how to build lightweight
-validation into pipelines with them.
-
-### `expect_empty()`: assert a data frame is empty
-
-Often you want to assert that a filter finds nothing, and to hear about
-it right away when it does. Writing a custom
-`if (nrow(x) > 0) cli::cli_abort(...)` every time gets repetitive.
-`expect_empty()` does it in one step, fits into a pipeline, and can
-write to a log file.
-
-Filter for the rows that should not exist, pipe them in, and the
-offending rows are at hand the moment something goes wrong.
-
-```{r}
-# Success:
-dplyr::starwars |>
-  filter(name == "Harry Potter") |>
-  expect_empty(
-    success_msg = "No Harry Potter rows in starwars",
-    warn_msg    = "Unexpected fictional character found"
-  )
-```
-
-```{r}
-# Warning: rows found
-dplyr::starwars |>
-  filter(mass > 1000) |>
-  expect_empty(warn_msg = "Unrealistic mass values")
-```
-
-The message previews the first rows; `dump`, below, writes all of them to
-a file.
-
-```{r, eval = FALSE}
-# Hard abort:
-dplyr::starwars |>
-  filter(mass > 1000) |>
-  expect_empty(abort_msg = "Unrealistic mass values")
-```
-
-The `log` option writes a timestamped entry to a file, and `dump` saves
-the offending rows. When a scheduled run misbehaves, the errors are
-already collected by the time you sit down to investigate:
-
-```{r, eval = FALSE}
-options(
-  daos.check_log  = f("log/{nowf()}/checks.log"),
-  daos.check_dump = "log/violations"
-)
-
-dplyr::starwars |>
-  filter(height > 250) |>
-  expect_empty(warn_msg = "Unusually tall characters")
-```
-
-### `expect_none()` and friends: checks that keep the pipeline going
-
-`expect_empty()` returns the violation set it was given. `expect_none()`
-takes the condition instead and returns the full data, so checks can be
-chained. `expect_unique()`, `expect_balanced()` and `expect_no_overlap()`
-cover keys, panels and spells, the rules from register work that are
-awkward to write as a `filter()`. `tally_violations()` counts violations
-for many rules at once without judging them. See `vignette("validation")`.
-
-```{r}
-dplyr::starwars |>
-  expect_none(height < 0) |>
-  expect_unique(name) |>
-  nrow()
-```
-
-### `flag_duplicates()`: detect and label duplicate rows
-
-Base R's `duplicated()` only marks the second occurrence of a duplicate.
-`flag_duplicates()` marks all copies and gives them a shared group ID,
-so the whole group can be inspected together. The ID can also serve as
-an implicit record linkage key: if several respondents have reported the
-same information but background data is missing for one of them, the
-shared `dupid` reveals the connection.
-
-```{r}
-flag_duplicates(ggplot2::mpg)
-```
-
-```{r}
-# Check specific columns:
-flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
-  filter(isdup) |>
-  arrange(dupid)
-```
-
-Combine with `expect_empty()` for a pipeline validation gate:
-
-```{r}
-ggplot2::mpg |>
-  flag_duplicates() |>
-  filter(isdup) |>
-  expect_empty(warn_msg = "Duplicate rows detected")
-```
+See `vignette("expectr", package = "expectr")`.
 
 ---
 
@@ -637,7 +515,7 @@ checkpoint.
 
 Neither function validates. Malformed values come back cleaned but still
 visibly malformed. Validation is `add_cpr_info()`'s job (below), or a
-checkpoint from `vignette("validation")`.
+checkpoint from expectr.
 
 ### `format_db07()`: choose the format of DB07 industry codes
 

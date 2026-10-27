@@ -10,7 +10,7 @@
 #' brought to 10 digits are returned cleaned but otherwise untouched, so a
 #' malformed number stays visibly malformed for downstream checks. Use
 #' [daos::add_cpr_info()] for validity, or pipe through a checkpoint
-#' (see `vignette("validation")`).
+#' from expectr (see `vignette("expectr", package = "expectr")`).
 #'
 #' [daos::add_cpr_info()] applies this cleaning internally for its
 #' calculations, while preserving the original CPR column in its output.

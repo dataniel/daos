@@ -111,5 +111,5 @@ add_spell_status(events, education, cpr, date, start, end, status,
 }
 \seealso{
 \code{\link[=spells_to_panel]{spells_to_panel()}} to build the panel from the spells,
-\code{\link[=expect_no_overlap]{expect_no_overlap()}} to check the spells first.
+\code{\link[expectr:expect_no_overlap]{expectr::expect_no_overlap()}} to check the spells first.
 }
