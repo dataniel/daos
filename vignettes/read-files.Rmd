@@ -86,7 +86,7 @@ result with `readr::type_convert()`, and points you to `view_types()`:
 ```
 Warning: Column types differ across files -- coercing to character and
 re-typing with `readr::type_convert()`.
-i Use `expectr::view_types` to inspect the differences.
+i Use `daos::view_types` to inspect the differences.
 ```
 
 The rule of thumb: if `read_files()` handles a set of files without
@@ -95,9 +95,8 @@ changed upstream, and the next step is to find out what.
 
 ## Finding the culprit with `view_types()`
 
-`view_types()`, from the expectr package, is `glimpse()` across multiple
-data frames at once: one row per column, one column per dataset, with
-abbreviated type strings.
+`view_types()` is `glimpse()` across multiple data frames at once: one
+row per column, one column per dataset, with abbreviated type strings.
 It takes the list from `read_files()` directly
 (`view_types(lst)`), or the data frames one by one:
 
@@ -137,7 +136,7 @@ diff.
 For pipelines, the `focus` argument turns the inspection into a check:
 it returns only the datasets where critical columns do *not* have the
 expected type, and an empty result on success. That plugs straight into
-the checkpoint pattern from expectr,
+the checkpoint pattern from the expectr package:
 
 ```{r, eval = TRUE}
 view_types(dat2023, dat2024, focus = c(cvr = "chr", amount = "dbl")) |>

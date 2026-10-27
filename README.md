@@ -56,13 +56,13 @@ panel <- read_files(
 
 If it handles a set of files without warnings, the production upstream is
 consistent. When it warns about type mismatches, something changed — and
-`expectr::view_types()` shows which column, in which file.
+`view_types()` shows which column, in which file.
 
 **Checkpoints instead of silent assumptions** now live in their own package,
 [expectr](https://github.com/dataniel/expectr): `expect_empty()`,
 `expect_none()`, `expect_unique()`, `expect_balanced()`,
-`expect_no_overlap()`, `tally_violations()`, `flag_duplicates()` and
-`view_types()`. daos forwards them, so existing scripts keep working.
+`expect_no_overlap()` and `tally_violations()`. daos forwards them, so
+existing scripts keep working.
 
 ```r
 library(expectr)
@@ -103,6 +103,7 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
 | `drop_empty_cols()` | Drop entirely empty selected columns |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
+| `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
 | `read_access()` | Read data from a Microsoft Access database via ODBC |
@@ -117,4 +118,5 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `spells_to_panel()` | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
+| `view_types()` | Compare column types across data frames (or a list from `read_files()`) and flag which would break a bind |
 | `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |

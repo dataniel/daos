@@ -3,10 +3,8 @@ df <- data.frame(id = c(1, 1, 2), amount = c(5, -1, 3))
 test_that("the moved checkpoints forward to expectr with the same result", {
   rlang::local_options(rlib_message_verbosity = "quiet")
   expect_equal(expect_none(df, amount > 100), df)
-  expect_equal(flag_duplicates(df, id), expectr::flag_duplicates(df, id))
   expect_equal(tally_violations(df, neg = amount < 0),
                expectr::tally_violations(df, neg = amount < 0))
-  expect_equal(view_types(df, df), expectr::view_types(df, df))
 })
 
 test_that("tidy evaluation survives the forwarding", {

@@ -2,12 +2,17 @@
 
 * The validation checkpoints have moved to their own package, expectr:
   `expect_empty()`, `expect_none()`, `expect_unique()`, `expect_balanced()`,
-  `expect_no_overlap()`, `tally_violations()`, `flag_duplicates()` and
-  `view_types()`. daos forwards each of them to expectr and says so once
-  per session; the options `daos.check_log` and `daos.check_dump` and the
-  condition class `daos_check_failure` keep working. Use
-  `library(expectr)` in new code. In expectr, the checkpoints are much
-  faster on population-sized data and also check DuckDB and Arrow tables.
+  `expect_no_overlap()` and `tally_violations()`. daos forwards each of
+  them to expectr and says so once per session; the options
+  `daos.check_log` and `daos.check_dump` and the condition class
+  `daos_check_failure` keep working. Use `library(expectr)` in new code.
+  In expectr, the checkpoints are much faster on population-sized data and
+  also check DuckDB and Arrow tables.
+
+* The inspection helpers `flag_duplicates()` and `view_types()` stay in
+  daos. `flag_duplicates()` now groups the key in one linear pass without
+  sorting it: about 11 times faster on 5 million rows keyed by cpr and
+  year.
 
 * `spells_to_panel()` turns spell data (education, addresses) into a
   yearly, quarterly or monthly panel with primo and ultimo status, and

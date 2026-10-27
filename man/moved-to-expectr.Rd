@@ -8,8 +8,6 @@
 \alias{expect_balanced}
 \alias{expect_no_overlap}
 \alias{tally_violations}
-\alias{flag_duplicates}
-\alias{view_types}
 \title{Checkpoints, now in the expectr package}
 \usage{
 expect_empty(...)
@@ -23,10 +21,6 @@ expect_balanced(...)
 expect_no_overlap(...)
 
 tally_violations(...)
-
-flag_duplicates(...)
-
-view_types(...)
 }
 \arguments{
 \item{...}{Passed on to the expectr function of the same name.}
@@ -38,10 +32,10 @@ What the expectr function returns.
 The validation checkpoints and their helpers moved from daos to the
 expectr package: \code{\link[expectr:expect_empty]{expectr::expect_empty()}}, \code{\link[expectr:expect_none]{expectr::expect_none()}},
 \code{\link[expectr:expect_unique]{expectr::expect_unique()}}, \code{\link[expectr:expect_balanced]{expectr::expect_balanced()}},
-\code{\link[expectr:expect_no_overlap]{expectr::expect_no_overlap()}}, \code{\link[expectr:tally_violations]{expectr::tally_violations()}},
-\code{\link[expectr:flag_duplicates]{expectr::flag_duplicates()}} and \code{\link[expectr:view_types]{expectr::view_types()}}. They share an
-engine and a contract the rest of daos does not, so they are developed
-there. See \code{vignette("expectr", package = "expectr")}.
+\code{\link[expectr:expect_no_overlap]{expectr::expect_no_overlap()}} and \code{\link[expectr:tally_violations]{expectr::tally_violations()}}. They
+share an engine and a contract the rest of daos does not, so they are
+developed there. See \code{vignette("expectr", package = "expectr")}. The
+inspection helpers \code{\link[=flag_duplicates]{flag_duplicates()}} and \code{\link[=view_types]{view_types()}} stay in daos.
 }
 \details{
 daos keeps a function of the same name for each, so existing scripts

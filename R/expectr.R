@@ -3,10 +3,10 @@
 #' The validation checkpoints and their helpers moved from daos to the
 #' expectr package: [expectr::expect_empty()], [expectr::expect_none()],
 #' [expectr::expect_unique()], [expectr::expect_balanced()],
-#' [expectr::expect_no_overlap()], [expectr::tally_violations()],
-#' [expectr::flag_duplicates()] and [expectr::view_types()]. They share an
-#' engine and a contract the rest of daos does not, so they are developed
-#' there. See `vignette("expectr", package = "expectr")`.
+#' [expectr::expect_no_overlap()] and [expectr::tally_violations()]. They
+#' share an engine and a contract the rest of daos does not, so they are
+#' developed there. See `vignette("expectr", package = "expectr")`. The
+#' inspection helpers [flag_duplicates()] and [view_types()] stay in daos.
 #'
 #' daos keeps a function of the same name for each, so existing scripts
 #' keep working. It calls expectr, says once per session that the function
@@ -52,14 +52,6 @@ expect_no_overlap <- function(...) call_expectr("expect_no_overlap", ...)
 #' @export
 tally_violations <- function(...) call_expectr("tally_violations", ...)
 
-#' @rdname moved-to-expectr
-#' @export
-flag_duplicates <- function(...) call_expectr("flag_duplicates", ...)
-
-#' @rdname moved-to-expectr
-#' @export
-view_types <- function(...) call_expectr("view_types", ...)
-
 # Calls the expectr function `fun`, with the old daos option names as a
 # fallback and the old condition class added to a failure. The arguments
 # travel as `...`, which keeps tidy evaluation intact: `{{ id }}` and
@@ -85,9 +77,7 @@ call_expectr <- function(fun, ...) {
     expect_unique     = expectr::expect_unique,
     expect_balanced   = expectr::expect_balanced,
     expect_no_overlap = expectr::expect_no_overlap,
-    tally_violations  = expectr::tally_violations,
-    flag_duplicates   = expectr::flag_duplicates,
-    view_types        = expectr::view_types
+    tally_violations  = expectr::tally_violations
   )
 
   # Called by its own name, so an error reads "Error in `expect_none()`"

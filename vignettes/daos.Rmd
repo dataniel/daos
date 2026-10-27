@@ -153,7 +153,7 @@ consistent: same formats, same column names, same types across files.
 If `read_files()` handles a set of files without warnings, the workflow
 is in order. When it warns about type mismatches, something has changed
 upstream. There is a separate article about this way of working, and
-about using `expectr::view_types()` when files refuse to stack:
+about using `view_types()` when files refuse to stack:
 `vignette("read-files")`.
 
 Supply a custom reader to override auto-detection or add arguments:
@@ -349,12 +349,76 @@ columns.
 
 ---
 
+## Data inspection
+
+### `view_types()`: compare column types across data frames
+
+`view_types()` is `glimpse()` across several data frames at once: one
+row per column, with the type in each dataset. Useful before a join, or
+before binding with `read_files(out = "bind")`.
+
+The `status` column says whether the frames would bind: `ok`,
+`coercible` (types differ but combine, like `int` + `dbl` or an all-`NA`
+column with anything), `missing` (absent somewhere, which `bind_rows()`
+fills with `NA`), or `conflict` (the bind fails).
+
+```{r}
+df_a <- data.frame(x = 1L,  y = "a", z = NA)
+df_b <- data.frame(x = 1.0, y = 2,   z = "b", w = 1)
+
+view_types(df_a, df_b)
+```
+
+```{r}
+# Only the columns that would break a bind:
+view_types(df_a, df_b, diff = TRUE)
+```
+
+The output of `read_files()` can be passed directly, since a named list
+of data frames is unpacked:
+
+```{r, eval = FALSE}
+read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+  view_types(diff = TRUE)
+```
+
+The `focus` argument checks that specific columns have an expected type
+and returns only the datasets where they do not:
+
+```{r}
+view_types(df_a, df_b, focus = c(x = "int", y = "chr"))
+```
+
+### `flag_duplicates()`: detect and label duplicate rows
+
+Base R's `duplicated()` only marks the second occurrence of a duplicate.
+`flag_duplicates()` marks all copies and gives them a shared group ID,
+so the whole group can be inspected together. The ID can also serve as
+an implicit record linkage key: if several respondents have reported the
+same information but background data is missing for one of them, the
+shared `dupid` reveals the connection.
+
+```{r}
+flag_duplicates(ggplot2::mpg)
+```
+
+```{r}
+# Check specific columns:
+flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
+  filter(isdup) |>
+  arrange(dupid)
+```
+
+Both functions inspect data before you settle on a rule. Turning a rule
+into a checkpoint is the job of the expectr package, below.
+
+---
+
 ## Data validation: the expectr package
 
 The validation checkpoints, `expect_empty()`, `expect_none()`,
 `expect_unique()`, `expect_balanced()`, `expect_no_overlap()` and
-`tally_violations()`, and the helpers `flag_duplicates()` and
-`view_types()` have moved to their own package,
+`tally_violations()`, have moved to their own package,
 [expectr](https://github.com/dataniel/expectr). They share an engine and
 a contract the rest of daos does not: each states an expectation about
 data as "the set of violations must be empty".

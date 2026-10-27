@@ -34,6 +34,8 @@ reference:
 
   - title: Data wrangling
     contents:
+      - view_types
+      - flag_duplicates
       - diagnose_timeseries
       - drop_empty_rows
       - drop_empty_cols
@@ -43,7 +45,7 @@ reference:
 
   - title: Validation checkpoints
     desc: >
-      The checkpoints and their helpers have moved to the expectr package.
+      The checkpoints have moved to the expectr package.
       daos forwards them for existing scripts.
     contents:
       - moved-to-expectr
