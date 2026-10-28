@@ -69,9 +69,9 @@
 functions built for day-to-day statistical work. This vignette walks
 through every function with short, self-contained examples.</p>
 <p>Five bodies of work that started here have since grown into packages
-of their own, and are not covered below: <a href="https://github.com/dataniel/taskr" class="external-link">taskr</a> for task management,
-<a href="https://github.com/dataniel/statbank" class="external-link">statbank</a> for the
-Greenland and Faroese statbanks, <a href="https://github.com/dataniel/cvrr" class="external-link">cvrr</a> for published Danish
+of their own, and are not covered below: taskr for task management,
+statbank for the Greenland and Faroese statbanks (both private for now),
+<a href="https://github.com/dataniel/cvrr" class="external-link">cvrr</a> for published Danish
 annual reports, <a href="https://github.com/dataniel/taxmill" class="external-link">taxmill</a> for milling PDF
 financial statements into data, and <a href="https://github.com/dataniel/pathr" class="external-link">pathr</a> for the file browser
 and the RStudio addins that take the friction out of Windows paths. None
@@ -106,7 +106,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261028"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-28 09:15"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-28 10:48"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>

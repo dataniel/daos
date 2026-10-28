@@ -5,15 +5,14 @@ day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
 Five bodies of work that started here have since grown into packages of
-their own, and are not covered below:
-[taskr](https://github.com/dataniel/taskr) for task management,
-[statbank](https://github.com/dataniel/statbank) for the Greenland and
-Faroese statbanks, [cvrr](https://github.com/dataniel/cvrr) for
-published Danish annual reports,
-[taxmill](https://github.com/dataniel/taxmill) for milling PDF financial
-statements into data, and [pathr](https://github.com/dataniel/pathr) for
-the file browser and the RStudio addins that take the friction out of
-Windows paths. None of them depends on daos, or daos on them.
+their own, and are not covered below: taskr for task management,
+statbank for the Greenland and Faroese statbanks (both private for now),
+[cvrr](https://github.com/dataniel/cvrr) for published Danish annual
+reports, [taxmill](https://github.com/dataniel/taxmill) for milling PDF
+financial statements into data, and
+[pathr](https://github.com/dataniel/pathr) for the file browser and the
+RStudio addins that take the friction out of Windows paths. None of them
+depends on daos, or daos on them.
 
 ------------------------------------------------------------------------
 
@@ -46,7 +45,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261028"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-28 09:15"
+#> [1] "2026-10-28 10:48"
 ```
 
 A typical use is timestamping an export file:
