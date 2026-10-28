@@ -34,29 +34,21 @@ pak::pak("dataniel/daos")
 
 ## What it looks like
 
-**Reading a set of files.** `read_files()` replaces the usual
-`list.files()` + loop + naming pipeline with one call that expands paths,
-checks they exist, detects the format, and names the results.
+**Readers and writers** now live in their own package,
+[lazer](https://github.com/dataniel/lazer): `read_files()`,
+`read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`, and
+`read_ta()`, `write_ta()` and `convert_ta()` for Greenlandic TA files in
+both layouts. daos forwards them, so existing scripts keep working.
 
 ```r
-library(daos)
+library(lazer)
 
-# One file returns the object; several return a named list
-df  <- read_files("data/results.parquet")
-lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
-
-# Or row-bind them, keeping track of where each row came from
-panel <- read_files(
-  "data/dat{2020:2024}.parquet",
-  names = 2020:2024,
-  out   = "bind",
-  .id   = "year"
-)
+panel <- read_files("data/dat{2020:2024}.parquet", names = 2020:2024,
+                    out = "bind", .id = "year")
 ```
 
-If it handles a set of files without warnings, the production upstream is
-consistent. When it warns about type mismatches, something changed — and
-`view_types()` shows which column, in which file.
+When `read_files()` warns about type mismatches, something changed
+upstream, and `view_types()` in daos shows which column, in which file.
 
 **Checkpoints instead of silent assumptions** now live in their own package,
 [expectr](https://github.com/dataniel/expectr): `expect_empty()`,
@@ -78,12 +70,12 @@ sales |>
 customers |>
   dplyr::mutate(cpr = clean_cpr(cpr)) |>   # restores Excel-lost leading zeros
   add_cpr_info(cpr) |>                     # birth date, age, sex, validity
-  write_excel(f("customers_{nowf()}.xlsx"))
+  lazer::write_excel(f("customers_{nowf()}.xlsx"))
 ```
 
-`write_excel()` writes an xlsx meant to be opened by a person: bold frozen
-header, thousand separators, blank cells for `NA`. `f()` is `glue::glue()`
-under a shorter name, and `nowf()` is a formatted timestamp.
+`lazer::write_excel()` writes an xlsx meant to be opened by a person: bold
+frozen header, thousand separators, blank cells for `NA`. `f()` is
+`glue::glue()` under a shorter name, and `nowf()` is a formatted timestamp.
 
 ## Functions
 
@@ -106,19 +98,14 @@ under a shorter name, and `nowf()` is a formatted timestamp.
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
 | `nowf()` | Formatted current timestamp, e.g. for file names |
-| `read_access()` | Read data from a Microsoft Access database via ODBC |
-| `read_files()` | Validate paths, read files (auto or custom reader), and optionally bind or unpack |
-| `read_workbook()` | Read every sheet (or chosen ranges or Excel tables) into a named list, finding the table on each sheet and warning about cells left outside |
-| `inspect_excel()` | List blocks of cells outside the table in an Excel workbook: titles, notes, totals, stray comments |
-| `read_ta()` | Read Greenlandic TA files (old layout) |
-| `write_ta()` | Write Greenlandic TA files (old layout) |
-| `read_ta2()` | Read Greenlandic TA files (new 140-character layout) |
-| `write_ta2()` | Write Greenlandic TA files (new 140-character layout) |
 | `screen_timeseries()` | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
 | `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
 | `spells_to_panel()` | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
-| `view_types()` | Compare column types across data frames (or a list from `read_files()`) and flag which would break a bind |
-| `write_excel()` | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file) |
+| `view_types()` | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind |
+
+The readers and writers (`read_files()`, `read_workbook()`,
+`inspect_excel()`, `write_excel()`, `read_access()` and the TA functions)
+are in [lazer](https://github.com/dataniel/lazer); daos forwards them.

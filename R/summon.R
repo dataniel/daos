@@ -3,7 +3,7 @@
 #' Searches an environment for objects whose names match a regular expression
 #' and returns them as a named list. Useful for collecting a family of
 #' similarly-named objects (e.g. `dat0` through `dat9`) after unpacking a
-#' list with `out = "unpack"` in [daos::read_files()].
+#' list with `out = "unpack"` in [lazer::read_files()].
 #'
 #' @param pattern A single regular expression string.
 #' @param .envir The environment to search. Default is the calling
@@ -17,7 +17,7 @@
 #' dat3 <- data.frame(x = 3)
 #' summon("^dat\\d+$")
 #'
-#' @seealso [daos::read_files()], [daos::split_by()]
+#' @seealso [lazer::read_files()], [daos::split_by()]
 #'
 #' @importFrom cli cli_abort
 #' @export

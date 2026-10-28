@@ -8,7 +8,7 @@ view_types(..., diff = FALSE, focus = NULL)
 }
 \arguments{
 \item{...}{Data frames to compare (unquoted), or a single named list of
-data frames, such as the default output of \code{\link[=read_files]{read_files()}}. A list
+data frames, such as the default output of \code{\link[lazer:read_files]{lazer::read_files()}}. A list
 can also be spliced with \verb{!!!}. Names are inferred from the expressions
 passed, or taken from the list.}
 
@@ -33,7 +33,7 @@ means the column is absent from that dataset.
 Shows the column types of one or more data frames side-by-side, and
 classifies each column by whether the datasets could be row-bound as they
 are. Useful for diagnosing type mismatches before a join or before
-binding with \code{\link[=read_files]{read_files()}}.
+binding with \code{\link[lazer:read_files]{lazer::read_files()}}.
 }
 \details{
 A type string alone does not say whether two data frames can be stacked:
@@ -41,7 +41,7 @@ A type string alone does not say whether two data frames can be stacked:
 entirely \code{NA} (readr reads an empty column as \code{lgl}). A column that is
 absent from one dataset is no obstacle either, since \code{\link[dplyr:bind_rows]{dplyr::bind_rows()}}
 fills it with \code{NA}. Only a real conflict such as \code{chr} vs \code{dbl} makes the
-bind fail, or forces \code{\link[=read_files]{read_files()}} to fall back to character. The
+bind fail, or forces \code{\link[lazer:read_files]{lazer::read_files()}} to fall back to character. The
 \code{status} column therefore asks the question the function is called for:
 does it bind?
 \itemize{
@@ -71,6 +71,6 @@ view_types(list(a = df1, b = df2))
 
 }
 \seealso{
-\code{\link[=read_files]{read_files()}}, and \code{\link[expectr:expect_empty]{expectr::expect_empty()}} to use
+\code{\link[lazer:read_files]{lazer::read_files()}}, and \code{\link[expectr:expect_empty]{expectr::expect_empty()}} to use
 \code{view_types(diff = TRUE)} or \code{focus} as a checkpoint
 }

@@ -19,7 +19,7 @@ A named list of matching objects.
 Searches an environment for objects whose names match a regular expression
 and returns them as a named list. Useful for collecting a family of
 similarly-named objects (e.g. \code{dat0} through \code{dat9}) after unpacking a
-list with \code{out = "unpack"} in \code{\link[=read_files]{read_files()}}.
+list with \code{out = "unpack"} in \code{\link[lazer:read_files]{lazer::read_files()}}.
 }
 \examples{
 dat1 <- data.frame(x = 1)
@@ -29,5 +29,5 @@ summon("^dat\\\\d+$")
 
 }
 \seealso{
-\code{\link[=read_files]{read_files()}}, \code{\link[=split_by]{split_by()}}
+\code{\link[lazer:read_files]{lazer::read_files()}}, \code{\link[=split_by]{split_by()}}
 }

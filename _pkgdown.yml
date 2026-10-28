@@ -25,14 +25,9 @@ reference:
       - "%??%"
       - "%like%"
 
-  - title: File workflow
+  - title: Workspace
     contents:
-      - read_files
-      - read_workbook
-      - inspect_excel
-      - read_access
       - summon
-      - write_excel
 
   - title: Data wrangling
     contents:
@@ -67,10 +62,13 @@ reference:
       - convert_db25_to_db07
       - db_label
       - inspect_db
-      - read_ta
-      - write_ta
-      - read_ta2
-      - write_ta2
+
+  - title: Readers and writers
+    desc: >
+      The readers and writers have moved to the lazer package.
+      daos forwards them for existing scripts.
+    contents:
+      - moved-to-lazer
 
 articles:
   - title: Get started
