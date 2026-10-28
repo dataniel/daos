@@ -22,9 +22,8 @@ with short, self-contained examples.
 
 Five bodies of work that started here have since grown into packages of
 their own, and are not covered below:
-[taskr](https://github.com/dataniel/taskr) for task management,
-[statbank](https://github.com/dataniel/statbank) for the Greenland and
-Faroese statbanks, [cvrr](https://github.com/dataniel/cvrr) for published
+taskr for task management, statbank for the Greenland and Faroese
+statbanks (both private for now), [cvrr](https://github.com/dataniel/cvrr) for published
 Danish annual reports, [taxmill](https://github.com/dataniel/taxmill)
 for milling PDF financial statements into data, and
 [pathr](https://github.com/dataniel/pathr) for the file browser and the

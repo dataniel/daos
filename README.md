@@ -20,8 +20,8 @@ own. They are standalone — none of them depends on `daos`, or `daos` on them.
 
 | Package | What it does |
 |---------|--------------|
-| [taskr](https://github.com/dataniel/taskr) | Taskwarrior-style task management backed by a shared SQLite file |
-| [statbank](https://github.com/dataniel/statbank) | Client and keyboard browser for the Greenland and Faroese statbanks |
+| taskr (private) | Taskwarrior-style task management backed by a shared SQLite file |
+| statbank (private) | Client and keyboard browser for the Greenland and Faroese statbanks |
 | [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
 | [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
 | [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
