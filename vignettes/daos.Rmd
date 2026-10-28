@@ -225,12 +225,14 @@ Warning: 'report.xlsx': cells outside the area read on 1 sheet were not read:
 ```
 
 When the table is not the one you want, choose it yourself: one range, a
-range per sheet (`NA` keeps the automatic one), or a defined Excel table,
-which keeps its range when rows are added:
+range per sheet (`NA` keeps the automatic one), a named range from the
+workbook, or a defined Excel table, which keeps its range when rows are
+added:
 
 ```{r, eval = FALSE}
 df     <- read_workbook("data/report.xlsx", range = "Report!B3:F40")
 sheets <- read_workbook("data/report.xlsx", range = c(Report = "B3:F40", Notes = NA))
+sales  <- read_workbook("data/report.xlsx", range = "Salesdata")   # Name Manager
 sales  <- read_workbook("data/report.xlsx", table = "Sales")
 ```
 

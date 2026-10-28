@@ -22,7 +22,13 @@ read_workbook(
 each sheet. One range, such as \code{"B3:F40"} (with a single \code{sheet}) or
 \code{"Sheet1!B3:F40"}; or one per sheet as a named vector,
 \code{c(Sheet1 = "B3:F40", Sheet2 = NA)}, where \code{NA} means find the table.
-Sheets not named are found automatically.}
+Sheets not named are found automatically.
+
+A range can also be a named range from the workbook (Formulas > Name
+Manager), such as \code{"Sales"}. A name carries its own sheet, so
+\code{range = c("Sales", "Costs")} reads both, named by the names, wherever
+they are; in a per-sheet vector the name must lie on that sheet. Named
+ranges need an \code{.xlsx} file and the \code{xml2} package.}
 
 \item{table}{Names of defined Excel tables, or \code{TRUE} for all of them.
 Cannot be combined with \code{sheet} or \code{range}. \code{.xlsx} and \code{.xlsm} only.}
@@ -87,6 +93,10 @@ df <- read_workbook("data/report.xlsx", sheet = "2024")
 # Your own range, for one sheet or per sheet (NA: find it):
 df     <- read_workbook("data/report.xlsx", range = "2024!B3:F40")
 sheets <- read_workbook("data/report.xlsx", range = c(`2024` = "B3:F40", `2023` = NA))
+
+# Named ranges (Formulas > Name Manager), wherever they are:
+sales  <- read_workbook("data/report.xlsx", range = "Sales")
+parts  <- read_workbook("data/report.xlsx", range = c("Sales", "Costs"))
 
 # A defined table, or all of them:
 sales  <- read_workbook("data/report.xlsx", table = "Sales")

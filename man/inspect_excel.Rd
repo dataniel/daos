@@ -15,7 +15,13 @@ inspect_excel(path, sheet = NULL, range = NULL, table = NULL, skip = 0)
 each sheet. One range, such as \code{"B3:F40"} (with a single \code{sheet}) or
 \code{"Sheet1!B3:F40"}; or one per sheet as a named vector,
 \code{c(Sheet1 = "B3:F40", Sheet2 = NA)}, where \code{NA} means find the table.
-Sheets not named are found automatically.}
+Sheets not named are found automatically.
+
+A range can also be a named range from the workbook (Formulas > Name
+Manager), such as \code{"Sales"}. A name carries its own sheet, so
+\code{range = c("Sales", "Costs")} reads both, named by the names, wherever
+they are; in a per-sheet vector the name must lie on that sheet. Named
+ranges need an \code{.xlsx} file and the \code{xml2} package.}
 
 \item{table}{Names of defined Excel tables (Insert > Table), or \code{TRUE} for
 all of them. Cannot be combined with \code{sheet} or \code{range}. \code{.xlsx} and

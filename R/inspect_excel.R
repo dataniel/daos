@@ -40,6 +40,12 @@
 #'   `"Sheet1!B3:F40"`; or one per sheet as a named vector,
 #'   `c(Sheet1 = "B3:F40", Sheet2 = NA)`, where `NA` means find the table.
 #'   Sheets not named are found automatically.
+#'
+#'   A range can also be a named range from the workbook (Formulas > Name
+#'   Manager), such as `"Sales"`. A name carries its own sheet, so
+#'   `range = c("Sales", "Costs")` reads both, named by the names, wherever
+#'   they are; in a per-sheet vector the name must lie on that sheet. Named
+#'   ranges need an `.xlsx` file and the `xml2` package.
 #' @param table Names of defined Excel tables (Insert > Table), or `TRUE` for
 #'   all of them. Cannot be combined with `sheet` or `range`. `.xlsx` and
 #'   `.xlsm` only, and needs the `xml2` package.
@@ -149,6 +155,21 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
     return(plan)
   }
 
+  # Defined names (Formulas > Name Manager) carry their own sheet, like tables
+  if (is.character(range) && is.null(names(range)) && !anyNA(range) && !any(.is_cell_ref(range))) {
+    if (!is.null(sheet)) {
+      cli::cli_abort(c(
+        "A named range already names its sheet; drop {.arg sheet}.",
+        "i" = 'To use a name on a given sheet, write {.code range = c({sheet[1]} = "{range[1]}")}.'
+      ), call = call)
+    }
+    sel <- .excel_lookup_names(path, range, call = call)
+    plan <- data.frame(name = range, sheet = sel$sheet, range = sel$range, detected = FALSE)
+    attr(plan, "mode") <- "named"
+    attr(plan, "single") <- length(range) == 1
+    return(plan)
+  }
+
   all_sheets <- readxl::excel_sheets(path)
   single <- length(sheet) == 1
 
@@ -214,9 +235,12 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
       ), call = call)
     }
     clean <- toupper(gsub("$", "", range, fixed = TRUE))
-    bad <- range[!is.na(clean) & !grepl("^[A-Z]{1,3}[0-9]+(:[A-Z]{1,3}[0-9]+)?$", clean)]
-    if (length(bad) > 0) {
-      cli::cli_abort("{.val {bad}} {?is not a cell range/are not cell ranges} such as {.val B3:F40}.", call = call)
+    # Anything that is not a cell range is a named range, which must lie on
+    # the sheet it is given for
+    is_name <- !is.na(range) & !.is_cell_ref(range)
+    if (any(is_name)) {
+      sel <- .excel_lookup_names(path, range[is_name], on_sheet = names(range)[is_name], call = call)
+      clean[is_name] <- sel$range
     }
     ranges[names(range)] <- clean
   }
@@ -272,10 +296,10 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
       areas <- .range_rect(on_sheet$range)
       areas$label <- paste0(on_sheet$name, " (", on_sheet$range, ")")
     } else {
-      rng <- plan$range[plan$sheet == sh]
-      if (is.na(rng)) return(NULL)   # empty sheet
-      areas <- .range_rect(rng)
-      areas$label <- rng
+      read <- plan[plan$sheet == sh & !is.na(plan$range), ]
+      if (nrow(read) == 0) return(NULL)   # empty sheet
+      areas <- .range_rect(read$range)
+      areas$label <- if (mode == "named") paste0(read$name, " (", read$range, ")") else read$range
     }
     cells <- attr(plan, "cells")[[sh]] %||% .excel_cells(path, sh)
     # Rows the caller skipped are left out on purpose, not by surprise
@@ -421,6 +445,109 @@ inspect_excel <- function(path, sheet = NULL, range = NULL, table = NULL, skip =
 }
 
 `%|NA|%` <- function(x, y) if (is.na(x)) y else x
+
+# Defined names -------------------------------------------------------------
+# readxl does not know them either. They are in workbook.xml as
+# <definedName name="Sales" localSheetId="0">'Sheet 1'!$B$3:$F$40</definedName>,
+# where localSheetId (if present) limits the name to one sheet.
+
+.is_cell_ref <- function(x) {
+  grepl("!", x, fixed = TRUE) |
+    grepl("^[A-Z]{1,3}[0-9]+(:[A-Z]{1,3}[0-9]+)?$", toupper(gsub("$", "", x, fixed = TRUE)))
+}
+
+.xlsx_defined_names <- function(path) {
+  wb <- .xlsx_part(path, "xl/workbook.xml")
+  sheets <- xml2::xml_attr(xml2::xml_find_all(wb, paste0("//", .xp("sheets", "sheet"))), "name")
+  dn <- xml2::xml_find_all(wb, paste0("//", .xp("definedNames", "definedName")))
+  local <- as.integer(xml2::xml_attr(dn, "localSheetId"))
+  ref <- .parse_defined_ref(xml2::xml_text(dn))
+  data.frame(
+    name  = xml2::xml_attr(dn, "name"),
+    scope = sheets[local + 1L],
+    sheet = ref$sheet,
+    range = ref$range,
+    ref   = xml2::xml_text(dn)
+  )
+}
+
+# 'Sheet 1'!$B$3:$F$40 -> sheet and "B3:F40". Whole columns ($A:$C) and rows
+# ($3:$5) run to the sheet's edge. Anything else (a formula, a constant,
+# several areas, #REF!) is NA: not something that can be read as a table.
+.parse_defined_ref <- function(ref) {
+  rx <- "^(?:'((?:[^']|'')+)'|([^'!]+))!\\$?([A-Za-z]{0,3})\\$?([0-9]*)(?::\\$?([A-Za-z]{0,3})\\$?([0-9]*))?$"
+  m <- regmatches(ref, regexec(rx, sub("^=", "", trimws(ref)), perl = TRUE))
+  parts <- lapply(m, function(g) {
+    if (length(g) == 0) return(c(NA_character_, NA_character_))
+    sheet <- if (nzchar(g[2])) gsub("''", "'", g[2], fixed = TRUE) else g[3]
+    c1 <- g[4]; r1 <- g[5]; c2 <- g[6]; r2 <- g[7]
+    # "#REF!" (a deleted range) matches with no address at all
+    if (!nzchar(c1) && !nzchar(r1)) return(c(NA_character_, NA_character_))
+    if (!nzchar(c2) && !nzchar(r2)) { c2 <- c1; r2 <- r1 }
+    if (!nzchar(r1) && !nzchar(r2)) { r1 <- "1"; r2 <- "1048576" }
+    if (!nzchar(c1) && !nzchar(c2)) { c1 <- "A"; c2 <- "XFD" }
+    if (!all(nzchar(c(c1, r1, c2, r2)))) return(c(NA_character_, NA_character_))
+    c(sheet, toupper(paste0(c1, r1, ":", c2, r2)))
+  })
+  list(sheet = vapply(parts, `[`, character(1), 1),
+       range = vapply(parts, `[`, character(1), 2))
+}
+
+# Look up names as Excel does: case-insensitively, a name scoped to a sheet
+# before a workbook-wide one. `on_sheet` (one per name) is the sheet the
+# caller gave the name for; the name must lie on it.
+.excel_lookup_names <- function(path, nm, on_sheet = NULL, call = rlang::caller_env()) {
+  if (!.is_xlsx(path)) {
+    cli::cli_abort(c(
+      "{.val {nm}} {?is not a cell range/are not cell ranges} such as {.val B3:F40}.",
+      "i" = "Named ranges can only be looked up in {.file .xlsx} and {.file .xlsm} files."
+    ), call = call)
+  }
+  .excel_need_xml2("read named ranges", call = call)
+  defs <- .xlsx_defined_names(path)
+  shown <- unique(defs$name[!startsWith(defs$name, "_xlnm.")])
+
+  out <- data.frame(sheet = rep(NA_character_, length(nm)), range = NA_character_)
+  unknown <- character()
+  for (i in seq_along(nm)) {
+    cand <- defs[tolower(defs$name) == tolower(nm[i]), ]
+    if (!is.null(on_sheet)) {
+      cand <- cand[is.na(cand$scope) | cand$scope == on_sheet[i], ]
+    }
+    if (nrow(cand) > 1) {
+      if (!is.null(on_sheet) && any(cand$scope %in% on_sheet[i])) {
+        cand <- cand[cand$scope %in% on_sheet[i], ]
+      } else if (any(is.na(cand$scope))) {
+        cand <- cand[is.na(cand$scope), ]
+      } else {
+        cli::cli_abort(c(
+          "The name {.val {nm[i]}} is defined on several sheets: {.val {cand$scope}}.",
+          "i" = 'Say which: {.code range = c({cand$scope[1]} = "{nm[i]}")}.'
+        ), call = call)
+      }
+    }
+    if (nrow(cand) == 0) { unknown <- c(unknown, nm[i]); next }
+    if (is.na(cand$range)) {
+      cli::cli_abort(c(
+        "The name {.val {nm[i]}} is not a single range of cells.",
+        "x" = "It refers to {.code {cand$ref}}."
+      ), call = call)
+    }
+    if (!is.null(on_sheet) && cand$sheet != on_sheet[i]) {
+      cli::cli_abort("The name {.val {nm[i]}} refers to sheet {.val {cand$sheet}}, not {.val {on_sheet[i]}}.", call = call)
+    }
+    out$sheet[i] <- cand$sheet
+    out$range[i] <- cand$range
+  }
+  if (length(unknown) > 0) {
+    cli::cli_abort(c(
+      "{.val {unknown}} {?is not a cell range or a named range/are not cell ranges or named ranges} in {.file {basename(path)}}.",
+      "i" = if (length(shown) > 0) "Named ranges: {.val {shown}}." else "The workbook has no named ranges.",
+      "i" = "Cell ranges look like {.val B3:F40} or {.val Sheet1!B3:F40}."
+    ), call = call)
+  }
+  out
+}
 
 # Cell references -------------------------------------------------------------
 

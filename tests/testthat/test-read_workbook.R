@@ -115,6 +115,55 @@ test_that("read_workbook() explains bad sheet, range and table arguments", {
   expect_snapshot(read_workbook("missing.xlsx"), error = TRUE)
 })
 
+test_that("read_workbook() reads a named range, which carries its own sheet", {
+  path <- make_named_xlsx(withr::local_tempfile(fileext = ".xlsx"))
+  expect_warning(res <- read_workbook(path, range = "Sales"), "E3:E5 right of Sales")
+  expect_s3_class(res, "tbl_df")
+  expect_equal(res$b, c("x", "y", "z"))
+  expect_equal(read_workbook(path, range = "sales", check = FALSE)$a, 1:3)   # case-insensitive, as in Excel
+})
+
+test_that("read_workbook() reads several named ranges into a list named by them", {
+  path <- make_named_xlsx(withr::local_tempfile(fileext = ".xlsx"))
+  res <- read_workbook(path, range = c("Sales", "Costs"))
+  expect_named(res, c("Sales", "Costs"))
+  expect_equal(res$Costs$c, 4:5)
+})
+
+test_that("read_workbook() uses a named range per sheet, preferring the sheet's own", {
+  path <- make_named_xlsx(withr::local_tempfile(fileext = ".xlsx"))
+  res <- read_workbook(path, range = c(Data = "Sales", Other = "Local"), check = FALSE)
+  expect_equal(names(res$Data), c("a", "b"))
+  expect_equal(res$Other$q, 1:2)
+  expect_equal(read_workbook(path, range = c(Data = "Local"), check = FALSE)$Data$c, 4:5)
+})
+
+test_that("inspect_excel() relates blocks to named ranges", {
+  path <- make_named_xlsx(withr::local_tempfile(fileext = ".xlsx"))
+  res <- inspect_excel(path, range = "Sales")
+  expect_equal(res$area, "Sales (B3:C6)")
+  expect_equal(res$block, "E3:E5")
+  expect_equal(nrow(inspect_excel(path, range = c("Sales", "Costs"))), 0)
+})
+
+test_that("read_workbook() explains named ranges it cannot use", {
+  withr::local_dir(withr::local_tempdir())
+  make_named_xlsx("named.xlsx")
+  expect_snapshot(read_workbook("named.xlsx", range = "Nope"), error = TRUE)
+  expect_snapshot(read_workbook("named.xlsx", range = "Local"), error = TRUE)
+  expect_snapshot(read_workbook("named.xlsx", range = c(Other = "Sales")), error = TRUE)
+  expect_snapshot(read_workbook("named.xlsx", sheet = "Data", range = "Sales"), error = TRUE)
+})
+
+test_that("defined names are parsed into a sheet and a range, or NA", {
+  ref <- daos:::.parse_defined_ref(c(
+    "'Sheet 1'!$B$3:$F$40", "Data!$A$1", "'It''s'!$B:$C", "Data!$3:$5",
+    "0.25", "Data!$A$1:$B$2,Data!$D$1:$E$2", "#REF!", "SUM(Data!$A:$A)"
+  ))
+  expect_equal(ref$sheet, c("Sheet 1", "Data", "It's", "Data", NA, NA, NA, NA))
+  expect_equal(ref$range, c("B3:F40", "A1:A1", "B1:C1048576", "A3:XFD5", NA, NA, NA, NA))
+})
+
 test_that("read_workbook() recognises a password-protected workbook", {
   withr::local_dir(withr::local_tempdir())
   # Encrypted .xlsx files are OLE containers; the signature is what matters

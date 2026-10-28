@@ -63,6 +63,10 @@
 #' df     <- read_workbook("data/report.xlsx", range = "2024!B3:F40")
 #' sheets <- read_workbook("data/report.xlsx", range = c(`2024` = "B3:F40", `2023` = NA))
 #'
+#' # Named ranges (Formulas > Name Manager), wherever they are:
+#' sales  <- read_workbook("data/report.xlsx", range = "Sales")
+#' parts  <- read_workbook("data/report.xlsx", range = c("Sales", "Costs"))
+#'
 #' # A defined table, or all of them:
 #' sales  <- read_workbook("data/report.xlsx", table = "Sales")
 #' tables <- read_workbook("data/report.xlsx", table = TRUE)
@@ -85,8 +89,12 @@ read_workbook <- function(path, sheet = NULL, range = NULL, table = NULL,
       # Pass the range as cell_limits: readxl parses range strings with
       # cellranger, which rejects rows from 100000 up ("A1:J100001").
       # readxl ignores skip with a range; drop it so the call is unambiguous.
+      # A range to the sheet's edge (a named range of whole columns) is left
+      # open, so readxl stops at the data instead of filling a million rows.
       rect <- .range_rect(plan$range[i])
-      limits <- readxl::cell_limits(c(rect$r1, rect$c1), c(rect$r2, rect$c2))
+      r2 <- if (rect$r2 >= 1048576) NA else rect$r2
+      c2 <- if (rect$c2 >= 16384) NA else rect$c2
+      limits <- readxl::cell_limits(c(rect$r1, rect$c1), c(r2, c2))
       args <- list(...)
       args$skip <- NULL
       do.call(readxl::read_excel, c(list(path, sheet = plan$sheet[i], range = limits), args))

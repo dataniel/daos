@@ -4,8 +4,8 @@
   list, finding the table on each sheet instead of reading every non-empty
   cell: titles, source notes and stray comments are left out, and one
   warning lists what was left behind. Choose the area yourself with
-  `range`, one per sheet if needed, or read defined Excel tables by name
-  with `table`. A password-protected workbook gives a clear error.
+  `range`, one per sheet if needed, or a named range from the workbook
+  (`range = "Sales"`), or read defined Excel tables by name with `table`. A password-protected workbook gives a clear error.
 
 * `inspect_excel()` lists the blocks of cells outside the table as a
   tibble, empty when the layout is clean.

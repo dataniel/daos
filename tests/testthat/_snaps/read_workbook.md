@@ -80,7 +80,9 @@
       read_workbook("report.xlsx", range = c(Report = "B3-C6"))
     Condition
       Error in `read_workbook()`:
-      ! "B3-C6" is not a cell range such as "B3:F40".
+      ! "B3-C6" is not a cell range or a named range in 'report.xlsx'.
+      i The workbook has no named ranges.
+      i Cell ranges look like "B3:F40" or "Sheet1!B3:F40".
 
 ---
 
@@ -107,6 +109,42 @@
     Condition
       Error in `read_workbook()`:
       ! File 'missing.xlsx' does not exist.
+
+# read_workbook() explains named ranges it cannot use
+
+    Code
+      read_workbook("named.xlsx", range = "Nope")
+    Condition
+      Error in `read_workbook()`:
+      ! "Nope" is not a cell range or a named range in 'named.xlsx'.
+      i Named ranges: "Sales", "Costs", and "Local".
+      i Cell ranges look like "B3:F40" or "Sheet1!B3:F40".
+
+---
+
+    Code
+      read_workbook("named.xlsx", range = "Local")
+    Condition
+      Error in `read_workbook()`:
+      ! The name "Local" is defined on several sheets: "Other" and "Data".
+      i Say which: `range = c(Other = "Local")`.
+
+---
+
+    Code
+      read_workbook("named.xlsx", range = c(Other = "Sales"))
+    Condition
+      Error in `read_workbook()`:
+      ! The name "Sales" refers to sheet "Data", not "Other".
+
+---
+
+    Code
+      read_workbook("named.xlsx", sheet = "Data", range = "Sales")
+    Condition
+      Error in `read_workbook()`:
+      ! A named range already names its sheet; drop `sheet`.
+      i To use a name on a given sheet, write `range = c(Data = "Sales")`.
 
 # read_workbook() recognises a password-protected workbook
 
