@@ -229,9 +229,7 @@ The validation checkpoints, `expect_empty()`, `expect_none()`,
 a contract the rest of daos does not: each states an expectation about
 data as "the set of violations must be empty".
 
-daos still forwards each of them to expectr, so existing scripts keep
-working, old options such as `daos.check_log` included. New code should
-load expectr directly:
+Load expectr to use them:
 
 ```{r, eval = FALSE}
 library(expectr)

@@ -53,8 +53,7 @@ upstream, and `view_types()` in daos shows which column, in which file.
 **Checkpoints instead of silent assumptions** now live in their own package,
 [expectr](https://github.com/dataniel/expectr): `expect_empty()`,
 `expect_none()`, `expect_unique()`, `expect_balanced()`,
-`expect_no_overlap()` and `tally_violations()`. daos forwards them, so
-existing scripts keep working.
+`expect_no_overlap()` and `tally_violations()`.
 
 ```r
 library(expectr)

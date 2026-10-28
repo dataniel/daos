@@ -40,13 +40,6 @@ reference:
       - spells_to_panel
       - add_spell_status
 
-  - title: Validation checkpoints
-    desc: >
-      The checkpoints have moved to the expectr package.
-      daos forwards them for existing scripts.
-    contents:
-      - moved-to-expectr
-
   - title: Interactive
     contents:
       - screen_timeseries

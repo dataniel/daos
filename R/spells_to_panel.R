@@ -11,7 +11,7 @@
 #' * `status_is = "state"` (default): the status holds for the whole spell,
 #'   e.g. enrolled, on leave. The status at a point is the status of the spell
 #'   covering it, and `NA` if no spell does. Spells are closed intervals, as
-#'   in [expectr::expect_no_overlap()].
+#'   in `expectr::expect_no_overlap()`.
 #' * `status_is = "outcome"`: the status is what happened when the spell
 #'   ended, e.g. passed or dropped out, as in education registers. While a
 #'   spell is running (start <= point < end, or no end) the status is
@@ -25,7 +25,7 @@
 #'
 #' If spells overlap, the spell with the latest start decides the status. In
 #' state mode, a message counts the points where this happened; find the
-#' spells with [expectr::expect_no_overlap()]. Rows with a missing start, or an end
+#' spells with `expectr::expect_no_overlap()`. Rows with a missing start, or an end
 #' before the start, are dropped with a message.
 #'
 #' @section Why it is fast:
@@ -78,7 +78,7 @@
 #' )
 #' spells_to_panel(leave, cpr, start, end, status, by = "quarter")
 #'
-#' @seealso [expectr::expect_no_overlap()] to check spells first, [expectr::expect_balanced()]
+#' @seealso `expectr::expect_no_overlap()` to check spells first, `expectr::expect_balanced()`
 #'   to check the resulting panel.
 #'
 #' @export

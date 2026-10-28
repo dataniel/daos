@@ -28,8 +28,8 @@
 #'   expectr::expect_empty(warn_msg = "Duplicate rows found")
 #' }
 #'
-#' @seealso [expectr::expect_unique()] to check a key,
-#'   [expectr::expect_empty()]
+#' @seealso `expectr::expect_unique()` to check a key,
+#'   `expectr::expect_empty()`
 #'
 #' @importFrom cli cli_abort
 #' @importFrom dplyr select

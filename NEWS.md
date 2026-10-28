@@ -8,39 +8,16 @@
   in use elsewhere. Use `library(lazer)`. daos no longer needs readr, nor
   the file-format packages in Suggests.
 
-* `read_workbook()` reads every sheet of an Excel workbook into a named
-  list, finding the table on each sheet instead of reading every non-empty
-  cell: titles, source notes and stray comments are left out, and one
-  warning lists what was left behind. Choose the area yourself with
-  `range`, one per sheet if needed, or a named range from the workbook
-  (`range = "Sales"`), or read defined Excel tables by name with `table`. A password-protected workbook gives a clear error.
-
-* `inspect_excel()` lists the blocks of cells outside the table as a
-  tibble, empty when the layout is clean.
-
-* `read_files()` is quiet on success and reports problems together:
-  * CSV files no longer print the locale and column specification for every
-    file. The decimal comma is kept when you pass a `locale` for its
-    encoding.
-  * A file that fails to read no longer stops the rest; all failures are
-    reported in one error, each with its file. Unsupported extensions are
-    caught before anything is read, missing files are listed with their full
-    path (at most ten), and multi-sheet workbooks give one warning in all.
-  * `out = "bind"` re-types only the columns whose types clash, and names
-    them in the warning, instead of re-guessing every column. Files that do
-    not read as data frames give a clear error.
-  * Files that share a name give a warning, and an error with
-    `out = "unpack"`. A name in `paths` on a pattern that expands to several
-    files is an error instead of being silently dropped.
-
 * The validation checkpoints have moved to their own package, expectr:
   `expect_empty()`, `expect_none()`, `expect_unique()`, `expect_balanced()`,
-  `expect_no_overlap()` and `tally_violations()`. daos forwards each of
-  them to expectr and says so once per session; the options
-  `daos.check_log` and `daos.check_dump` and the condition class
-  `daos_check_failure` keep working. Use `library(expectr)` in new code.
-  In expectr, the checkpoints are much faster on population-sized data and
-  also check DuckDB and Arrow tables.
+  `expect_no_overlap()` and `tally_violations()`. They are removed from
+  daos, with no forwarding, since they were not yet in use elsewhere; use
+  `library(expectr)`. In expectr, the checkpoints are much faster on
+  population-sized data and also check DuckDB and Arrow tables.
+
+* daos, lazer and expectr are independent: none imports or suggests
+  another. They work together, e.g. `view_types()` output passed to
+  `expectr::expect_empty()`, but each installs and runs on its own.
 
 * The inspection helpers `flag_duplicates()` and `view_types()` stay in
   daos. `flag_duplicates()` now groups the key in one linear pass without

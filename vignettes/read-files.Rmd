@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
   eval     = FALSE
 )
 library(daos)
-library(expectr, warn.conflicts = FALSE)
 library(dplyr, warn.conflicts = FALSE)
 ```
 
@@ -143,9 +142,9 @@ it returns only the datasets where critical columns do *not* have the
 expected type, and an empty result on success. That plugs straight into
 the checkpoint pattern from the expectr package:
 
-```{r, eval = TRUE}
+```{r}
 view_types(dat2023, dat2024, focus = c(cvr = "chr", amount = "dbl")) |>
-  expect_empty(warn_msg = "cvr or amount has the wrong type")
+  expectr::expect_empty(warn_msg = "cvr or amount has the wrong type")
 ```
 
 ## Other shapes of output

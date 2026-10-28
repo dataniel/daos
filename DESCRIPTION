@@ -8,8 +8,7 @@ Description: A collection of utility functions for day-to-day statistical
     Danish identifier cleaning, register spell and panel data, interactive
     time-series screening, and various convenience shortcuts for common
     tidyverse patterns. The data validation checkpoints have moved to the
-    expectr package, which daos forwards for existing scripts, and the
-    readers and writers to the lazer package.
+    expectr package, and the readers and writers to the lazer package.
 License: MIT + file LICENSE
 URL: https://dataniel.github.io/daos, https://github.com/dataniel/daos
 BugReports: https://github.com/dataniel/daos/issues
@@ -19,7 +18,6 @@ Imports:
     cli,
     data.table,
     dplyr,
-    expectr,
     glue,
     rlang,
     tibble,
@@ -37,8 +35,6 @@ Suggests:
     knitr,
     rmarkdown,
     pkgdown
-Remotes:
-    dataniel/expectr
 Config/Needs/website: pkgdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr

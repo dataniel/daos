@@ -74,7 +74,7 @@
 #'                  name = "education")
 #'
 #' @seealso [spells_to_panel()] to build the panel from the spells,
-#'   [expectr::expect_no_overlap()] to check the spells first.
+#'   `expectr::expect_no_overlap()` to check the spells first.
 #'
 #' @export
 add_spell_status <- function(data, spells, id, at, start, end, status,

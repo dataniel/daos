@@ -40,6 +40,6 @@ ggplot2::mpg |>
 
 }
 \seealso{
-\code{\link[expectr:expect_unique]{expectr::expect_unique()}} to check a key,
-\code{\link[expectr:expect_empty]{expectr::expect_empty()}}
+\code{expectr::expect_unique()} to check a key,
+\code{expectr::expect_empty()}
 }
