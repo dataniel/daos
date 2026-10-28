@@ -106,7 +106,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261028"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-10-28 01:09"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-10-28 09:15"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -213,10 +213,10 @@ instead of <code><a href="https://rdrr.io/r/base/NULL.html" class="external-link
 <p>The readers and writers have moved to their own package, <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a>:
 <code>read_files()</code>, <code>read_workbook()</code>,
 <code>inspect_excel()</code>, <code>write_excel()</code>,
-<code>read_access()</code> and the TA functions <code>read_ta()</code>,
-<code>write_ta()</code> and <code>convert_ta()</code>. Use
-<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library(lazer)</a></code>, and see
-<code>vignette("lazer", package = "lazer")</code>.</p>
+<code>read_access()</code> and <code>read_sut()</code>,
+<code>write_sut()</code> and <code>convert_sut()</code> for supply and
+use table files (SUT, the TA files). Use <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library(lazer)</a></code>,
+and see <code>vignette("lazer", package = "lazer")</code>.</p>
 <div class="section level3">
 <h3 id="summon-retrieve-objects-by-name-pattern">
 <code>summon()</code>: retrieve objects by name pattern<a class="anchor" aria-label="anchor" href="#summon-retrieve-objects-by-name-pattern"></a>

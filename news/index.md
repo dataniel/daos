@@ -4,10 +4,10 @@
 
 - The readers and writers have moved to their own package, lazer:
   `read_files()`, `read_workbook()`, `inspect_excel()`, `write_excel()`,
-  `read_access()` and the TA functions, where the two TA layouts are one
-  family (`read_ta(version = )`, `write_ta(version = )`,
-  `convert_ta()`). They are removed from daos, with no forwarding, since
-  they were not yet in use elsewhere. Use
+  `read_access()`, and the TA functions, which become `read_sut()`,
+  `write_sut()` and `convert_sut()` for supply and use table (SUT)
+  files, one family for both layouts. They are removed from daos, with
+  no forwarding, since they were not yet in use elsewhere. Use
   [`library(lazer)`](https://rdrr.io/r/base/library.html). daos no
   longer needs readr, nor the file-format packages in Suggests.
 

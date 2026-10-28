@@ -46,7 +46,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261028"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-28 01:09"
+#> [1] "2026-10-28 09:15"
 ```
 
 A typical use is timestamping an export file:
@@ -159,7 +159,8 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 The readers and writers have moved to their own package,
 [lazer](https://github.com/dataniel/lazer): `read_files()`,
 `read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`
-and the TA functions `read_ta()`, `write_ta()` and `convert_ta()`. Use
+and `read_sut()`, `write_sut()` and `convert_sut()` for supply and use
+table files (SUT, the TA files). Use
 [`library(lazer)`](https://rdrr.io/r/base/library.html), and see
 `vignette("lazer", package = "lazer")`.
 

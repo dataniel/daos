@@ -38,8 +38,8 @@ pak::pak("dataniel/daos")
 **Readers and writers** now live in their own package,
 [lazer](https://github.com/dataniel/lazer): `read_files()`,
 `read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`,
-and `read_ta()`, `write_ta()` and `convert_ta()` for Greenlandic TA
-files in both layouts.
+and `read_sut()`, `write_sut()` and `convert_sut()` for Greenlandic
+supply and use table files (SUT, the TA files) in both layouts.
 
 ``` r
 library(lazer)
@@ -118,7 +118,7 @@ formatted timestamp.
 | [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)                                                                                                                     | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind                     |
 
 The readers and writers (`read_files()`, `read_workbook()`,
-`inspect_excel()`, `write_excel()`, `read_access()` and the TA
+`inspect_excel()`, `write_excel()`, `read_access()` and the SUT
 functions) are in [lazer](https://github.com/dataniel/lazer).
 
 # Package index
