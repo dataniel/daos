@@ -3,8 +3,7 @@
 Searches an environment for objects whose names match a regular
 expression and returns them as a named list. Useful for collecting a
 family of similarly-named objects (e.g. `dat0` through `dat9`) after
-unpacking a list with `out = "unpack"` in
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md).
+unpacking a list with `out = "unpack"` in `lazer::read_files()`.
 
 ## Usage
 
@@ -28,7 +27,7 @@ A named list of matching objects.
 
 ## See also
 
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md),
+`lazer::read_files()`,
 [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
 
 ## Examples

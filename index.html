@@ -12,8 +12,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Utility Functions for Statistical Work">
-<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, Danish identifier cleaning, register spell and panel data, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package; daos forwards them for existing scripts.">
-<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for file I/O across many formats, Danish identifier cleaning, register spell and panel data, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package; daos forwards them for existing scripts.">
+<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, register spell and panel data, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, and the readers and writers to the lazer package.">
+<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, register spell and panel data, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, and the readers and writers to the lazer package.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -104,36 +104,27 @@
 <div class="section level2">
 <h2 id="what-it-looks-like">What it looks like<a class="anchor" aria-label="anchor" href="#what-it-looks-like"></a>
 </h2>
-<p><strong>Reading a set of files.</strong> <code><a href="reference/read_files.html">read_files()</a></code> replaces the usual <code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files()</a></code> + loop + naming pipeline with one call that expands paths, checks they exist, detects the format, and names the results.</p>
+<p><strong>Readers and writers</strong> now live in their own package, <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a>: <code>read_files()</code>, <code>read_workbook()</code>, <code>inspect_excel()</code>, <code>write_excel()</code>, <code>read_access()</code>, and <code>read_ta()</code>, <code>write_ta()</code> and <code>convert_ta()</code> for Greenlandic TA files in both layouts.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dataniel.github.io/daos">daos</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">lazer</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># One file returns the object; several return a named list</span></span>
-<span><span class="va">df</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/results.parquet"</span><span class="op">)</span></span>
-<span><span class="va">lst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{0:9}.parquet"</span>, names <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or row-bind them, keeping track of where each row came from</span></span>
-<span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_files.html">read_files</a></span><span class="op">(</span></span>
-<span>  <span class="st">"data/dat{2020:2024}.parquet"</span>,</span>
-<span>  names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span>,</span>
-<span>  out   <span class="op">=</span> <span class="st">"bind"</span>,</span>
-<span>  .id   <span class="op">=</span> <span class="st">"year"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>If it handles a set of files without warnings, the production upstream is consistent. When it warns about type mismatches, something changed — and <code><a href="https://dataniel.github.io/expectr/reference/view_types.html" class="external-link">expectr::view_types()</a></code> shows which column, in which file.</p>
-<p><strong>Checkpoints instead of silent assumptions</strong> now live in their own package, <a href="https://github.com/dataniel/expectr" class="external-link">expectr</a>: <code><a href="reference/moved-to-expectr.html">expect_empty()</a></code>, <code><a href="reference/moved-to-expectr.html">expect_none()</a></code>, <code><a href="reference/moved-to-expectr.html">expect_unique()</a></code>, <code><a href="reference/moved-to-expectr.html">expect_balanced()</a></code>, <code><a href="reference/moved-to-expectr.html">expect_no_overlap()</a></code>, <code><a href="reference/moved-to-expectr.html">tally_violations()</a></code>, <code><a href="reference/moved-to-expectr.html">flag_duplicates()</a></code> and <code><a href="reference/moved-to-expectr.html">view_types()</a></code>. daos forwards them, so existing scripts keep working.</p>
+<span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu">read_files</span><span class="op">(</span><span class="st">"data/dat{2020:2024}.parquet"</span>, names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span>,</span>
+<span>                    out <span class="op">=</span> <span class="st">"bind"</span>, .id <span class="op">=</span> <span class="st">"year"</span><span class="op">)</span></span></code></pre></div>
+<p>When <code>read_files()</code> warns about type mismatches, something changed upstream, and <code><a href="reference/view_types.html">view_types()</a></code> in daos shows which column, in which file.</p>
+<p><strong>Checkpoints instead of silent assumptions</strong> now live in their own package, <a href="https://github.com/dataniel/expectr" class="external-link">expectr</a>: <code><a href="https://dataniel.github.io/expectr/reference/expect_empty.html" class="external-link">expect_empty()</a></code>, <code><a href="https://dataniel.github.io/expectr/reference/expect_none.html" class="external-link">expect_none()</a></code>, <code><a href="https://dataniel.github.io/expectr/reference/expect_unique.html" class="external-link">expect_unique()</a></code>, <code><a href="https://dataniel.github.io/expectr/reference/expect_balanced.html" class="external-link">expect_balanced()</a></code>, <code><a href="https://dataniel.github.io/expectr/reference/expect_no_overlap.html" class="external-link">expect_no_overlap()</a></code> and <code><a href="https://dataniel.github.io/expectr/reference/tally_violations.html" class="external-link">tally_violations()</a></code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dataniel.github.io/expectr" class="external-link">expectr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sales</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/moved-to-expectr.html">expect_none</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">customer_id</span><span class="op">)</span>, abort_msg <span class="op">=</span> <span class="st">"Sales without a customer id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/moved-to-expectr.html">expect_unique</a></span><span class="op">(</span><span class="va">order_id</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dataniel.github.io/expectr/reference/expect_none.html" class="external-link">expect_none</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">customer_id</span><span class="op">)</span>, abort_msg <span class="op">=</span> <span class="st">"Sales without a customer id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dataniel.github.io/expectr/reference/expect_unique.html" class="external-link">expect_unique</a></span><span class="op">(</span><span class="va">order_id</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Danish and Greenlandic identifiers, and a file a colleague can read.</strong></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">customers</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>cpr <span class="op">=</span> <span class="fu"><a href="reference/clean_cpr.html">clean_cpr</a></span><span class="op">(</span><span class="va">cpr</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span>   <span class="co"># restores Excel-lost leading zeros</span></span>
 <span>  <span class="fu"><a href="reference/add_cpr_info.html">add_cpr_info</a></span><span class="op">(</span><span class="va">cpr</span><span class="op">)</span> <span class="op">|&gt;</span>                     <span class="co"># birth date, age, sex, validity</span></span>
-<span>  <span class="fu"><a href="reference/write_excel.html">write_excel</a></span><span class="op">(</span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"customers_{nowf()}.xlsx"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="reference/write_excel.html">write_excel()</a></code> writes an xlsx meant to be opened by a person: bold frozen header, thousand separators, blank cells for <code>NA</code>. <code><a href="reference/f.html">f()</a></code> is <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> under a shorter name, and <code><a href="reference/nowf.html">nowf()</a></code> is a formatted timestamp.</p>
+<span>  <span class="fu">lazer</span><span class="fu">::</span><span class="fu">write_excel</span><span class="op">(</span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"customers_{nowf()}.xlsx"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code>lazer::write_excel()</code> writes an xlsx meant to be opened by a person: bold frozen header, thousand separators, blank cells for <code>NA</code>. <code><a href="reference/f.html">f()</a></code> is <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> under a shorter name, and <code><a href="reference/nowf.html">nowf()</a></code> is a formatted timestamp.</p>
 </div>
 <div class="section level2">
 <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a>
@@ -209,67 +200,48 @@
 <td>String interpolation shorthand (<code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue</a></code> alias)</td>
 </tr>
 <tr class="odd">
+<td><code><a href="reference/flag_duplicates.html">flag_duplicates()</a></code></td>
+<td>Prepend <code>isdup</code>/<code>dupid</code> columns to mark duplicate rows</td>
+</tr>
+<tr class="even">
 <td><code><a href="reference/is_blank.html">is_blank()</a></code></td>
 <td>Test whether a value is blank in the broadest sense</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/nowf.html">nowf()</a></code></td>
 <td>Formatted current timestamp, e.g. for file names</td>
 </tr>
-<tr class="odd">
-<td><code><a href="reference/read_access.html">read_access()</a></code></td>
-<td>Read data from a Microsoft Access database via ODBC</td>
-</tr>
 <tr class="even">
-<td><code><a href="reference/read_files.html">read_files()</a></code></td>
-<td>Validate paths, read files (auto or custom reader), and optionally bind or unpack</td>
-</tr>
-<tr class="odd">
-<td><code><a href="reference/read_ta.html">read_ta()</a></code></td>
-<td>Read Greenlandic TA files (old layout)</td>
-</tr>
-<tr class="even">
-<td><code><a href="reference/write_ta.html">write_ta()</a></code></td>
-<td>Write Greenlandic TA files (old layout)</td>
-</tr>
-<tr class="odd">
-<td><code><a href="reference/read_ta2.html">read_ta2()</a></code></td>
-<td>Read Greenlandic TA files (new 140-character layout)</td>
-</tr>
-<tr class="even">
-<td><code><a href="reference/write_ta2.html">write_ta2()</a></code></td>
-<td>Write Greenlandic TA files (new 140-character layout)</td>
-</tr>
-<tr class="odd">
 <td><code><a href="reference/screen_timeseries.html">screen_timeseries()</a></code></td>
 <td>Fast interactive time-series screening with optional in-app diagnostics and seasonal plots</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/diagnose_timeseries.html">diagnose_timeseries()</a></code></td>
 <td>Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/shh.html">shh()</a></code></td>
 <td>Suppress messages and warnings during evaluation</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/split_by.html">split_by()</a></code></td>
 <td>Split a data frame into a named list by grouping columns</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/spells_to_panel.html">spells_to_panel()</a></code></td>
 <td>Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="reference/summon.html">summon()</a></code></td>
 <td>Retrieve objects matching a regex pattern from an environment</td>
 </tr>
-<tr class="odd">
-<td><code><a href="reference/write_excel.html">write_excel()</a></code></td>
-<td>Format xlsx with configurable <code>digits</code>; choose <code>new</code>, <code>append</code>, <code>replace</code> (sheets), or <code>overwrite</code> (whole file)</td>
+<tr class="even">
+<td><code><a href="reference/view_types.html">view_types()</a></code></td>
+<td>Compare column types across data frames (or a list from <code>lazer::read_files()</code>) and flag which would break a bind</td>
 </tr>
 </tbody>
 </table>
+<p>The readers and writers (<code>read_files()</code>, <code>read_workbook()</code>, <code>inspect_excel()</code>, <code>write_excel()</code>, <code>read_access()</code> and the TA functions) are in <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

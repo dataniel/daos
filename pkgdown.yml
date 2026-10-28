@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   daos: daos.html
   read-files: read-files.html
-last_built: 2026-10-27T18:28Z
+last_built: 2026-10-28T01:09Z
 urls:
   reference: https://dataniel.github.io/daos/reference
   article: https://dataniel.github.io/daos/articles

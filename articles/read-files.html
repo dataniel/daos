@@ -79,24 +79,26 @@ The block grows with every new delivery, the calls drift apart as one of
 them picks up an extra argument, a missing file is only discovered when
 its own line runs, and <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code> at the end either fails
 or, worse, succeeds while hiding a type change. This article is about
-replacing the block with one <code><a href="../reference/read_files.html">read_files()</a></code> call, and about
-using <code><a href="../reference/moved-to-expectr.html">view_types()</a></code> when the files turn out not to be as
-stackable as they looked.</p>
+replacing the block with one <code>read_files()</code> call, from the <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a> package, and about
+using <code><a href="../reference/view_types.html">view_types()</a></code> from daos when the files turn out not to
+be as stackable as they looked.</p>
 <div class="section level2">
 <h2 id="one-call-many-files">One call, many files<a class="anchor" aria-label="anchor" href="#one-call-many-files"></a>
 </h2>
-<p><code><a href="../reference/read_files.html">read_files()</a></code> expands paths with glue syntax, checks that
+<p><code>read_files()</code> expands paths with glue syntax, checks that
 <em>every</em> file exists before reading anything, detects the format
 from the extension, and returns a named list (with a progress bar along
 the way):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>, names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2023</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">lst</span> <span class="op">&lt;-</span> <span class="fu">read_files</span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>, names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2023</span><span class="op">)</span></span></code></pre></div>
 <p>Two things are easy to miss but matter in practice:</p>
 <ul>
 <li>
 <strong>Missing files fail fast and together.</strong> One error
 lists every absent file up front, instead of the loop dying at file
-seven after five minutes of reading.</li>
+seven after five minutes of reading. A file that exists but cannot be
+read does not stop the rest either: all failures are reported in one
+error at the end, each with its file name.</li>
 <li>
 <strong>Column names are lowercased by default</strong>, which
 removes the most common cosmetic difference between deliveries before it
@@ -110,7 +112,7 @@ becomes a problem (<code>.lowercase = FALSE</code> to opt out).</li>
 batches), bind them directly with <code>out = "bind"</code>, and use
 <code>.id</code> to keep track of where each row came from:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">read_files</span><span class="op">(</span></span>
 <span>  <span class="st">"data/dat{2020:2023}.parquet"</span>,</span>
 <span>  names <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2023</span>,</span>
 <span>  out   <span class="op">=</span> <span class="st">"bind"</span>,</span>
@@ -126,13 +128,15 @@ the next, or a column was renamed upstream. With the one-call-per-file
 pattern this surfaces, if at all, as a confusing
 <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows()</a></code> error or a silently mistyped column.</p>
 <p><code>read_files(out = "bind")</code> handles it instead. If the
-files cannot be bound as-is, it warns, coerces everything to character,
-re-types the result with <code><a href="https://readr.tidyverse.org/reference/type_convert.html" class="external-link">readr::type_convert()</a></code>, and points
-you to <code><a href="../reference/moved-to-expectr.html">view_types()</a></code>:</p>
-<pre><code>Warning: Column types differ across files -- coercing to character and
-re-typing with `readr::type_convert()`.
-i Use `expectr::view_types` to inspect the differences.</code></pre>
-<p>The rule of thumb: if <code><a href="../reference/read_files.html">read_files()</a></code> handles a set of
+files cannot be bound as-is, it finds the columns whose types clash,
+converts only those to character, re-types them with
+<code><a href="https://readr.tidyverse.org/reference/parse_guess.html" class="external-link">readr::parse_guess()</a></code>, and points you to
+<code><a href="../reference/view_types.html">view_types()</a></code>. The rest of the columns keep the types they
+were read with:</p>
+<pre><code>Warning: Column types differ across files for cvr, amount -- re-typed with
+`readr::parse_guess()`.
+i Use `daos::view_types()` to inspect the differences.</code></pre>
+<p>The rule of thumb: if <code>read_files()</code> handles a set of
 files without warnings, the data production is consistent. When it
 warns, something changed upstream, and the next step is to find out
 what.</p>
@@ -140,16 +144,16 @@ what.</p>
 <div class="section level2">
 <h2 id="finding-the-culprit-with-view_types">Finding the culprit with <code>view_types()</code><a class="anchor" aria-label="anchor" href="#finding-the-culprit-with-view_types"></a>
 </h2>
-<p><code><a href="../reference/moved-to-expectr.html">view_types()</a></code>, from the expectr package, is
-<code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across multiple data frames at once: one row per
-column, one column per dataset, with abbreviated type strings. It takes
-the list from <code><a href="../reference/read_files.html">read_files()</a></code> directly
-(<code>view_types(lst)</code>), or the data frames one by one:</p>
+<p><code><a href="../reference/view_types.html">view_types()</a></code> is <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> across multiple
+data frames at once: one row per column, one column per dataset, with
+abbreviated type strings. It takes the list from
+<code>read_files()</code> directly (<code>view_types(lst)</code>), or
+the data frames one by one:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dat2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="st">"11111111"</span>, name <span class="op">=</span> <span class="st">"Firm A"</span>, amount <span class="op">=</span> <span class="fl">100</span>,    year <span class="op">=</span> <span class="fl">2023L</span><span class="op">)</span></span>
 <span><span class="va">dat2024</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="fl">11111111</span>,  name <span class="op">=</span> <span class="st">"Firm B"</span>, amount <span class="op">=</span> <span class="st">"1.000"</span>, turnover <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   column   status   dat2023 dat2024</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
@@ -163,7 +167,7 @@ the list from <code><a href="../reference/read_files.html">read_files()</a></cod
 <li>
 <code>conflict</code>: the types cannot be combined
 (<code>chr</code> vs <code>dbl</code> for <code>cvr</code>). This is
-what makes <code><a href="../reference/read_files.html">read_files()</a></code> fall back to character, and the
+what makes <code>read_files()</code> fall back to character, and the
 classic cause of a corrupted join key.</li>
 <li>
 <code>missing</code>: the column does not exist in every dataset
@@ -181,7 +185,7 @@ is entirely <code>NA</code> (readr reads an empty column as
 <p><code>diff = TRUE</code> cuts the listing down to the conflicts, the
 columns that actually break the stack:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
 <span><span class="co">#&gt;   column status   dat2023 dat2024</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
@@ -189,21 +193,16 @@ columns that actually break the stack:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> amount conflict dbl     chr</span></span></code></pre></div>
 <p>The same overview is just as useful <em>before a join</em>: two
 frames that are about to be joined on <code>cvr</code> should agree on
-its type, and <code><a href="../reference/moved-to-expectr.html">view_types()</a></code> answers that in one line instead
+its type, and <code><a href="../reference/view_types.html">view_types()</a></code> answers that in one line instead
 of two <code><a href="https://pillar.r-lib.org/reference/glimpse.html" class="external-link">glimpse()</a></code> calls and a visual diff.</p>
 <p>For pipelines, the <code>focus</code> argument turns the inspection
 into a check: it returns only the datasets where critical columns do
 <em>not</em> have the expected type, and an empty result on success.
-That plugs straight into the checkpoint pattern from expectr,</p>
+That plugs straight into the checkpoint pattern from the expectr
+package:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/moved-to-expectr.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="st">"chr"</span>, amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/moved-to-expectr.html">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"cvr or amount has the wrong type"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in expect_empty(view_types(dat2023, dat2024, focus = c(cvr = "chr", : cvr or amount has the wrong type</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 2 rows found:</span></span>
-<span><span class="co">#&gt;     column status   dat2024</span></span>
-<span><span class="co">#&gt;     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt;   <span style="color: #BCBCBC;">1</span> cvr    conflict dbl</span></span>
-<span><span class="co">#&gt;   <span style="color: #BCBCBC;">2</span> amount conflict chr</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/view_types.html">view_types</a></span><span class="op">(</span><span class="va">dat2023</span>, <span class="va">dat2024</span>, focus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="st">"chr"</span>, amount <span class="op">=</span> <span class="st">"dbl"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">expectr</span><span class="fu">::</span><span class="fu"><a href="https://dataniel.github.io/expectr/reference/expect_empty.html" class="external-link">expect_empty</a></span><span class="op">(</span>warn_msg <span class="op">=</span> <span class="st">"cvr or amount has the wrong type"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="other-shapes-of-output">Other shapes of output<a class="anchor" aria-label="anchor" href="#other-shapes-of-output"></a>
@@ -214,7 +213,7 @@ pairs well with <code><a href="https://rdrr.io/r/base/lapply.html" class="extern
 is closest to the one-call-per-file pattern, but with the validation,
 naming, and progress handled for you:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/read_files.html">read_files</a></span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>,</span>
+<code class="sourceCode R"><span><span class="fu">read_files</span><span class="op">(</span><span class="st">"data/dat{2020:2023}.parquet"</span>,</span>
 <span>           names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"dat"</span>, <span class="fl">2020</span><span class="op">:</span><span class="fl">2023</span><span class="op">)</span>, out <span class="op">=</span> <span class="st">"unpack"</span><span class="op">)</span></span></code></pre></div>
 <p><code>summon("^dat\\d+$")</code> collects an unpacked family back
 into a named list when you change your mind.</p>

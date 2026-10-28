@@ -44,9 +44,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20261027"
+#> [1] "20261028"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-27 18:28"
+#> [1] "2026-10-28 01:09"
 ```
 
 A typical use is timestamping an export file:
@@ -154,91 +154,14 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 
 ------------------------------------------------------------------------
 
-## File workflows
+## Files: the lazer package
 
-### `read_files()`: validate, read, and collect
-
-Reading a set of files normally takes a small pipeline:
-[`list.files()`](https://rdrr.io/r/base/list.files.html), a loop or
-[`purrr::map()`](https://purrr.tidyverse.org/reference/map.html), and
-manual naming.
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-does it in one call and handles path expansion, existence checks, format
-detection, and naming along the way.
-
-A single path returns the object directly; multiple paths return a named
-list with a progress bar.
-
-``` r
-# Single file (returns object directly):
-df <- read_files("data/results.parquet")
-
-# Multiple files with glue expansion:
-lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
-```
-
-Supported formats: `csv`, `tsv`, `parquet`, `feather`, `xlsx`, `xls`,
-`rds`, `sas7bdat`, `sav`, `por`, `xpt`, `dta`, `json`, `ndjson`,
-`jsonl`, `yaml`, `yml`, `txt`.
-
-In practice,
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-works best when data production is consistent: same formats, same column
-names, same types across files. If
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-handles a set of files without warnings, the workflow is in order. When
-it warns about type mismatches, something has changed upstream. There is
-a separate article about this way of working, and about using
-[`expectr::view_types()`](https://dataniel.github.io/expectr/reference/view_types.html)
-when files refuse to stack:
-[`vignette("read-files")`](https://dataniel.github.io/daos/articles/read-files.md).
-
-Supply a custom reader to override auto-detection or add arguments:
-
-``` r
-read_files(
-  "data/dat{0:9}.parquet",
-  reader = \(x) arrow::read_parquet(x, col_select = 1:5)
-)
-```
-
-**Column name casing**
-
-By default, column names are converted to lowercase after reading
-(`.lowercase = TRUE`). Set `.lowercase = FALSE` to preserve original
-casing.
-
-**Binding into one tibble**
-
-Set `out = "bind"` to row-bind all files. Use `.id` to track the origin
-of each row. When `names` is a numeric vector (e.g. years), the `.id`
-column will also be numeric.
-
-``` r
-read_files(
-  "data/dat{2020:2024}.parquet",
-  names = 2020:2024,
-  out   = "bind",
-  .id   = "year"
-)
-```
-
-If column types differ across files, a warning is issued and types are
-reconciled with
-[`readr::type_convert()`](https://readr.tidyverse.org/reference/type_convert.html).
-The `.id` column is always excluded from this reconciliation.
-
-**Unpacking into individual variables**
-
-Set `out = "unpack"` to assign each file as its own named variable in
-the calling environment. By default,
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-aborts if any name already exists. Set `.overwrite = TRUE` to allow
-overwriting.
-
-``` r
-read_files("data/dat{0:9}.parquet", names = paste0("dat", 0:9), out = "unpack")
-```
+The readers and writers have moved to their own package,
+[lazer](https://github.com/dataniel/lazer): `read_files()`,
+`read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`
+and the TA functions `read_ta()`, `write_ta()` and `convert_ta()`. Use
+[`library(lazer)`](https://rdrr.io/r/base/library.html), and see
+`vignette("lazer", package = "lazer")`.
 
 ### `summon()`: retrieve objects by name pattern
 
@@ -264,169 +187,145 @@ names(result)
 #> [1] "dat1" "dat2" "dat3"
 ```
 
-### `read_access()`: read from a Microsoft Access database
+------------------------------------------------------------------------
 
-Connects to an `.mdb` or `.accdb` file via ODBC, executes a SQL query,
-and returns the result as a tibble. Requires the `DBI` and `odbc`
-packages and a Microsoft Access ODBC driver.
+## Data inspection
 
-The `verbosity` argument controls output:
+### `view_types()`: compare column types across data frames
 
-- `"compact"` (default): one line per file, best when looping
-- `"full"`: header, spinners, and summary, best for single files
-- `"quiet"`: no output
+[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+is [`glimpse()`](https://pillar.r-lib.org/reference/glimpse.html) across
+several data frames at once: one row per column, with the type in each
+dataset. Useful before a join, or before binding with
+`read_files(out = "bind")`.
 
-``` r
-# Full output for interactive use:
-df <- read_access("data/sales.mdb", "SELECT * FROM Customers",
-                  verbosity = "full")
-
-# Loop over many databases quietly:
-files <- list.files("data", pattern = "\\.mdb$", full.names = TRUE)
-results <- lapply(files, \(f) read_access(f, "SELECT * FROM Sales"))
-```
-
-### `write_excel()`: write presentable Excel files
-
-This function exists because a plain data export is hard to read for the
-people the file is meant for. The complaint from a colleague who works
-with macroeconomic statistics was concrete: no frozen header, no
-thousand separators, no rounding.
-[`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
-is fast but writes exactly such unformatted files, and `openxlsx2` can
-do all the styling but wants a workbook object, worksheets, styles, and
-a save call.
-[`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
-sits in between: one call, with defaults that make the file presentable.
-
-- Numeric columns with at least one value ≥ 1,000 are formatted with a
-  thousand separator and no displayed decimals (`#,##0`); the underlying
-  values are preserved. Use `digits = 2` for two displayed decimals, or
-  `digits = NULL` to disable automatic numeric formatting. This applies
-  to columns with an absolute value of at least 1,000.
-- Year-like columns are excluded automatically: a numeric column where
-  every value is a whole number between 1800 and 2200 is assumed to hold
-  years, so `2020` is not displayed as `2.020`. Disable with
-  `detect_years = FALSE`, and use `skip_fmt` for columns the heuristic
-  cannot guess (e.g. numeric period codes like `202001`).
-- `NA` values appear as blank cells.
-- The header row is bold.
-- The first row is frozen (can be turned off with
-  `freeze_header = FALSE`).
-
-Only `.xlsx` can be written. The old binary `.xls` format is not
-supported, and a non-`.xlsx` path fails early instead of producing a
-file Excel will complain about.
-
-**Writing a new file**
-
-Pass a data frame or a named list of data frames. The default
-`mode = "new"` fails if the file already exists. Use
-`mode = "overwrite"` to replace the entire workbook.
+The `status` column says whether the frames would bind: `ok`,
+`coercible` (types differ but combine, like `int` + `dbl` or an all-`NA`
+column with anything), `missing` (absent somewhere, which
+[`bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)
+fills with `NA`), or `conflict` (the bind fails).
 
 ``` r
-# Single data frame: sheet name defaults to "Sheet1"
-write_excel(mtcars, "output.xlsx")
+df_a <- data.frame(x = 1L,  y = "a", z = NA)
+df_b <- data.frame(x = 1.0, y = 2,   z = "b", w = 1)
 
-# Named list: each element becomes a sheet
-write_excel(
-  list(Cars = mtcars, Iris = iris),
-  "output.xlsx"
-)
+view_types(df_a, df_b)
+#> # A tibble: 4 × 4
+#>   column status    df_a  df_b 
+#>   <chr>  <chr>     <chr> <chr>
+#> 1 x      coercible int   dbl  
+#> 2 y      conflict  chr   dbl  
+#> 3 z      coercible lgl   chr  
+#> 4 w      missing   NA    dbl
 ```
-
-**Sheet naming**
-
-Sheet names come from the list names. Unnamed elements get default names
-(`"Sheet1"`, `"Sheet2"`, …). Mixed naming is also fine:
 
 ``` r
-# "Hoved" is explicit; second sheet becomes "Sheet2"
-write_excel(list(Hoved = mtcars, iris), "output.xlsx")
+# Only the columns that would break a bind:
+view_types(df_a, df_b, diff = TRUE)
+#> # A tibble: 1 × 4
+#>   column status   df_a  df_b 
+#>   <chr>  <chr>    <chr> <chr>
+#> 1 y      conflict chr   dbl
 ```
 
-**Appending sheets to an existing file**
-
-`mode = "append"` adds sheets to an existing file and fails on name
-collisions. Use `mode = "replace"` to replace matching sheets and add
-any new ones. Names are matched ignoring case; replaced sheets keep
-their position, and other sheets are retained. Both modes require an
-existing file and operate on whole sheets, not individual rows.
+The output of `read_files()` can be passed directly, since a named list
+of data frames is unpacked:
 
 ``` r
-write_excel(list(Hoved = mtcars), "output.xlsx")
-write_excel(list(Bilag = iris), "output.xlsx", mode = "append")
-write_excel(list(Hoved = mtcars), "output.xlsx", mode = "replace")
+lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+  view_types(diff = TRUE)
 ```
 
-**Other options**
+The `focus` argument checks that specific columns have an expected type
+and returns only the datasets where they do not:
 
 ``` r
-# Insert as an Excel table (filter arrows, banded rows)
-write_excel(mtcars, "output.xlsx", as_table = TRUE)
-
-# Exclude columns from the #,##0 format
-write_excel(mtcars, "output.xlsx", skip_fmt = "hp")
+view_types(df_a, df_b, focus = c(x = "int", y = "chr"))
+#> # A tibble: 2 × 3
+#>   column status    df_b 
+#>   <chr>  <chr>     <chr>
+#> 1 x      coercible dbl  
+#> 2 y      conflict  dbl
 ```
 
-### `read_ta()` / `write_ta()`: read and write Greenlandic TA files
+### `flag_duplicates()`: detect and label duplicate rows
+
+Base R’s [`duplicated()`](https://rdrr.io/r/base/duplicated.html) only
+marks the second occurrence of a duplicate.
+[`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
+marks all copies and gives them a shared group ID, so the whole group
+can be inspected together. The ID can also serve as an implicit record
+linkage key: if several respondents have reported the same information
+but background data is missing for one of them, the shared `dupid`
+reveals the connection.
 
 ``` r
-df <- read_ta("ta.file")
-write_ta(df, "ta.file")
+flag_duplicates(ggplot2::mpg)
+#> # A tibble: 234 × 13
+#>    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy
+#>    <lgl> <int> <chr>        <chr>      <dbl> <int> <int> <chr> <chr> <int> <int>
+#>  1 FALSE     0 audi         a4           1.8  1999     4 auto… f        18    29
+#>  2 FALSE     0 audi         a4           1.8  1999     4 manu… f        21    29
+#>  3 FALSE     0 audi         a4           2    2008     4 manu… f        20    31
+#>  4 FALSE     0 audi         a4           2    2008     4 auto… f        21    30
+#>  5 FALSE     0 audi         a4           2.8  1999     6 auto… f        16    26
+#>  6 FALSE     0 audi         a4           2.8  1999     6 manu… f        18    26
+#>  7 FALSE     0 audi         a4           3.1  2008     6 auto… f        18    27
+#>  8 FALSE     0 audi         a4 quattro   1.8  1999     4 manu… 4        18    26
+#>  9 FALSE     0 audi         a4 quattro   1.8  1999     4 auto… 4        16    25
+#> 10 FALSE     0 audi         a4 quattro   2    2008     4 manu… 4        20    28
+#> # ℹ 224 more rows
+#> # ℹ 2 more variables: fl <chr>, class <chr>
 ```
-
-[`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
-only writes what
-[`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)
-reads back unchanged. Values that would not fit their fixed-width field,
-or would lose decimals, stop with an error that lists them, so no file
-with shifted fields is written.
-
-### `read_ta2()` / `write_ta2()`: the new TA layout
 
 ``` r
-df <- read_ta2("ta.file")
-write_ta2(df, "ta.file")
+# Check specific columns:
+flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
+  filter(isdup) |>
+  arrange(dupid)
+#> # A tibble: 227 × 13
+#>    isdup dupid manufacturer model      displ  year   cyl trans drv     cty   hwy
+#>    <lgl> <int> <chr>        <chr>      <dbl> <int> <int> <chr> <chr> <int> <int>
+#>  1 TRUE      1 audi         a4           1.8  1999     4 auto… f        18    29
+#>  2 TRUE      1 audi         a4           1.8  1999     4 manu… f        21    29
+#>  3 TRUE      1 audi         a4           2.8  1999     6 auto… f        16    26
+#>  4 TRUE      1 audi         a4           2.8  1999     6 manu… f        18    26
+#>  5 TRUE      2 audi         a4           2    2008     4 manu… f        20    31
+#>  6 TRUE      2 audi         a4           2    2008     4 auto… f        21    30
+#>  7 TRUE      2 audi         a4           3.1  2008     6 auto… f        18    27
+#>  8 TRUE      3 audi         a4 quattro   1.8  1999     4 manu… 4        18    26
+#>  9 TRUE      3 audi         a4 quattro   1.8  1999     4 auto… 4        16    25
+#> 10 TRUE      3 audi         a4 quattro   2.8  1999     6 auto… 4        15    25
+#> # ℹ 217 more rows
+#> # ℹ 2 more variables: fl <chr>, class <chr>
 ```
 
-The new TA system uses a 140-character layout with nine columns. The `2`
-functions handle it with the same guarantee as
-[`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md);
-the old pair is kept for the transition and for old files.
-[`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)
-refuses lines shorter than 140 characters, so an old-layout file is
-never read into the wrong columns.
+Both functions inspect data before you settle on a rule. Turning a rule
+into a checkpoint is the job of the expectr package, below.
 
 ------------------------------------------------------------------------
 
 ## Data validation: the expectr package
 
 The validation checkpoints,
-[`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+[`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
+[`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
+[`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
+[`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
+[`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
 and
-[`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-and the helpers
-[`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-and
-[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+[`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html),
 have moved to their own package,
 [expectr](https://github.com/dataniel/expectr). They share an engine and
 a contract the rest of daos does not: each states an expectation about
 data as “the set of violations must be empty”.
 
-daos still forwards each of them to expectr, so existing scripts keep
-working, old options such as `daos.check_log` included. New code should
-load expectr directly:
+Load expectr to use them:
 
 ``` r
 library(expectr)
 
-read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   view_types(diff = TRUE) |>
   expect_empty(warn_msg = "The files do not bind")
 ```

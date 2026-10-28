@@ -35,47 +35,33 @@ pak::pak("dataniel/daos")
 
 ## What it looks like
 
-**Reading a set of files.**
-[`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-replaces the usual
-[`list.files()`](https://rdrr.io/r/base/list.files.html) + loop + naming
-pipeline with one call that expands paths, checks they exist, detects
-the format, and names the results.
+**Readers and writers** now live in their own package,
+[lazer](https://github.com/dataniel/lazer): `read_files()`,
+`read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`,
+and `read_ta()`, `write_ta()` and `convert_ta()` for Greenlandic TA
+files in both layouts.
 
 ``` r
-library(daos)
+library(lazer)
 
-# One file returns the object; several return a named list
-df  <- read_files("data/results.parquet")
-lst <- read_files("data/dat{0:9}.parquet", names = 0:9)
-
-# Or row-bind them, keeping track of where each row came from
-panel <- read_files(
-  "data/dat{2020:2024}.parquet",
-  names = 2020:2024,
-  out   = "bind",
-  .id   = "year"
-)
+panel <- read_files("data/dat{2020:2024}.parquet", names = 2020:2024,
+                    out = "bind", .id = "year")
 ```
 
-If it handles a set of files without warnings, the production upstream
-is consistent. When it warns about type mismatches, something changed —
-and
-[`expectr::view_types()`](https://dataniel.github.io/expectr/reference/view_types.html)
-shows which column, in which file.
+When `read_files()` warns about type mismatches, something changed
+upstream, and
+[`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+in daos shows which column, in which file.
 
 **Checkpoints instead of silent assumptions** now live in their own
 package, [expectr](https://github.com/dataniel/expectr):
-[`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-[`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+[`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
+[`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
+[`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
+[`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
+[`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
 and
-[`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md).
-daos forwards them, so existing scripts keep working.
+[`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html).
 
 ``` r
 library(expectr)
@@ -91,12 +77,11 @@ sales |>
 customers |>
   dplyr::mutate(cpr = clean_cpr(cpr)) |>   # restores Excel-lost leading zeros
   add_cpr_info(cpr) |>                     # birth date, age, sex, validity
-  write_excel(f("customers_{nowf()}.xlsx"))
+  lazer::write_excel(f("customers_{nowf()}.xlsx"))
 ```
 
-[`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
-writes an xlsx meant to be opened by a person: bold frozen header,
-thousand separators, blank cells for `NA`.
+`lazer::write_excel()` writes an xlsx meant to be opened by a person:
+bold frozen header, thousand separators, blank cells for `NA`.
 [`f()`](https://dataniel.github.io/daos/reference/f.md) is
 [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html) under a
 shorter name, and
@@ -121,18 +106,17 @@ formatted timestamp.
 | [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)                                                                                                           | Drop rows empty across selected columns; optionally include blank text                                                               |
 | [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)                                                                                                           | Drop entirely empty selected columns                                                                                                 |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md)                                                                                                                                       | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias)                                |
+| [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)                                                                                                           | Prepend `isdup`/`dupid` columns to mark duplicate rows                                                                               |
 | [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)                                                                                                                         | Test whether a value is blank in the broadest sense                                                                                  |
 | [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)                                                                                                                                 | Formatted current timestamp, e.g. for file names                                                                                     |
-| [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)                                                                                                                   | Read data from a Microsoft Access database via ODBC                                                                                  |
-| [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)                                                                                                                     | Validate paths, read files (auto or custom reader), and optionally bind or unpack                                                    |
-| [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md)                                                                                                                           | Read Greenlandic TA files (old layout)                                                                                               |
-| [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)                                                                                                                         | Write Greenlandic TA files (old layout)                                                                                              |
-| [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)                                                                                                                         | Read Greenlandic TA files (new 140-character layout)                                                                                 |
-| [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)                                                                                                                       | Write Greenlandic TA files (new 140-character layout)                                                                                |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)                                                                                                       | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots                                           |
 | [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)                                                                                                   | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group                          |
 | [`shh()`](https://dataniel.github.io/daos/reference/shh.md)                                                                                                                                   | Suppress messages and warnings during evaluation                                                                                     |
 | [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)                                                                                                                         | Split a data frame into a named list by grouping columns                                                                             |
 | [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)                                                                                                           | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status                                |
 | [`summon()`](https://dataniel.github.io/daos/reference/summon.md)                                                                                                                             | Retrieve objects matching a regex pattern from an environment                                                                        |
-| [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)                                                                                                                   | Format xlsx with configurable `digits`; choose `new`, `append`, `replace` (sheets), or `overwrite` (whole file)                      |
+| [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)                                                                                                                     | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind                     |
+
+The readers and writers (`read_files()`, `read_workbook()`,
+`inspect_excel()`, `write_excel()`, `read_access()` and the TA
+functions) are in [lazer](https://github.com/dataniel/lazer).

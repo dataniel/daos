@@ -22,19 +22,17 @@
 
   Regex matching with `NA` preservation
 
-## File workflow
+## Workspace
 
-- [`read_files()`](https://dataniel.github.io/daos/reference/read_files.md)
-  : Read one or more files
-- [`read_access()`](https://dataniel.github.io/daos/reference/read_access.md)
-  : Read data from a Microsoft Access database
 - [`summon()`](https://dataniel.github.io/daos/reference/summon.md) :
   Retrieve objects matching a pattern from an environment
-- [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
-  : Write data frames to a presentable Excel file
 
 ## Data wrangling
 
+- [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+  : Compare column types across data frames
+- [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
+  : Flag duplicate rows
 - [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
   : Diagnose time series, optionally within dplyr groups
 - [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)
@@ -46,21 +44,6 @@
   : Turn spell data into a period panel with primo and ultimo status
 - [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
   : Add status from spell data to a panel you already have
-
-## Validation checkpoints
-
-The checkpoints and their helpers have moved to the expectr package.
-daos forwards them for existing scripts.
-
-- [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  [`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
-  : Checkpoints, now in the expectr package
 
 ## Interactive
 
@@ -88,11 +71,3 @@ daos forwards them for existing scripts.
 - [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)
   : Inspect possible classifications of mixed DB07 and DB25 industry
   codes
-- [`read_ta()`](https://dataniel.github.io/daos/reference/read_ta.md) :
-  Read a Greenlandic TA file
-- [`write_ta()`](https://dataniel.github.io/daos/reference/write_ta.md)
-  : Write a Greenlandic TA file
-- [`read_ta2()`](https://dataniel.github.io/daos/reference/read_ta2.md)
-  : Read a Greenlandic TA file in the new layout
-- [`write_ta2()`](https://dataniel.github.io/daos/reference/write_ta2.md)
-  : Write a Greenlandic TA file in the new layout

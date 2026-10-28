@@ -2,22 +2,44 @@
 
 ## daos (development version)
 
+- The readers and writers have moved to their own package, lazer:
+  `read_files()`, `read_workbook()`, `inspect_excel()`, `write_excel()`,
+  `read_access()` and the TA functions, where the two TA layouts are one
+  family (`read_ta(version = )`, `write_ta(version = )`,
+  `convert_ta()`). They are removed from daos, with no forwarding, since
+  they were not yet in use elsewhere. Use
+  [`library(lazer)`](https://rdrr.io/r/base/library.html). daos no
+  longer needs readr, nor the file-format packages in Suggests.
+
 - The validation checkpoints have moved to their own package, expectr:
-  [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md),
-  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
+  [`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
+  [`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
+  [`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
+  [`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
   and
-  [`view_types()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md).
-  daos forwards each of them to expectr and says so once per session;
-  the options `daos.check_log` and `daos.check_dump` and the condition
-  class `daos_check_failure` keep working. Use
-  [`library(expectr)`](https://dataniel.github.io/expectr) in new code.
-  In expectr, the checkpoints are much faster on population-sized data
-  and also check DuckDB and Arrow tables.
+  [`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html).
+  They are removed from daos, with no forwarding, since they were not
+  yet in use elsewhere; use
+  [`library(expectr)`](https://dataniel.github.io/expectr). In expectr,
+  the checkpoints are much faster on population-sized data and also
+  check DuckDB and Arrow tables.
+
+- daos, lazer and expectr are independent: none imports or suggests
+  another. They work together,
+  e.g. [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+  output passed to
+  [`expectr::expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
+  but each installs and runs on its own.
+
+- The inspection helpers
+  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
+  and
+  [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
+  stay in daos.
+  [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
+  now groups the key in one linear pass without sorting it: about 11
+  times faster on 5 million rows keyed by cpr and year.
 
 - [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
   turns spell data (education, addresses) into a yearly, quarterly or
@@ -30,24 +52,24 @@
 - Validation checkpoints are extended into a small family that shares
   one engine (`vignette("validation")`):
 
-  - [`expect_none()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  - [`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html)
     checks a condition and returns the full data, so checks can be
     chained mid-pipeline.
-  - [`expect_unique()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  - [`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html)
     checks keys, e.g. before a join.
-  - [`expect_balanced()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  - [`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html)
     checks that a register panel is balanced, or with `gaps_only = TRUE`
     that units do not skip periods.
-  - [`expect_no_overlap()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  - [`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
     checks that spells (addresses, employment) do not overlap within a
     unit.
-  - [`tally_violations()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+  - [`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html)
     counts violations for many rules at once without warning or
     aborting; filter and pipe it into
-    [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+    [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
     to judge.
 
-- [`expect_empty()`](https://dataniel.github.io/daos/reference/moved-to-expectr.md)
+- [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
   failure messages now give the row count and preview the first rows.
   Messages are shown literally (braces are no longer interpolated). With
   `warn_msg` or `abort_msg` set, the success message defaults to
@@ -61,10 +83,9 @@
   31 December of the previous year. Use `primo = "jan1"` for 1 January
   ages.
 
-- [`write_excel()`](https://dataniel.github.io/daos/reference/write_excel.md)
-  gains `digits`: keep zero displayed decimals by default, choose a
-  different precision, or use `NULL` to disable automatic numeric
-  formatting. Stored values are unchanged.
+- `write_excel()` gains `digits`: keep zero displayed decimals by
+  default, choose a different precision, or use `NULL` to disable
+  automatic numeric formatting. Stored values are unchanged.
 
 - Consolidate Excel writing in `write_excel(mode = ...)`: `new`
   (default), `append`, `replace` (matching sheets), and `overwrite`
