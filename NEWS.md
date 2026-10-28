@@ -2,13 +2,11 @@
 
 * The readers and writers have moved to their own package, lazer:
   `read_files()`, `read_workbook()`, `inspect_excel()`, `write_excel()`,
-  `read_access()` and the TA functions. daos forwards each to lazer and
-  says so once per session; `read_ta()`, `read_ta2()`, `write_ta()` and
-  `write_ta2()` keep their signatures and call `lazer::read_ta()` and
-  `lazer::write_ta()` with the right `version`. In lazer the two TA layouts
-  are one family, with `convert_ta()` to convert between them. Use
-  `library(lazer)` in new code. daos no longer needs readr, nor the
-  file-format packages in Suggests.
+  `read_access()` and the TA functions, where the two TA layouts are one
+  family (`read_ta(version = )`, `write_ta(version = )`, `convert_ta()`).
+  They are removed from daos, with no forwarding, since they were not yet
+  in use elsewhere. Use `library(lazer)`. daos no longer needs readr, nor
+  the file-format packages in Suggests.
 
 * `read_workbook()` reads every sheet of an Excel workbook into a named
   list, finding the table on each sheet instead of reading every non-empty

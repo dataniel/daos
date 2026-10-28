@@ -38,7 +38,7 @@ pak::pak("dataniel/daos")
 [lazer](https://github.com/dataniel/lazer): `read_files()`,
 `read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()`, and
 `read_ta()`, `write_ta()` and `convert_ta()` for Greenlandic TA files in
-both layouts. daos forwards them, so existing scripts keep working.
+both layouts.
 
 ```r
 library(lazer)
@@ -108,4 +108,4 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 
 The readers and writers (`read_files()`, `read_workbook()`,
 `inspect_excel()`, `write_excel()`, `read_access()` and the TA functions)
-are in [lazer](https://github.com/dataniel/lazer); daos forwards them.
+are in [lazer](https://github.com/dataniel/lazer).

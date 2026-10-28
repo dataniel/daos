@@ -129,9 +129,8 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 The readers and writers have moved to their own package,
 [lazer](https://github.com/dataniel/lazer): `read_files()`,
 `read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()` and
-the TA functions `read_ta()`, `write_ta()` and `convert_ta()`. daos
-forwards to them, so existing scripts keep working; new code should use
-`library(lazer)`. See `vignette("lazer", package = "lazer")`.
+the TA functions `read_ta()`, `write_ta()` and `convert_ta()`. Use
+`library(lazer)`, and see `vignette("lazer", package = "lazer")`.
 
 ### `summon()`: retrieve objects by name pattern
 
@@ -185,7 +184,7 @@ The output of `read_files()` can be passed directly, since a named list
 of data frames is unpacked:
 
 ```{r, eval = FALSE}
-read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   view_types(diff = TRUE)
 ```
 
@@ -237,7 +236,7 @@ load expectr directly:
 ```{r, eval = FALSE}
 library(expectr)
 
-read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
+lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   view_types(diff = TRUE) |>
   expect_empty(warn_msg = "The files do not bind")
 ```

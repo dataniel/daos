@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
   eval     = FALSE
 )
 library(daos)
-library(lazer, warn.conflicts = FALSE)
 library(expectr, warn.conflicts = FALSE)
 library(dplyr, warn.conflicts = FALSE)
 ```

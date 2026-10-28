@@ -63,13 +63,6 @@ reference:
       - db_label
       - inspect_db
 
-  - title: Readers and writers
-    desc: >
-      The readers and writers have moved to the lazer package.
-      daos forwards them for existing scripts.
-    contents:
-      - moved-to-lazer
-
 articles:
   - title: Get started
     navbar: ~
