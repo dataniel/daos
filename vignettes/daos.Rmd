@@ -129,7 +129,8 @@ filter(ggplot2::mpg, model %like% "\\d+") |>
 The readers and writers have moved to their own package,
 [lazer](https://github.com/dataniel/lazer): `read_files()`,
 `read_workbook()`, `inspect_excel()`, `write_excel()`, `read_access()` and
-the TA functions `read_ta()`, `write_ta()` and `convert_ta()`. Use
+`read_sut()`, `write_sut()` and `convert_sut()` for supply and use table
+files (SUT, the TA files). Use
 `library(lazer)`, and see `vignette("lazer", package = "lazer")`.
 
 ### `summon()`: retrieve objects by name pattern
