@@ -37,8 +37,6 @@ reference:
       - drop_empty_rows
       - drop_empty_cols
       - split_by
-      - spells_to_panel
-      - add_spell_status
 
   - title: Interactive
     contents:

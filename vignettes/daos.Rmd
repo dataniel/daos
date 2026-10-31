@@ -222,12 +222,14 @@ into a checkpoint is the job of the expectr package, below.
 
 ## Data validation: the expectr package
 
-The validation checkpoints, `expect_empty()`, `expect_none()`,
-`expect_unique()`, `expect_balanced()`, `expect_no_overlap()` and
+The validation checkpoints, `expect_empty()`, `expect_none()` and
 `tally_violations()`, have moved to their own package,
 [expectr](https://github.com/dataniel/expectr). They share an engine and
 a contract the rest of daos does not: each states an expectation about
-data as "the set of violations must be empty".
+data as "the set of violations must be empty". The checks on the
+structure of register data, unique keys, balanced panels and overlapping
+spells, are in [lustrum](https://github.com/dataniel/lustrum), together
+with `spells_to_panel()` and `add_spell_status()`.
 
 Load expectr to use them:
 
@@ -301,61 +303,9 @@ parts2 <- split_by(ggplot2::mpg, cyl, drv, .sep = "-")
 names(parts2)[1:4]
 ```
 
-### `spells_to_panel()`: from spells to a yearly panel
-
-Registers often store spells: one row per education, address or benefit
-period, with a start, an end and a status. `spells_to_panel()` turns them
-into one row per unit and year (or `by = "quarter"`/`"month"`), with the
-status at primo and ultimo. By default primo is the previous ultimo, so
-primo 2021 is the status on 31 December 2020.
-
-In an education register the status is the *outcome* of the spell, passed
-or dropped out. With `status_is = "outcome"`, a running spell shows as
-`ongoing` and the outcome applies from the end date until a new spell
-starts:
-
-```{r}
-education <- data.frame(
-  cpr    = c("a", "a", "b"),
-  start  = as.Date(c("2018-08-15", "2021-08-15", "2019-08-15")),
-  end    = as.Date(c("2021-06-20", NA,           "2020-03-01")),
-  status = c("passed", "in progress", "dropped out")
-)
-
-education |>
-  spells_to_panel(cpr, start, end, status,
-                  from = 2018, to = 2022,
-                  status_is = "outcome", ongoing = "in progress")
-```
-
-With the default `status_is = "state"`, the status holds for the whole spell
-(enrolled, on leave) and is `NA` outside spells. `from` and `to` give every
-unit the same window, which makes a balanced panel. Without them, each
-unit runs from its first start to its last end. Dates are handled as integer
-days, and one compiled pass over the sorted spells does the work, so
-millions of spells take seconds.
-
-### `add_spell_status()`: status from spells on a panel you already have
-
-Often the panel exists already, e.g. a population with one row per person
-and year, and the spells should only add a status to it. A
-`left_join(join_by(between()))` does that until the data gets messy:
-overlapping spells duplicate rows, and an ongoing spell with no end matches
-nothing. `add_spell_status()` keeps the rows of the panel exactly as they
-are and uses the rules of `spells_to_panel()`:
-
-```{r}
-population <- data.frame(cpr  = c("a", "a", "b", "c"),
-                         year = c(2020, 2021, 2020, 2020))
-
-population |>
-  add_spell_status(education, cpr, year, start, end, status,
-                   status_is = "outcome", ongoing = "in progress")
-```
-
-A Date column in `at` gives the status on that day instead, e.g. the day of
-a diagnosis. Use `when = "ultimo"` for a single column, `name` to choose its
-name, and `overlap = "error"` to stop when spells overlap.
+`spells_to_panel()` and `add_spell_status()`, which turn spells into a
+panel with primo and ultimo status, have moved to
+[lustrum](https://github.com/dataniel/lustrum).
 
 ---
 

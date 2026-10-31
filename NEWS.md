@@ -1,5 +1,9 @@
 # daos (development version)
 
+* `spells_to_panel()` and `add_spell_status()` have moved to the lustrum
+  package, with their compiled spell pass, unchanged. They are removed from
+  daos, with no forwarding; use `library(lustrum)`.
+
 * The readers and writers have moved to their own package, lazer:
   `read_files()`, `read_workbook()`, `inspect_excel()`, `write_excel()`,
   `read_access()`, and the TA functions, which become `read_sut()`,

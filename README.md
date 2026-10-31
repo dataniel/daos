@@ -83,7 +83,6 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
-| `add_spell_status()` | Add primo/ultimo status from spells to an existing panel, or the status on a date, without changing its rows |
 | `age()` | Choose the reference year or date for an age column in `add_cpr_info()` |
 | `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
@@ -101,7 +100,6 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 | `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |
 | `split_by()` | Split a data frame into a named list by grouping columns |
-| `spells_to_panel()` | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status |
 | `summon()` | Retrieve objects matching a regex pattern from an environment |
 | `view_types()` | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind |
 
