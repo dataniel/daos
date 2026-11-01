@@ -28,7 +28,7 @@
 #' # Typical use: match register data to a classification table
 #' # df |> dplyr::mutate(branche = format_db07(branche, "compact"))
 #'
-#' @seealso [daos::clean_cpr()], [daos::clean_cvr()]
+#' @seealso [daos::clean_cvr()], [daos::db_label()]
 #'
 #' @export
 format_db07 <- function(x, format = c("dotted", "compact")) {

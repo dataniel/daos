@@ -20,14 +20,15 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
-Five bodies of work that started here have since grown into packages of
+Several bodies of work that started here have since grown into packages of
 their own, and are not covered below:
 taskr for task management, statbank for the Greenland and Faroese
 statbanks (both private for now), [cvrr](https://github.com/dataniel/cvrr) for published
 Danish annual reports, [taxmill](https://github.com/dataniel/taxmill)
-for milling PDF financial statements into data, and
+for milling PDF financial statements into data,
 [pathr](https://github.com/dataniel/pathr) for the file browser and the
-RStudio addins that take the friction out of Windows paths. None of them
+RStudio addins that take the friction out of Windows paths, and
+[pnr](https://github.com/dataniel/pnr) for CPR numbers. None of them
 depends on daos, or daos on them.
 
 ---
@@ -311,29 +312,24 @@ panel with primo and ultimo status, have moved to
 
 ## Domain-specific
 
-### `clean_cpr()` / `clean_cvr()`: standardise identifier columns
+### `clean_cvr()`: standardise CVR numbers
 
-Identifiers rarely arrive in one consistent shape: `111111-1118`,
-`12 34 56 78`, `DK12345678`, or a nine-digit CPR that lost its leading
-zero in Excel. Before a join, both sides need the same form, and that is
-all these two functions do. They take a vector and return a vector, so
-the natural place for them is inside a `mutate()`:
+CVR numbers rarely arrive in one consistent shape: `12 34 56 78` or
+`DK12345678`. Before a join, both sides need the same form, and that is
+all `clean_cvr()` does. It takes a vector and returns a vector, so the
+natural place for it is inside a `mutate()`:
 
 ```{r}
-clean_cpr(c("111111-1118", "101004007", "1111111118"))
 clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
 ```
 
-The two differ on one point. `clean_cpr()` zero-pads nine-digit values,
-because birth days 01 to 09 mean that a third of all CPR numbers start
-with a zero, which Excel drops. `clean_cvr()` never adds a digit: a
-seven-digit CVR cannot be told apart from a typo, and padding it would
-let a malformed number slip past a later `cvr %like% "^\\d{8}$"`
-checkpoint.
+It never adds a digit: a seven-digit CVR cannot be told apart from a
+typo, and padding it would let a malformed number slip past a later
+`cvr %like% "^\\d{8}$"` checkpoint. It does not validate either.
+Malformed values come back cleaned but still visibly malformed.
 
-Neither function validates. Malformed values come back cleaned but still
-visibly malformed. Validation is `add_cpr_info()`'s job (below), or a
-checkpoint from expectr.
+CPR numbers are handled by the pnr package, where `clean_cpr()` does pad
+nine-digit values: birth days 01 to 09 make that padding unambiguous.
 
 ### `format_db07()`: choose the format of DB07 industry codes
 
@@ -406,109 +402,6 @@ units, not economic activity. They are approximate and should not be used
 as weights to distribute turnover. A round trip need not recover the
 original code. Invalid lengths and unknown codes return `NA` with a warning;
 missing values remain missing. Leading zeroes are not guessed.
-
-### `add_cpr_info()`: add birth date, age, sex, and validity
-
-`add_cpr_info()` appends selected information while preserving the original
-CPR column. Dashes, spaces, and lost leading zeroes are handled internally.
-Use `clean_cpr()` explicitly if you also want to standardise the source column.
-
-Both functions share the same native cleaning rules. `add_cpr_info()` parses
-each CPR once for all requested outputs, including multiple age calculations.
-You do not need a separate cleaning step just to calculate CPR information.
-Use an explicit cleaning step when the identifier will also be used for joins
-or export:
-
-```{r, eval=FALSE}
-df |>
-  dplyr::mutate(pnr = clean_cpr(pnr)) |>
-  add_cpr_info(pnr, age(year), sex, bday)
-```
-
-`clean_cpr()` is idempotent: cleaning again gives the same values. Already
-standardised character vectors are returned without a replacement vector.
-
-Without selections, the function adds `bday`, `age`, `sex`, `mod11`, and `valid`.
-Bare `age` and `age()` use today's date; explicit references make analysis
-reproducible.
-
-```{r}
-df <- data.frame(
-  pnr = c("1111111118", "111111-1118", "111111118"),
-  year = c(2024L, 2025L, 2026L)
-)
-add_cpr_info(df, pnr)
-add_cpr_info(df, pnr, sex, birth_date = bday)
-```
-
-Write `output_name = calculation` to rename a result. Each age calculation
-has its own reference, so several ages can be added in one call:
-
-```{r}
-df |>
-  add_cpr_info(
-    pnr,
-    primoalder = age(year),
-    medioalder = age(year, "medio"),
-    ultimoalder = age(year, "ultimo"),
-    sex,
-    bday
-  )
-```
-
-`age(year)` defaults to `"primo"` with `primo = "previous_ultimo"`
-(31 December of the previous year); `"medio"` means 1 July and
-`"ultimo"` means 31 December. `year` can be a scalar, a column, or an
-expression evaluated in the original input data.
-
-This default makes opening ages equal to the previous year's closing ages.
-It can also be written explicitly:
-
-```{r}
-add_cpr_info(df, pnr, primoalder = age(year, primo = "previous_ultimo"))
-```
-
-Someone born on 1 January 2000 is then 0 in counting year 2001;
-`age(year, primo = "jan1")` instead includes that day's birthday and gives 1.
-
-For a specific date, use `age(date = ...)` with a Date or ISO date string.
-Supply one reference for all rows or one per row. Missing references give
-missing ages. Use `.env$name` to explicitly access a caller variable when
-a column has the same name.
-
-```{r}
-add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
-df$reference <- as.Date(paste0(df$year, "-01-01"))
-add_cpr_info(df, pnr, alder = age(date = reference))
-```
-
-Existing output names cause an error with guidance to rename the selection
-or use `overwrite = TRUE`. Duplicate output names are always an error, and
-the source CPR column cannot be overwritten.
-
-`valid` means ten digits encoding a real calendar date, not confirmation
-that the CPR number was assigned. Missing and invalid CPR values give
-`valid = FALSE`. `mod11` is an independent checksum and is not part of
-`valid`. Choose `mod11` explicitly when selecting outputs if you need it.
-
-The former `add`, `ref_date`, `year`, and `at` arguments are replaced by
-selections and `age()`. For example, `add = c(alder = "age"), year = year`
-becomes `alder = age(year)`. The source CPR column is now preserved.
-
-Age counts completed calendar years, not elapsed days divided by 365.25.
-For a person born on 29 February, age increases on 29 February in leap
-years and on 1 March in non-leap years. For a birth date of 29 February 2000:
-
-| Reference date | Age |
-| --- | ---: |
-| 2024-02-28 | 23 |
-| 2024-02-29 | 24 |
-| 2024-03-01 | 24 |
-| 2025-02-28 | 24 |
-| 2025-03-01 | 25 |
-
-`age(2024)` means age on 31 December 2023.
-by default, giving age 23 in this example.
 
 ## Interactive tools
 

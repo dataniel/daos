@@ -4,7 +4,7 @@
 #' dashes and spaces are stripped (`"12 34 56 78"` -> `"12345678"`), and a
 #' leading `"DK"` VAT prefix is removed (`"DK12345678"` -> `"12345678"`).
 #'
-#' Unlike [daos::clean_cpr()], seven-digit values are *not* zero-padded:
+#' Unlike `pnr::clean_cpr()`, seven-digit values are *not* zero-padded:
 #' a lost leading zero cannot be distinguished from a typo, and inventing
 #' a digit would let a malformed number slip past downstream checks such
 #' as a `cvr %like% "^\\d{8}$"` checkpoint. Values are returned cleaned
@@ -21,7 +21,8 @@
 #' # Typical use: standardise the join key on both sides
 #' # df  |> dplyr::mutate(cvr = clean_cvr(cvr))
 #'
-#' @seealso [daos::clean_cpr()]
+#' @seealso [daos::format_db07()]; `clean_cpr()` in the pnr package for
+#'   CPR numbers.
 #'
 #' @export
 clean_cvr <- function(x) {

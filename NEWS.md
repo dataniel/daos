@@ -1,5 +1,11 @@
 # daos (development version)
 
+* `clean_cpr()`, `add_cpr_info()` and `age()` have moved to their own
+  package, pnr, unchanged and with their native C kernel. pnr adds
+  `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with no
+  forwarding; use `library(pnr)`. daos no longer has compiled code.
+  `clean_cvr()` stays in daos.
+
 * `spells_to_panel()` and `add_spell_status()` have moved to the lustrum
   package, with their compiled spell pass, unchanged. They are removed from
   daos, with no forwarding; use `library(lustrum)`.

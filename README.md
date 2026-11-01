@@ -15,7 +15,7 @@
 
 ## Related packages
 
-Five bodies of work grew large enough to leave and become packages of their
+These bodies of work grew large enough to leave and become packages of their
 own. They are standalone — none of them depends on `daos`, or `daos` on them.
 
 | Package | What it does |
@@ -25,6 +25,7 @@ own. They are standalone — none of them depends on `daos`, or `daos` on them.
 | [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
 | [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
 | [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
+| [pnr](https://github.com/dataniel/pnr) | Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise |
 
 ## Installation
 
@@ -63,13 +64,18 @@ sales |>
   expect_unique(order_id)
 ```
 
+**CPR numbers** now live in their own package,
+[pnr](https://github.com/dataniel/pnr): `clean_cpr()`, `add_cpr_info()` and
+`age()`, plus `diagnose_cpr()` for what is wrong with a CPR column and
+`pseudo_cpr()` for serial numbers in place of the CPR number.
+
 **Danish and Greenlandic identifiers, and a file a colleague can read.**
 
 ```r
-customers |>
-  dplyr::mutate(cpr = clean_cpr(cpr)) |>   # restores Excel-lost leading zeros
-  add_cpr_info(cpr) |>                     # birth date, age, sex, validity
-  lazer::write_excel(f("customers_{nowf()}.xlsx"))
+companies |>
+  dplyr::mutate(cvr = clean_cvr(cvr),                 # strips DK and separators
+                branche = format_db07(branche)) |>    # one DB07 format
+  lazer::write_excel(f("companies_{nowf()}.xlsx"))
 ```
 
 `lazer::write_excel()` writes an xlsx meant to be opened by a person: bold
@@ -82,9 +88,6 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 |----------|-------------|
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
-| `add_cpr_info()` | Add birth date, age, sex, and validity derived from Danish CPR numbers |
-| `age()` | Choose the reference year or date for an age column in `add_cpr_info()` |
-| `clean_cpr()` | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros |
 | `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | `format_db07()` | Automatically handle mixed DB07 input; choose dotted (`01.11.00`) or compact (`011100`) output |
 | `db_label()` | Look up Danish industry labels with an explicit DB07 or DB25 version |
@@ -105,4 +108,5 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 
 The readers and writers (`read_files()`, `read_workbook()`,
 `inspect_excel()`, `write_excel()`, `read_access()` and the SUT functions)
-are in [lazer](https://github.com/dataniel/lazer).
+are in [lazer](https://github.com/dataniel/lazer), and the CPR functions in
+[pnr](https://github.com/dataniel/pnr).

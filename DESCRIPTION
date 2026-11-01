@@ -9,8 +9,8 @@ Description: A collection of utility functions for day-to-day statistical
     time-series screening, and various convenience shortcuts for common
     tidyverse patterns. The data validation checkpoints have moved to the
     expectr package, the register structure checks and spell conversions
-    to the lustrum package, and the readers and writers to the lazer
-    package.
+    to the lustrum package, the readers and writers to the lazer
+    package, and the CPR functions to the pnr package.
 License: MIT + file LICENSE
 URL: https://dataniel.github.io/daos, https://github.com/dataniel/daos
 BugReports: https://github.com/dataniel/daos/issues
@@ -41,4 +41,3 @@ Config/Needs/website: pkgdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0
-NeedsCompilation: yes

@@ -44,9 +44,6 @@ reference:
 
   - title: Danish and Greenlandic data
     contents:
-      - clean_cpr
-      - add_cpr_info
-      - age
       - clean_cvr
       - format_db07
       - convert_db07_to_db25
