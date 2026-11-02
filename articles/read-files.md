@@ -71,9 +71,8 @@ error or a silently mistyped column.
 
 `read_files(out = "bind")` handles it instead. If the files cannot be
 bound as-is, it finds the columns whose types clash, converts only those
-to character, re-types them with
-[`readr::parse_guess()`](https://readr.tidyverse.org/reference/parse_guess.html),
-and points you to
+to character, re-types them with `readr::parse_guess()`, and points you
+to
 [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md).
 The rest of the columns keep the types they were read with:
 

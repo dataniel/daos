@@ -30,9 +30,7 @@ A tibble with `isdup` and `dupid` prepended.
 
 ## See also
 
-[`expectr::expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html)
-to check a key,
-[`expectr::expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
+`expectr::expect_unique()` to check a key, `expectr::expect_empty()`
 
 ## Examples
 

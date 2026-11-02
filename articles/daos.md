@@ -4,14 +4,15 @@ The **daos** package is a collection of utility functions built for
 day-to-day statistical work. This vignette walks through every function
 with short, self-contained examples.
 
-Five bodies of work that started here have since grown into packages of
-their own, and are not covered below: taskr for task management,
+Several bodies of work that started here have since grown into packages
+of their own, and are not covered below: taskr for task management,
 statbank for the Greenland and Faroese statbanks (both private for now),
 [cvrr](https://github.com/dataniel/cvrr) for published Danish annual
 reports, [taxmill](https://github.com/dataniel/taxmill) for milling PDF
-financial statements into data, and
+financial statements into data,
 [pathr](https://github.com/dataniel/pathr) for the file browser and the
-RStudio addins that take the friction out of Windows paths. None of them
+RStudio addins that take the friction out of Windows paths, and
+[pnr](https://github.com/dataniel/pnr) for CPR numbers. None of them
 depends on daos, or daos on them.
 
 ------------------------------------------------------------------------
@@ -43,9 +44,9 @@ so you can timestamp an export inline without stopping to look up the
 
 ``` r
 nowf()                  # default: YYYYMMDD
-#> [1] "20261028"
+#> [1] "20261102"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-10-28 10:48"
+#> [1] "2026-11-02 00:09"
 ```
 
 A typical use is timestamping an export file:
@@ -307,18 +308,14 @@ into a checkpoint is the job of the expectr package, below.
 
 ## Data validation: the expectr package
 
-The validation checkpoints,
-[`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
-[`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
-[`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
-[`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
-[`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
-and
-[`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html),
-have moved to their own package,
+The validation checkpoints, `expect_empty()`, `expect_none()` and
+`tally_violations()`, have moved to their own package,
 [expectr](https://github.com/dataniel/expectr). They share an engine and
 a contract the rest of daos does not: each states an expectation about
-data as “the set of violations must be empty”.
+data as “the set of violations must be empty”. The checks on the
+structure of register data, unique keys, balanced panels and overlapping
+spells, are in [lustrum](https://github.com/dataniel/lustrum), together
+with `spells_to_panel()` and `add_spell_status()`.
 
 Load expectr to use them:
 
@@ -330,8 +327,7 @@ lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   expect_empty(warn_msg = "The files do not bind")
 ```
 
-See
-[`vignette("expectr", package = "expectr")`](https://dataniel.github.io/expectr/articles/expectr.html).
+See `vignette("expectr", package = "expectr")`.
 
 ------------------------------------------------------------------------
 
@@ -431,117 +427,36 @@ names(parts2)[1:4]
 #> [1] "4-4" "4-f" "5-f" "6-4"
 ```
 
-### `spells_to_panel()`: from spells to a yearly panel
-
-Registers often store spells: one row per education, address or benefit
-period, with a start, an end and a status.
-[`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
-turns them into one row per unit and year (or
-`by = "quarter"`/`"month"`), with the status at primo and ultimo. By
-default primo is the previous ultimo, so primo 2021 is the status on 31
-December 2020.
-
-In an education register the status is the *outcome* of the spell,
-passed or dropped out. With `status_is = "outcome"`, a running spell
-shows as `ongoing` and the outcome applies from the end date until a new
-spell starts:
-
-``` r
-education <- data.frame(
-  cpr    = c("a", "a", "b"),
-  start  = as.Date(c("2018-08-15", "2021-08-15", "2019-08-15")),
-  end    = as.Date(c("2021-06-20", NA,           "2020-03-01")),
-  status = c("passed", "in progress", "dropped out")
-)
-
-education |>
-  spells_to_panel(cpr, start, end, status,
-                  from = 2018, to = 2022,
-                  status_is = "outcome", ongoing = "in progress")
-#> # A tibble: 10 × 4
-#>    cpr    year primo       ultimo     
-#>    <chr> <int> <chr>       <chr>      
-#>  1 a      2018 NA          in progress
-#>  2 a      2019 in progress in progress
-#>  3 a      2020 in progress in progress
-#>  4 a      2021 in progress in progress
-#>  5 a      2022 in progress in progress
-#>  6 b      2018 NA          NA         
-#>  7 b      2019 NA          in progress
-#>  8 b      2020 in progress dropped out
-#>  9 b      2021 dropped out dropped out
-#> 10 b      2022 dropped out dropped out
-```
-
-With the default `status_is = "state"`, the status holds for the whole
-spell (enrolled, on leave) and is `NA` outside spells. `from` and `to`
-give every unit the same window, which makes a balanced panel. Without
-them, each unit runs from its first start to its last end. Dates are
-handled as integer days, and one compiled pass over the sorted spells
-does the work, so millions of spells take seconds.
-
-### `add_spell_status()`: status from spells on a panel you already have
-
-Often the panel exists already, e.g. a population with one row per
-person and year, and the spells should only add a status to it. A
-`left_join(join_by(between()))` does that until the data gets messy:
-overlapping spells duplicate rows, and an ongoing spell with no end
-matches nothing.
-[`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
-keeps the rows of the panel exactly as they are and uses the rules of
-[`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md):
-
-``` r
-population <- data.frame(cpr  = c("a", "a", "b", "c"),
-                         year = c(2020, 2021, 2020, 2020))
-
-population |>
-  add_spell_status(education, cpr, year, start, end, status,
-                   status_is = "outcome", ongoing = "in progress")
-#>   cpr year status_primo status_ultimo
-#> 1   a 2020  in progress   in progress
-#> 2   a 2021  in progress   in progress
-#> 3   b 2020  in progress   dropped out
-#> 4   c 2020         <NA>          <NA>
-```
-
-A Date column in `at` gives the status on that day instead, e.g. the day
-of a diagnosis. Use `when = "ultimo"` for a single column, `name` to
-choose its name, and `overlap = "error"` to stop when spells overlap.
+`spells_to_panel()` and `add_spell_status()`, which turn spells into a
+panel with primo and ultimo status, have moved to
+[lustrum](https://github.com/dataniel/lustrum).
 
 ------------------------------------------------------------------------
 
 ## Domain-specific
 
-### `clean_cpr()` / `clean_cvr()`: standardise identifier columns
+### `clean_cvr()`: standardise CVR numbers
 
-Identifiers rarely arrive in one consistent shape: `111111-1118`,
-`12 34 56 78`, `DK12345678`, or a nine-digit CPR that lost its leading
-zero in Excel. Before a join, both sides need the same form, and that is
-all these two functions do. They take a vector and return a vector, so
-the natural place for them is inside a
+CVR numbers rarely arrive in one consistent shape: `12 34 56 78` or
+`DK12345678`. Before a join, both sides need the same form, and that is
+all
+[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
+does. It takes a vector and returns a vector, so the natural place for
+it is inside a
 [`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html):
 
 ``` r
-clean_cpr(c("111111-1118", "101004007", "1111111118"))
-#> [1] "1111111118" "0101004007" "1111111118"
 clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
 #> [1] "12345678" "12345678" "12345678"
 ```
 
-The two differ on one point.
-[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-zero-pads nine-digit values, because birth days 01 to 09 mean that a
-third of all CPR numbers start with a zero, which Excel drops.
-[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
-never adds a digit: a seven-digit CVR cannot be told apart from a typo,
-and padding it would let a malformed number slip past a later
-`cvr %like% "^\\d{8}$"` checkpoint.
+It never adds a digit: a seven-digit CVR cannot be told apart from a
+typo, and padding it would let a malformed number slip past a later
+`cvr %like% "^\\d{8}$"` checkpoint. It does not validate either.
+Malformed values come back cleaned but still visibly malformed.
 
-Neither function validates. Malformed values come back cleaned but still
-visibly malformed. Validation is
-[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)’s
-job (below), or a checkpoint from expectr.
+CPR numbers are handled by the pnr package, where `clean_cpr()` does pad
+nine-digit values: birth days 01 to 09 make that padding unambiguous.
 
 ### `format_db07()`: choose the format of DB07 industry codes
 
@@ -646,145 +561,6 @@ of units, not economic activity. They are approximate and should not be
 used as weights to distribute turnover. A round trip need not recover
 the original code. Invalid lengths and unknown codes return `NA` with a
 warning; missing values remain missing. Leading zeroes are not guessed.
-
-### `add_cpr_info()`: add birth date, age, sex, and validity
-
-[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-appends selected information while preserving the original CPR column.
-Dashes, spaces, and lost leading zeroes are handled internally. Use
-[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-explicitly if you also want to standardise the source column.
-
-Both functions share the same native cleaning rules.
-[`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-parses each CPR once for all requested outputs, including multiple age
-calculations. You do not need a separate cleaning step just to calculate
-CPR information. Use an explicit cleaning step when the identifier will
-also be used for joins or export:
-
-``` r
-df |>
-  dplyr::mutate(pnr = clean_cpr(pnr)) |>
-  add_cpr_info(pnr, age(year), sex, bday)
-```
-
-[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-is idempotent: cleaning again gives the same values. Already
-standardised character vectors are returned without a replacement
-vector.
-
-Without selections, the function adds `bday`, `age`, `sex`, `mod11`, and
-`valid`. Bare `age` and
-[`age()`](https://dataniel.github.io/daos/reference/age.md) use today’s
-date; explicit references make analysis reproducible.
-
-``` r
-df <- data.frame(
-  pnr = c("1111111118", "111111-1118", "111111118"),
-  year = c(2024L, 2025L, 2026L)
-)
-add_cpr_info(df, pnr)
-#>           pnr year       bday age sex mod11 valid
-#> 1  1111111118 2024 1911-11-11 114   0  TRUE  TRUE
-#> 2 111111-1118 2025 1911-11-11 114   0  TRUE  TRUE
-#> 3   111111118 2026 1911-11-01 114   0 FALSE  TRUE
-add_cpr_info(df, pnr, sex, birth_date = bday)
-#>           pnr year sex birth_date
-#> 1  1111111118 2024   0 1911-11-11
-#> 2 111111-1118 2025   0 1911-11-11
-#> 3   111111118 2026   0 1911-11-01
-```
-
-Write `output_name = calculation` to rename a result. Each age
-calculation has its own reference, so several ages can be added in one
-call:
-
-``` r
-df |>
-  add_cpr_info(
-    pnr,
-    primoalder = age(year),
-    medioalder = age(year, "medio"),
-    ultimoalder = age(year, "ultimo"),
-    sex,
-    bday
-  )
-#>           pnr year primoalder medioalder ultimoalder sex       bday
-#> 1  1111111118 2024        112        112         113   0 1911-11-11
-#> 2 111111-1118 2025        113        113         114   0 1911-11-11
-#> 3   111111118 2026        114        114         115   0 1911-11-01
-```
-
-`age(year)` defaults to `"primo"` with `primo = "previous_ultimo"` (31
-December of the previous year); `"medio"` means 1 July and `"ultimo"`
-means 31 December. `year` can be a scalar, a column, or an expression
-evaluated in the original input data.
-
-This default makes opening ages equal to the previous year’s closing
-ages. It can also be written explicitly:
-
-``` r
-add_cpr_info(df, pnr, primoalder = age(year, primo = "previous_ultimo"))
-#>           pnr year primoalder
-#> 1  1111111118 2024        112
-#> 2 111111-1118 2025        113
-#> 3   111111118 2026        114
-```
-
-Someone born on 1 January 2000 is then 0 in counting year 2001;
-`age(year, primo = "jan1")` instead includes that day’s birthday and
-gives 1.
-
-For a specific date, use `age(date = ...)` with a Date or ISO date
-string. Supply one reference for all rows or one per row. Missing
-references give missing ages. Use `.env$name` to explicitly access a
-caller variable when a column has the same name.
-
-``` r
-add_cpr_info(df, pnr, alder = age(date = "2025-07-01"))
-#>           pnr year alder
-#> 1  1111111118 2024   113
-#> 2 111111-1118 2025   113
-#> 3   111111118 2026   113
-df$reference <- as.Date(paste0(df$year, "-01-01"))
-add_cpr_info(df, pnr, alder = age(date = reference))
-#>           pnr year  reference alder
-#> 1  1111111118 2024 2024-01-01   112
-#> 2 111111-1118 2025 2025-01-01   113
-#> 3   111111118 2026 2026-01-01   114
-```
-
-Existing output names cause an error with guidance to rename the
-selection or use `overwrite = TRUE`. Duplicate output names are always
-an error, and the source CPR column cannot be overwritten.
-
-`valid` means ten digits encoding a real calendar date, not confirmation
-that the CPR number was assigned. Missing and invalid CPR values give
-`valid = FALSE`. `mod11` is an independent checksum and is not part of
-`valid`. Choose `mod11` explicitly when selecting outputs if you need
-it.
-
-The former `add`, `ref_date`, `year`, and `at` arguments are replaced by
-selections and
-[`age()`](https://dataniel.github.io/daos/reference/age.md). For
-example, `add = c(alder = "age"), year = year` becomes
-`alder = age(year)`. The source CPR column is now preserved.
-
-Age counts completed calendar years, not elapsed days divided by 365.25.
-For a person born on 29 February, age increases on 29 February in leap
-years and on 1 March in non-leap years. For a birth date of 29 February
-2000:
-
-| Reference date | Age |
-|----------------|----:|
-| 2024-02-28     |  23 |
-| 2024-02-29     |  24 |
-| 2024-03-01     |  24 |
-| 2025-02-28     |  24 |
-| 2025-03-01     |  25 |
-
-`age(2024)` means age on 31 December 2023. by default, giving age 23 in
-this example.
 
 ## Interactive tools
 

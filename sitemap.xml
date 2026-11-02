@@ -8,10 +8,6 @@
 <url><loc>https://dataniel.github.io/daos/authors.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/index.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/news/index.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/add_cpr_info.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/add_spell_status.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/age.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/clean_cpr.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/clean_cvr.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/convert_db07_to_db25.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/db_label.html</loc></url>
@@ -28,7 +24,6 @@
 <url><loc>https://dataniel.github.io/daos/reference/nowf.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/screen_timeseries.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/shh.html</loc></url>
-<url><loc>https://dataniel.github.io/daos/reference/spells_to_panel.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/split_by.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/summon.html</loc></url>
 <url><loc>https://dataniel.github.io/daos/reference/view_types.html</loc></url>

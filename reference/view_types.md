@@ -72,9 +72,8 @@ so the classification follows the same rules as
 
 ## See also
 
-`lazer::read_files()`, and
-[`expectr::expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
-to use `view_types(diff = TRUE)` or `focus` as a checkpoint
+`lazer::read_files()`, and `expectr::expect_empty()` to use
+`view_types(diff = TRUE)` or `focus` as a checkpoint
 
 ## Examples
 

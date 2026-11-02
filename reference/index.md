@@ -40,10 +40,6 @@
   : Drop rows or columns that are empty in selected columns
 - [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)
   : Split a data frame into a named list by grouping columns
-- [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
-  : Turn spell data into a period panel with primo and ultimo status
-- [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
-  : Add status from spell data to a panel you already have
 
 ## Interactive
 
@@ -52,12 +48,6 @@
 
 ## Danish and Greenlandic data
 
-- [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-  : Standardise CPR numbers
-- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  : Add information derived from Danish CPR numbers
-- [`age()`](https://dataniel.github.io/daos/reference/age.md) : Specify
-  an age calculation for CPR information
 - [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   : Standardise CVR numbers
 - [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)

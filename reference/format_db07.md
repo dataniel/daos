@@ -39,8 +39,8 @@ codes as character columns to avoid the problem at the source.
 
 ## See also
 
-[`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md),
-[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
+[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md),
+[`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)
 
 ## Examples
 

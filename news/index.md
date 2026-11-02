@@ -2,6 +2,20 @@
 
 ## daos (development version)
 
+- `clean_cpr()`, `add_cpr_info()` and `age()` have moved to their own
+  package, pnr, unchanged and with their native C kernel. pnr adds
+  `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with
+  no forwarding; use
+  [`library(pnr)`](https://rdrr.io/r/base/library.html). daos no longer
+  has compiled code.
+  [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
+  stays in daos.
+
+- `spells_to_panel()` and `add_spell_status()` have moved to the lustrum
+  package, with their compiled spell pass, unchanged. They are removed
+  from daos, with no forwarding; use
+  [`library(lustrum)`](https://rdrr.io/r/base/library.html).
+
 - The readers and writers have moved to their own package, lazer:
   `read_files()`, `read_workbook()`, `inspect_excel()`, `write_excel()`,
   `read_access()`, and the TA functions, which become `read_sut()`,
@@ -12,25 +26,19 @@
   longer needs readr, nor the file-format packages in Suggests.
 
 - The validation checkpoints have moved to their own package, expectr:
-  [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
-  [`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
-  [`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
-  [`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
-  [`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
-  and
-  [`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html).
+  `expect_empty()`, `expect_none()`, `expect_unique()`,
+  `expect_balanced()`, `expect_no_overlap()` and `tally_violations()`.
   They are removed from daos, with no forwarding, since they were not
   yet in use elsewhere; use
-  [`library(expectr)`](https://dataniel.github.io/expectr). In expectr,
+  [`library(expectr)`](https://rdrr.io/r/base/library.html). In expectr,
   the checkpoints are much faster on population-sized data and also
   check DuckDB and Arrow tables.
 
 - daos, lazer and expectr are independent: none imports or suggests
   another. They work together,
   e.g. [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)
-  output passed to
-  [`expectr::expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
-  but each installs and runs on its own.
+  output passed to `expectr::expect_empty()`, but each installs and runs
+  on its own.
 
 - The inspection helpers
   [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)
@@ -41,43 +49,34 @@
   now groups the key in one linear pass without sorting it: about 11
   times faster on 5 million rows keyed by cpr and year.
 
-- [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)
-  turns spell data (education, addresses) into a yearly, quarterly or
-  monthly panel with primo and ultimo status, and
-  [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)
-  adds the same status to a panel you already have, or the status on a
-  date. Rows are never added or dropped, also when spells overlap; both
-  share one compiled lookup.
+- `spells_to_panel()` turns spell data (education, addresses) into a
+  yearly, quarterly or monthly panel with primo and ultimo status, and
+  `add_spell_status()` adds the same status to a panel you already have,
+  or the status on a date. Rows are never added or dropped, also when
+  spells overlap; both share one compiled lookup.
 
 - Validation checkpoints are extended into a small family that shares
   one engine (`vignette("validation")`):
 
-  - [`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html)
-    checks a condition and returns the full data, so checks can be
-    chained mid-pipeline.
-  - [`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html)
-    checks keys, e.g. before a join.
-  - [`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html)
-    checks that a register panel is balanced, or with `gaps_only = TRUE`
-    that units do not skip periods.
-  - [`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
-    checks that spells (addresses, employment) do not overlap within a
-    unit.
-  - [`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html)
-    counts violations for many rules at once without warning or
-    aborting; filter and pipe it into
-    [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
-    to judge.
+  - `expect_none()` checks a condition and returns the full data, so
+    checks can be chained mid-pipeline.
+  - `expect_unique()` checks keys, e.g. before a join.
+  - `expect_balanced()` checks that a register panel is balanced, or
+    with `gaps_only = TRUE` that units do not skip periods.
+  - `expect_no_overlap()` checks that spells (addresses, employment) do
+    not overlap within a unit.
+  - `tally_violations()` counts violations for many rules at once
+    without warning or aborting; filter and pipe it into
+    `expect_empty()` to judge.
 
-- [`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html)
-  failure messages now give the row count and preview the first rows.
-  Messages are shown literally (braces are no longer interpolated). With
-  `warn_msg` or `abort_msg` set, the success message defaults to
-  `"Check passed: <message>"`, so the log names every check. Failures
-  signal class `daos_check_failure` with the rows in `$violations`. Log
-  lines now include the row count. New `dump` argument writes offending
-  rows to CSV; `log` and `dump` default to the options `daos.check_log`
-  and `daos.check_dump`.
+- `expect_empty()` failure messages now give the row count and preview
+  the first rows. Messages are shown literally (braces are no longer
+  interpolated). With `warn_msg` or `abort_msg` set, the success message
+  defaults to `"Check passed: <message>"`, so the log names every check.
+  Failures signal class `daos_check_failure` with the rows in
+  `$violations`. Log lines now include the row count. New `dump`
+  argument writes offending rows to CSV; `log` and `dump` default to the
+  options `daos.check_log` and `daos.check_dump`.
 
 - `age(year)` defaults to `primo = "previous_ultimo"`: opening ages on
   31 December of the previous year. Use `primo = "jan1"` for 1 January
@@ -120,8 +119,7 @@
   `method = "simple"` uses DST’s separate approximate matrix for each
   direction. Invalid or unknown full codes also warn and return `NA`.
 
-- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  now accepts selections such as `sex`, `bday`, and
+- `add_cpr_info()` now accepts selections such as `sex`, `bday`, and
   `alder = age(year, "ultimo")`. Multiple age references work in one
   call. This replaces the `add`, `ref_date`, `year`, and `at` arguments.
 
@@ -129,25 +127,20 @@
   an explicit date. Bare `age` uses today. Default output still includes
   all five information types.
 
-- [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  preserves the source CPR column. Use
-  [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
+- `add_cpr_info()` preserves the source CPR column. Use `clean_cpr()`
   explicitly to standardise it. Existing output columns require
   `overwrite = TRUE`; duplicate output names and replacing the source
   CPR column are errors.
 
 - CPR cleaning and derivation now share a registered native C kernel.
-  Each CPR is parsed once per
-  [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  call, including multiple ages; modulus-11 no longer allocates a digit
-  matrix. ISO reference dates are validated directly without parsing and
-  formatting them through POSIXlt.
+  Each CPR is parsed once per `add_cpr_info()` call, including multiple
+  ages; modulus-11 no longer allocates a digit matrix. ISO reference
+  dates are validated directly without parsing and formatting them
+  through POSIXlt.
 
-- [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)
-  returns already standardised character vectors without copying them.
-  Cleaning remains optional before
-  [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)
-  and is useful when standardising identifiers for joins or export.
+- `clean_cpr()` returns already standardised character vectors without
+  copying them. Cleaning remains optional before `add_cpr_info()` and is
+  useful when standardising identifiers for joins or export.
 
 - Source installations now require a C compiler (Rtools on Windows).
 

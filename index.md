@@ -15,17 +15,18 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 
 ## Related packages
 
-Five bodies of work grew large enough to leave and become packages of
+These bodies of work grew large enough to leave and become packages of
 their own. They are standalone — none of them depends on `daos`, or
 `daos` on them.
 
-| Package                                        | What it does                                                                                           |
-|------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| taskr (private)                                | Taskwarrior-style task management backed by a shared SQLite file                                       |
-| statbank (private)                             | Client and keyboard browser for the Greenland and Faroese statbanks                                    |
-| [cvrr](https://github.com/dataniel/cvrr)       | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation           |
-| [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally                                     |
-| [pathr](https://github.com/dataniel/pathr)     | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
+| Package | What it does |
+|----|----|
+| taskr (private) | Taskwarrior-style task management backed by a shared SQLite file |
+| statbank (private) | Client and keyboard browser for the Greenland and Faroese statbanks |
+| [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
+| [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
+| [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
+| [pnr](https://github.com/dataniel/pnr) | Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise |
 
 ## Installation
 
@@ -55,13 +56,8 @@ in daos shows which column, in which file.
 
 **Checkpoints instead of silent assumptions** now live in their own
 package, [expectr](https://github.com/dataniel/expectr):
-[`expect_empty()`](https://dataniel.github.io/expectr/reference/expect_empty.html),
-[`expect_none()`](https://dataniel.github.io/expectr/reference/expect_none.html),
-[`expect_unique()`](https://dataniel.github.io/expectr/reference/expect_unique.html),
-[`expect_balanced()`](https://dataniel.github.io/expectr/reference/expect_balanced.html),
-[`expect_no_overlap()`](https://dataniel.github.io/expectr/reference/expect_no_overlap.html)
-and
-[`tally_violations()`](https://dataniel.github.io/expectr/reference/tally_violations.html).
+`expect_empty()`, `expect_none()`, `expect_unique()`,
+`expect_balanced()`, `expect_no_overlap()` and `tally_violations()`.
 
 ``` r
 library(expectr)
@@ -71,13 +67,18 @@ sales |>
   expect_unique(order_id)
 ```
 
+**CPR numbers** now live in their own package,
+[pnr](https://github.com/dataniel/pnr): `clean_cpr()`, `add_cpr_info()`
+and `age()`, plus `diagnose_cpr()` for what is wrong with a CPR column
+and `pseudo_cpr()` for serial numbers in place of the CPR number.
+
 **Danish and Greenlandic identifiers, and a file a colleague can read.**
 
 ``` r
-customers |>
-  dplyr::mutate(cpr = clean_cpr(cpr)) |>   # restores Excel-lost leading zeros
-  add_cpr_info(cpr) |>                     # birth date, age, sex, validity
-  lazer::write_excel(f("customers_{nowf()}.xlsx"))
+companies |>
+  dplyr::mutate(cvr = clean_cvr(cvr),                 # strips DK and separators
+                branche = format_db07(branche)) |>    # one DB07 format
+  lazer::write_excel(f("companies_{nowf()}.xlsx"))
 ```
 
 `lazer::write_excel()` writes an xlsx meant to be opened by a person:
@@ -90,33 +91,29 @@ formatted timestamp.
 
 ## Functions
 
-| Function                                                                                                                                                                                      | Description                                                                                                                          |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `%??%`                                                                                                                                                                                        | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""`                                     |
-| `%like%`                                                                                                                                                                                      | Regex matching that preserves `NA` (unlike `grepl`)                                                                                  |
-| [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md)                                                                                                                 | Add birth date, age, sex, and validity derived from Danish CPR numbers                                                               |
-| [`add_spell_status()`](https://dataniel.github.io/daos/reference/add_spell_status.md)                                                                                                         | Add primo/ultimo status from spells to an existing panel, or the status on a date, without changing its rows                         |
-| [`age()`](https://dataniel.github.io/daos/reference/age.md)                                                                                                                                   | Choose the reference year or date for an age column in [`add_cpr_info()`](https://dataniel.github.io/daos/reference/add_cpr_info.md) |
-| [`clean_cpr()`](https://dataniel.github.io/daos/reference/clean_cpr.md)                                                                                                                       | Standardise CPR numbers: strip separators, restore Excel-lost leading zeros                                                          |
-| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)                                                                                                                       | Standardise CVR numbers: strip separators and the DK VAT prefix                                                                      |
-| [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)                                                                                                                   | Automatically handle mixed DB07 input; choose dotted (`01.11.00`) or compact (`011100`) output                                       |
-| [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)                                                                                                                         | Look up Danish industry labels with an explicit DB07 or DB25 version                                                                 |
-| [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)                                                                                                                     | Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels                                                           |
-| [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) / [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) | Convert full industry codes using DST’s bundled keys; strict or simplified mapping                                                   |
-| [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)                                                                                                           | Drop rows empty across selected columns; optionally include blank text                                                               |
-| [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md)                                                                                                           | Drop entirely empty selected columns                                                                                                 |
-| [`f()`](https://dataniel.github.io/daos/reference/f.md)                                                                                                                                       | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias)                                |
-| [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md)                                                                                                           | Prepend `isdup`/`dupid` columns to mark duplicate rows                                                                               |
-| [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md)                                                                                                                         | Test whether a value is blank in the broadest sense                                                                                  |
-| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md)                                                                                                                                 | Formatted current timestamp, e.g. for file names                                                                                     |
-| [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)                                                                                                       | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots                                           |
-| [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)                                                                                                   | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group                          |
-| [`shh()`](https://dataniel.github.io/daos/reference/shh.md)                                                                                                                                   | Suppress messages and warnings during evaluation                                                                                     |
-| [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md)                                                                                                                         | Split a data frame into a named list by grouping columns                                                                             |
-| [`spells_to_panel()`](https://dataniel.github.io/daos/reference/spells_to_panel.md)                                                                                                           | Turn spells (education, addresses) into a yearly/quarterly/monthly panel with primo and ultimo status                                |
-| [`summon()`](https://dataniel.github.io/daos/reference/summon.md)                                                                                                                             | Retrieve objects matching a regex pattern from an environment                                                                        |
-| [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md)                                                                                                                     | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind                     |
+| Function | Description |
+|----|----|
+| `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
+| `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
+| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md) | Standardise CVR numbers: strip separators and the DK VAT prefix |
+| [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md) | Automatically handle mixed DB07 input; choose dotted (`01.11.00`) or compact (`011100`) output |
+| [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md) | Look up Danish industry labels with an explicit DB07 or DB25 version |
+| [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md) | Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels |
+| [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) / [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) | Convert full industry codes using DST’s bundled keys; strict or simplified mapping |
+| [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop rows empty across selected columns; optionally include blank text |
+| [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop entirely empty selected columns |
+| [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
+| [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md) | Prepend `isdup`/`dupid` columns to mark duplicate rows |
+| [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md) | Test whether a value is blank in the broadest sense |
+| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) | Formatted current timestamp, e.g. for file names |
+| [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md) | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
+| [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md) | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
+| [`shh()`](https://dataniel.github.io/daos/reference/shh.md) | Suppress messages and warnings during evaluation |
+| [`split_by()`](https://dataniel.github.io/daos/reference/split_by.md) | Split a data frame into a named list by grouping columns |
+| [`summon()`](https://dataniel.github.io/daos/reference/summon.md) | Retrieve objects matching a regex pattern from an environment |
+| [`view_types()`](https://dataniel.github.io/daos/reference/view_types.md) | Compare column types across data frames (or a list from `lazer::read_files()`) and flag which would break a bind |
 
 The readers and writers (`read_files()`, `read_workbook()`,
 `inspect_excel()`, `write_excel()`, `read_access()` and the SUT
-functions) are in [lazer](https://github.com/dataniel/lazer).
+functions) are in [lazer](https://github.com/dataniel/lazer), and the
+CPR functions in [pnr](https://github.com/dataniel/pnr).
