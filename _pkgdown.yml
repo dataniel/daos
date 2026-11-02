@@ -42,10 +42,6 @@ reference:
     contents:
       - screen_timeseries
 
-  - title: Danish identifiers
-    contents:
-      - clean_cvr
-
 articles:
   - title: Get started
     navbar: ~

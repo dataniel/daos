@@ -4,28 +4,48 @@
 \alias{nowf}
 \title{Formatted timestamp for now}
 \usage{
-nowf(fmt = "\%Y\%m\%d")
+nowf(fmt = "date")
 }
 \arguments{
-\item{fmt}{Format string as accepted by \code{\link[base:strftime]{strftime()}}.
-Default is \code{"\%Y\%m\%d"} (ISO date without separators).}
+\item{fmt}{A named format, or a format string as accepted by
+\code{\link[base:strftime]{strftime()}}. Default \code{"date"}.\tabular{lll}{
+   Name \tab Format \tab Example \cr
+   \code{"date"} \tab \verb{\%Y\%m\%d} \tab \code{20261102} \cr
+   \code{"datetime"} \tab \verb{\%Y\%m\%d_\%H\%M\%S} \tab \verb{20261102_143022} \cr
+   \code{"iso"} \tab \verb{\%Y-\%m-\%d} \tab \code{2026-11-02} \cr
+   \code{"month"} \tab \verb{\%Y\%m} \tab \code{202611} \cr
+   \code{"year"} \tab \verb{\%Y} \tab \code{2026} \cr
+   \code{"time"} \tab \verb{\%H\%M\%S} \tab \code{143022} \cr
+   \code{"stamp"} \tab \verb{\%Y-\%m-\%d \%H:\%M:\%S} \tab \verb{2026-11-02 14:30:22} \cr
+}}
 }
 \value{
 A single character string with the formatted timestamp.
 }
 \description{
-A shorthand for \code{format(Sys.time(), fmt)}. Useful for constructing
-file names and log paths with a timestamp baked in.
+A shorthand for \code{format(Sys.time(), fmt)}, with names for the formats
+that come up again and again. Useful for constructing file names and log
+paths with a timestamp baked in.
+}
+\details{
+The names are words rather than numbers, so \code{nowf("datetime")} says what
+it gives to whoever reads the code next. The file-name formats sort
+chronologically and contain no characters Windows forbids; \code{"stamp"} is
+for logs and has colons, so not for file names.
+
+A string without \verb{\%} that is not one of the names is an error, so a
+typo such as \code{"datetiem"} does not silently become a file name.
 }
 \examples{
-nowf()                 # e.g. "20260518"
-nowf("\%Y\%m\%d_\%H\%M\%S")  # e.g. "20260518_143022"
-nowf("\%Y\%B")           # e.g. "2026May"
+nowf()                 # e.g. "20261102"
+nowf("datetime")       # e.g. "20261102_143022"
+nowf("iso")            # e.g. "2026-11-02"
+nowf("\%Y\%B")           # any strftime format, e.g. "2026November"
 
 # Typical use in file paths:
 \dontrun{
 f("log/{nowf()}/0-check_data.log")
-f("data/export_{nowf('\%Y\%m\%d_\%H\%M\%S')}.parquet")
+f("data/export_{nowf('datetime')}.parquet")
 }
 
 }

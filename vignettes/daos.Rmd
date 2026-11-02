@@ -54,16 +54,28 @@ f("1 + 1 = {1 + 1}")
 can timestamp an export inline without stopping to look up the
 `format(Sys.time(), ...)` signature.
 
+The common formats have names, so the code says what it gives:
+
 ```{r}
-nowf()                  # default: YYYYMMDD
-nowf("%Y-%m-%d %H:%M")  # custom format
+nowf()            # "date", the default: YYYYMMDD
+nowf("datetime")  # YYYYMMDD_HHMMSS
+nowf("iso")       # YYYY-MM-DD
+nowf("month")     # YYYYMM
+nowf("stamp")     # for logs, with colons
+```
+
+`"year"` and `"time"` complete the set. Any other `strftime()` string
+still works, and a name typo is an error rather than a file name:
+
+```{r}
+nowf("%Y-%m-%d %H:%M")
 ```
 
 A typical use is timestamping an export file:
 
 ```{r, eval = FALSE}
 iris |>
-  writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
+  writexl::write_xlsx(f("iris_{nowf('datetime')}.xlsx"))
 ```
 
 ### `shh()`: suppress messages and warnings
@@ -310,27 +322,6 @@ panel with primo and ultimo status, have moved to
 [lustrum](https://github.com/dataniel/lustrum).
 
 ---
-
-## Danish identifiers
-
-### `clean_cvr()`: standardise CVR numbers
-
-CVR numbers rarely arrive in one consistent shape: `12 34 56 78` or
-`DK12345678`. Before a join, both sides need the same form, and that is
-all `clean_cvr()` does. It takes a vector and returns a vector, so the
-natural place for it is inside a `mutate()`:
-
-```{r}
-clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
-```
-
-It never adds a digit: a seven-digit CVR cannot be told apart from a
-typo, and padding it would let a malformed number slip past a later
-`cvr %like% "^\\d{8}$"` checkpoint. It does not validate either.
-Malformed values come back cleaned but still visibly malformed.
-
-CPR numbers are handled by the pnrr package, where `clean_cpr()` does pad
-nine-digit values: birth days 01 to 09 make that padding unambiguous.
 
 ## Interactive tools
 

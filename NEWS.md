@@ -1,5 +1,14 @@
 # daos (development version)
 
+* `nowf()` takes named formats: `"date"` (the default, `20261102`),
+  `"datetime"`, `"iso"`, `"month"`, `"year"`, `"time"` and `"stamp"`. Any
+  other string is still a `strftime()` format, so existing calls are
+  unchanged.
+
+* `clean_cvr()` has moved to cvrr, unchanged, next to `cvr_query()`, which
+  requires the 8 digits it produces. It is removed from daos, with no
+  forwarding; use `cvrr::clean_cvr()`.
+
 * The industry code functions have moved to their own package, brch:
   `format_db07()`, `db_label()`, `inspect_db()`, `convert_db07_to_db25()`
   and `convert_db25_to_db07()`, unchanged and with the bundled Statistics
@@ -10,7 +19,6 @@
   package, pnrr, unchanged and with their native C kernel. pnrr adds
   `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with no
   forwarding; use `library(pnrr)`. daos no longer has compiled code.
-  `clean_cvr()` stays in daos.
 
 * `spells_to_panel()` and `add_spell_status()` have moved to the lustrum
   package, with their compiled spell pass, unchanged. They are removed from

@@ -2,7 +2,6 @@
 
 export("%??%")
 export("%like%")
-export(clean_cvr)
 export(diagnose_timeseries)
 export(drop_empty_cols)
 export(drop_empty_rows)

@@ -73,18 +73,20 @@ sales |>
 **Industry codes** now live in their own package,
 [brch](https://github.com/dataniel/brch): `format_db07()`, `db_label()`,
 `inspect_db()`, `convert_db07_to_db25()` and `convert_db25_to_db07()`.
+`clean_cvr()` is in [cvrr](https://github.com/dataniel/cvrr), next to
+`cvr_query()`.
 
-**A clean key, and a file a colleague can read.**
+**A file a colleague can read, named by when it was made.**
 
 ```r
-companies |>
-  dplyr::mutate(cvr = clean_cvr(cvr)) |>   # strips DK and separators
-  lazer::write_excel(f("companies_{nowf()}.xlsx"))
+results |>
+  lazer::write_excel(f("results_{nowf('datetime')}.xlsx"))  # results_20261102_143022.xlsx
 ```
 
 `lazer::write_excel()` writes an xlsx meant to be opened by a person: bold
 frozen header, thousand separators, blank cells for `NA`. `f()` is
-`glue::glue()` under a shorter name, and `nowf()` is a formatted timestamp.
+`glue::glue()` under a shorter name, and `nowf()` is a formatted timestamp
+with named formats such as `"date"`, `"datetime"` and `"iso"`.
 
 ## Functions
 
@@ -92,13 +94,12 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 |----------|-------------|
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
-| `clean_cvr()` | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | `drop_empty_rows()` | Drop rows empty across selected columns; optionally include blank text |
 | `drop_empty_cols()` | Drop entirely empty selected columns |
 | `f()` | String interpolation shorthand (`glue::glue` alias) |
 | `flag_duplicates()` | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | `is_blank()` | Test whether a value is blank in the broadest sense |
-| `nowf()` | Formatted current timestamp, e.g. for file names |
+| `nowf()` | Formatted current timestamp with named formats (`"date"`, `"datetime"`, `"iso"`, ...), e.g. for file names |
 | `screen_timeseries()` | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
 | `diagnose_timeseries()` | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | `shh()` | Suppress messages and warnings during evaluation |
