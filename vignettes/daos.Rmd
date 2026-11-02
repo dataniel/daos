@@ -27,9 +27,10 @@ statbanks (both private for now), [cvrr](https://github.com/dataniel/cvrr) for p
 Danish annual reports, [taxmill](https://github.com/dataniel/taxmill)
 for milling PDF financial statements into data,
 [pathr](https://github.com/dataniel/pathr) for the file browser and the
-RStudio addins that take the friction out of Windows paths, and
-[pnrr](https://github.com/dataniel/pnrr) for CPR numbers. None of them
-depends on daos, or daos on them.
+RStudio addins that take the friction out of Windows paths,
+[pnrr](https://github.com/dataniel/pnrr) for CPR numbers, and
+[brch](https://github.com/dataniel/brch) for DB07 and DB25 industry codes.
+None of them depends on daos, or daos on them.
 
 ---
 
@@ -310,7 +311,7 @@ panel with primo and ultimo status, have moved to
 
 ---
 
-## Domain-specific
+## Danish identifiers
 
 ### `clean_cvr()`: standardise CVR numbers
 
@@ -330,78 +331,6 @@ Malformed values come back cleaned but still visibly malformed.
 
 CPR numbers are handled by the pnrr package, where `clean_cpr()` does pad
 nine-digit values: birth days 01 to 09 make that padding unambiguous.
-
-### `format_db07()`: choose the format of DB07 industry codes
-
-DB07 industry codes appear both as `011100` and `01.11.00` depending on
-the source. `format_db07()` automatically handles mixed input with dots,
-whitespace, or digits only. Choose `"dotted"` (the default) or `"compact"`
-output without specifying the input format. Any aggregation level works:
-
-```{r}
-format_db07(c("011100", "01.1100", "0111", "011"))
-format_db07(c("011100", "01.11.00", "01 11 00"), format = "compact")
-```
-
-Like the `clean_*` functions, `format_db07()` never invents digits:
-a code that lost its leading
-zero in Excel is ambiguous (`111` could be group `11.1` or class `01.11`),
-so keep industry codes as character columns.
-
-### `db_label()`: add Danish industry labels
-
-Use `db_label()` to add a label column from a DB code. Always specify
-`version = "DB07"` or `version = "DB25"`; identical codes can have different
-meanings in the two classifications.
-
-```{r}
-df <- data.frame(dbkode = c("011200", "01.49.10", NA))
-df |> dplyr::mutate(branche_label = db_label(dbkode, version = "DB07"))
-db_label(c("A", "01", "01.1", "01.11"), version = "DB25")
-```
-
-Labels come from the bundled DST tables and work offline. Input can contain
-dots or whitespace. Unknown codes return `NA` with a warning; missing values
-stay missing. Keep leading zeroes in character codes.
-
-### Convert industry codes between DB07 and DB25
-
-For mixed data, inspect the source codes before converting:
-
-```{r}
-inspect_db(c("014910", "014800", "253000", "011200", NA))
-```
-
-`db07_only` and `db25_only` indicate membership in just one classification.
-`both` means the version cannot be determined from the code alone: `253000`
-has different meanings in DB07 and DB25. Both labels are returned for review.
-Identical labels also leave the version unresolved. Use source metadata and
-the original industry text and time context to investigate these rows.
-The inspection supports full six-digit codes only.
-
-`convert_db07_to_db25()` and `convert_db25_to_db07()` use bundled keys from
-[Statistics Denmark](https://www.dst.dk/da/Statistik/dokumentation/dansk-branchekode-er-gaeldende)
-(source page updated 26 February 2026), so no internet connection is needed.
-Both accept full six-digit codes with or without dots and whitespace:
-
-```{r}
-convert_db07_to_db25(c("011100", "01.49.10", NA))
-convert_db25_to_db07("25.30.00", format = "compact")
-```
-
-By default, a code with multiple possible destinations returns `NA` with
-a warning. To choose DST's simplified mapping explicitly:
-
-```{r}
-convert_db07_to_db25("01.19.00", method = "simple")
-convert_db25_to_db07("01.48.00", method = "simple")
-```
-
-The simplified matrices are specific to each direction and use numbers of
-units, not economic activity. They are approximate and should not be used
-as weights to distribute turnover. A round trip need not recover the
-original code. Invalid lengths and unknown codes return `NA` with a warning;
-missing values remain missing. Leading zeroes are not guessed.
 
 ## Interactive tools
 

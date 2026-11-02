@@ -1,5 +1,11 @@
 # daos (development version)
 
+* The industry code functions have moved to their own package, brch:
+  `format_db07()`, `db_label()`, `inspect_db()`, `convert_db07_to_db25()`
+  and `convert_db25_to_db07()`, unchanged and with the bundled Statistics
+  Denmark keys and labels. They are removed from daos, with no forwarding;
+  use `library(brch)`. daos no longer bundles data.
+
 * `clean_cpr()`, `add_cpr_info()` and `age()` have moved to their own
   package, pnrr, unchanged and with their native C kernel. pnrr adds
   `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with no

@@ -33,6 +33,5 @@ clean_cvr(c("DK12345678", "12 34 56 78", "12345678", NA))
 
 }
 \seealso{
-\code{\link[=format_db07]{format_db07()}}; \code{clean_cpr()} in the pnrr package for
-CPR numbers.
+\code{clean_cpr()} in the pnrr package for CPR numbers.
 }

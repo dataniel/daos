@@ -21,8 +21,7 @@
 #' # Typical use: standardise the join key on both sides
 #' # df  |> dplyr::mutate(cvr = clean_cvr(cvr))
 #'
-#' @seealso [daos::format_db07()]; `clean_cpr()` in the pnrr package for
-#'   CPR numbers.
+#' @seealso `clean_cpr()` in the pnrr package for CPR numbers.
 #'
 #' @export
 clean_cvr <- function(x) {

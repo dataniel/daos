@@ -42,14 +42,9 @@ reference:
     contents:
       - screen_timeseries
 
-  - title: Danish and Greenlandic data
+  - title: Danish identifiers
     contents:
       - clean_cvr
-      - format_db07
-      - convert_db07_to_db25
-      - convert_db25_to_db07
-      - db_label
-      - inspect_db
 
 articles:
   - title: Get started
