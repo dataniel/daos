@@ -45,8 +45,3 @@
 
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
-
-## Danish identifiers
-
-- [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
-  : Standardise CVR numbers

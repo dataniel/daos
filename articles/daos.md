@@ -43,18 +43,35 @@ f("1 + 1 = {1 + 1}")
 so you can timestamp an export inline without stopping to look up the
 `format(Sys.time(), ...)` signature.
 
+The common formats have names, so the code says what it gives:
+
 ``` r
-nowf()                  # default: YYYYMMDD
+nowf()            # "date", the default: YYYYMMDD
 #> [1] "20261102"
-nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-11-02 00:25"
+nowf("datetime")  # YYYYMMDD_HHMMSS
+#> [1] "20261102_003511"
+nowf("iso")       # YYYY-MM-DD
+#> [1] "2026-11-02"
+nowf("month")     # YYYYMM
+#> [1] "202611"
+nowf("stamp")     # for logs, with colons
+#> [1] "2026-11-02 00:35:11"
+```
+
+`"year"` and `"time"` complete the set. Any other
+[`strftime()`](https://rdrr.io/r/base/strptime.html) string still works,
+and a name typo is an error rather than a file name:
+
+``` r
+nowf("%Y-%m-%d %H:%M")
+#> [1] "2026-11-02 00:35"
 ```
 
 A typical use is timestamping an export file:
 
 ``` r
 iris |>
-  writexl::write_xlsx(f("iris_{nowf('%Y%B')}.xlsx"))
+  writexl::write_xlsx(f("iris_{nowf('datetime')}.xlsx"))
 ```
 
 ### `shh()`: suppress messages and warnings
@@ -433,32 +450,6 @@ panel with primo and ultimo status, have moved to
 [lustrum](https://github.com/dataniel/lustrum).
 
 ------------------------------------------------------------------------
-
-## Danish identifiers
-
-### `clean_cvr()`: standardise CVR numbers
-
-CVR numbers rarely arrive in one consistent shape: `12 34 56 78` or
-`DK12345678`. Before a join, both sides need the same form, and that is
-all
-[`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
-does. It takes a vector and returns a vector, so the natural place for
-it is inside a
-[`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html):
-
-``` r
-clean_cvr(c("DK12345678", "12 34 56 78", "12345678"))
-#> [1] "12345678" "12345678" "12345678"
-```
-
-It never adds a digit: a seven-digit CVR cannot be told apart from a
-typo, and padding it would let a malformed number slip past a later
-`cvr %like% "^\\d{8}$"` checkpoint. It does not validate either.
-Malformed values come back cleaned but still visibly malformed.
-
-CPR numbers are handled by the pnrr package, where `clean_cpr()` does
-pad nine-digit values: birth days 01 to 09 make that padding
-unambiguous.
 
 ## Interactive tools
 

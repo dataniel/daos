@@ -2,6 +2,16 @@
 
 ## daos (development version)
 
+- [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) takes
+  named formats: `"date"` (the default, `20261102`), `"datetime"`,
+  `"iso"`, `"month"`, `"year"`, `"time"` and `"stamp"`. Any other string
+  is still a [`strftime()`](https://rdrr.io/r/base/strptime.html)
+  format, so existing calls are unchanged.
+
+- `clean_cvr()` has moved to cvrr, unchanged, next to `cvr_query()`,
+  which requires the 8 digits it produces. It is removed from daos, with
+  no forwarding; use `cvrr::clean_cvr()`.
+
 - The industry code functions have moved to their own package, brch:
   `format_db07()`, `db_label()`, `inspect_db()`,
   `convert_db07_to_db25()` and `convert_db25_to_db07()`, unchanged and
@@ -16,8 +26,6 @@
   no forwarding; use
   [`library(pnrr)`](https://rdrr.io/r/base/library.html). daos no longer
   has compiled code.
-  [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
-  stays in daos.
 
 - `spells_to_panel()` and `add_spell_status()` have moved to the lustrum
   package, with their compiled spell pass, unchanged. They are removed

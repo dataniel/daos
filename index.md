@@ -77,13 +77,14 @@ CPR number.
 **Industry codes** now live in their own package,
 [brch](https://github.com/dataniel/brch): `format_db07()`, `db_label()`,
 `inspect_db()`, `convert_db07_to_db25()` and `convert_db25_to_db07()`.
+`clean_cvr()` is in [cvrr](https://github.com/dataniel/cvrr), next to
+`cvr_query()`.
 
-**A clean key, and a file a colleague can read.**
+**A file a colleague can read, named by when it was made.**
 
 ``` r
-companies |>
-  dplyr::mutate(cvr = clean_cvr(cvr)) |>   # strips DK and separators
-  lazer::write_excel(f("companies_{nowf()}.xlsx"))
+results |>
+  lazer::write_excel(f("results_{nowf('datetime')}.xlsx"))  # results_20261102_143022.xlsx
 ```
 
 `lazer::write_excel()` writes an xlsx meant to be opened by a person:
@@ -92,7 +93,8 @@ bold frozen header, thousand separators, blank cells for `NA`.
 [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html) under a
 shorter name, and
 [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) is a
-formatted timestamp.
+formatted timestamp with named formats such as `"date"`, `"datetime"`
+and `"iso"`.
 
 ## Functions
 
@@ -100,13 +102,12 @@ formatted timestamp.
 |----|----|
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
-| [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md) | Standardise CVR numbers: strip separators and the DK VAT prefix |
 | [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop rows empty across selected columns; optionally include blank text |
 | [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop entirely empty selected columns |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
 | [`flag_duplicates()`](https://dataniel.github.io/daos/reference/flag_duplicates.md) | Prepend `isdup`/`dupid` columns to mark duplicate rows |
 | [`is_blank()`](https://dataniel.github.io/daos/reference/is_blank.md) | Test whether a value is blank in the broadest sense |
-| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) | Formatted current timestamp, e.g. for file names |
+| [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) | Formatted current timestamp with named formats (`"date"`, `"datetime"`, `"iso"`, …), e.g. for file names |
 | [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md) | Fast interactive time-series screening with optional in-app diagnostics and seasonal plots |
 | [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md) | Time-series statistics, seasonal/outlier screening, stationarity and structural breaks, optionally by group |
 | [`shh()`](https://dataniel.github.io/daos/reference/shh.md) | Suppress messages and warnings during evaluation |

@@ -1,25 +1,47 @@
 # Formatted timestamp for now
 
-A shorthand for `format(Sys.time(), fmt)`. Useful for constructing file
-names and log paths with a timestamp baked in.
+A shorthand for `format(Sys.time(), fmt)`, with names for the formats
+that come up again and again. Useful for constructing file names and log
+paths with a timestamp baked in.
 
 ## Usage
 
 ``` r
-nowf(fmt = "%Y%m%d")
+nowf(fmt = "date")
 ```
 
 ## Arguments
 
 - fmt:
 
-  Format string as accepted by
-  [`strftime()`](https://rdrr.io/r/base/strptime.html). Default is
-  `"%Y%m%d"` (ISO date without separators).
+  A named format, or a format string as accepted by
+  [`strftime()`](https://rdrr.io/r/base/strptime.html). Default
+  `"date"`.
+
+  |              |                     |                       |
+  |--------------|---------------------|-----------------------|
+  | Name         | Format              | Example               |
+  | `"date"`     | `%Y%m%d`            | `20261102`            |
+  | `"datetime"` | `%Y%m%d_%H%M%S`     | `20261102_143022`     |
+  | `"iso"`      | `%Y-%m-%d`          | `2026-11-02`          |
+  | `"month"`    | `%Y%m`              | `202611`              |
+  | `"year"`     | `%Y`                | `2026`                |
+  | `"time"`     | `%H%M%S`            | `143022`              |
+  | `"stamp"`    | `%Y-%m-%d %H:%M:%S` | `2026-11-02 14:30:22` |
 
 ## Value
 
 A single character string with the formatted timestamp.
+
+## Details
+
+The names are words rather than numbers, so `nowf("datetime")` says what
+it gives to whoever reads the code next. The file-name formats sort
+chronologically and contain no characters Windows forbids; `"stamp"` is
+for logs and has colons, so not for file names.
+
+A string without `%` that is not one of the names is an error, so a typo
+such as `"datetiem"` does not silently become a file name.
 
 ## See also
 
@@ -29,16 +51,18 @@ interpolation
 ## Examples
 
 ``` r
-nowf()                 # e.g. "20260518"
+nowf()                 # e.g. "20261102"
 #> [1] "20261102"
-nowf("%Y%m%d_%H%M%S")  # e.g. "20260518_143022"
-#> [1] "20261102_002552"
-nowf("%Y%B")           # e.g. "2026May"
+nowf("datetime")       # e.g. "20261102_143022"
+#> [1] "20261102_003509"
+nowf("iso")            # e.g. "2026-11-02"
+#> [1] "2026-11-02"
+nowf("%Y%B")           # any strftime format, e.g. "2026November"
 #> [1] "2026November"
 
 # Typical use in file paths:
 if (FALSE) { # \dontrun{
 f("log/{nowf()}/0-check_data.log")
-f("data/export_{nowf('%Y%m%d_%H%M%S')}.parquet")
+f("data/export_{nowf('datetime')}.parquet")
 } # }
 ```

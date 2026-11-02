@@ -126,13 +126,12 @@
 <span>  <span class="fu">expect_none</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">customer_id</span><span class="op">)</span>, abort_msg <span class="op">=</span> <span class="st">"Sales without a customer id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">expect_unique</span><span class="op">(</span><span class="va">order_id</span><span class="op">)</span></span></code></pre></div>
 <p><strong>CPR numbers</strong> now live in their own package, <a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a>: <code>clean_cpr()</code>, <code>add_cpr_info()</code> and <code>age()</code>, plus <code>diagnose_cpr()</code> for what is wrong with a CPR column and <code>pseudo_cpr()</code> for serial numbers in place of the CPR number.</p>
-<p><strong>Industry codes</strong> now live in their own package, <a href="https://github.com/dataniel/brch" class="external-link">brch</a>: <code>format_db07()</code>, <code>db_label()</code>, <code>inspect_db()</code>, <code>convert_db07_to_db25()</code> and <code>convert_db25_to_db07()</code>.</p>
-<p><strong>A clean key, and a file a colleague can read.</strong></p>
+<p><strong>Industry codes</strong> now live in their own package, <a href="https://github.com/dataniel/brch" class="external-link">brch</a>: <code>format_db07()</code>, <code>db_label()</code>, <code>inspect_db()</code>, <code>convert_db07_to_db25()</code> and <code>convert_db25_to_db07()</code>. <code>clean_cvr()</code> is in <a href="https://github.com/dataniel/cvrr" class="external-link">cvrr</a>, next to <code>cvr_query()</code>.</p>
+<p><strong>A file a colleague can read, named by when it was made.</strong></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">companies</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="fu"><a href="reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="va">cvr</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span>   <span class="co"># strips DK and separators</span></span>
-<span>  <span class="fu">lazer</span><span class="fu">::</span><span class="fu">write_excel</span><span class="op">(</span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"companies_{nowf()}.xlsx"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><code>lazer::write_excel()</code> writes an xlsx meant to be opened by a person: bold frozen header, thousand separators, blank cells for <code>NA</code>. <code><a href="reference/f.html">f()</a></code> is <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> under a shorter name, and <code><a href="reference/nowf.html">nowf()</a></code> is a formatted timestamp.</p>
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">lazer</span><span class="fu">::</span><span class="fu">write_excel</span><span class="op">(</span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"results_{nowf('datetime')}.xlsx"</span><span class="op">)</span><span class="op">)</span>  <span class="co"># results_20261102_143022.xlsx</span></span></code></pre></div>
+<p><code>lazer::write_excel()</code> writes an xlsx meant to be opened by a person: bold frozen header, thousand separators, blank cells for <code>NA</code>. <code><a href="reference/f.html">f()</a></code> is <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> under a shorter name, and <code><a href="reference/nowf.html">nowf()</a></code> is a formatted timestamp with named formats such as <code>"date"</code>, <code>"datetime"</code> and <code>"iso"</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a>
@@ -157,10 +156,6 @@
 <td>Regex matching that preserves <code>NA</code> (unlike <code>grepl</code>)</td>
 </tr>
 <tr>
-<td><code><a href="reference/clean_cvr.html">clean_cvr()</a></code></td>
-<td>Standardise CVR numbers: strip separators and the DK VAT prefix</td>
-</tr>
-<tr>
 <td><code><a href="reference/drop_empty_rows.html">drop_empty_rows()</a></code></td>
 <td>Drop rows empty across selected columns; optionally include blank text</td>
 </tr>
@@ -182,7 +177,7 @@
 </tr>
 <tr>
 <td><code><a href="reference/nowf.html">nowf()</a></code></td>
-<td>Formatted current timestamp, e.g. for file names</td>
+<td>Formatted current timestamp with named formats (<code>"date"</code>, <code>"datetime"</code>, <code>"iso"</code>, …), e.g. for file names</td>
 </tr>
 <tr>
 <td><code><a href="reference/screen_timeseries.html">screen_timeseries()</a></code></td>
