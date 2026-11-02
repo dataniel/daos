@@ -27,6 +27,7 @@ their own. They are standalone — none of them depends on `daos`, or
 | [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
 | [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
 | [pnrr](https://github.com/dataniel/pnrr) | Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise |
+| [brch](https://github.com/dataniel/brch) | Danish industry codes DB07 and DB25: format, label, inspect, convert |
 
 ## Installation
 
@@ -73,12 +74,15 @@ sales |>
 with a CPR column and `pseudo_cpr()` for serial numbers in place of the
 CPR number.
 
-**Danish and Greenlandic identifiers, and a file a colleague can read.**
+**Industry codes** now live in their own package,
+[brch](https://github.com/dataniel/brch): `format_db07()`, `db_label()`,
+`inspect_db()`, `convert_db07_to_db25()` and `convert_db25_to_db07()`.
+
+**A clean key, and a file a colleague can read.**
 
 ``` r
 companies |>
-  dplyr::mutate(cvr = clean_cvr(cvr),                 # strips DK and separators
-                branche = format_db07(branche)) |>    # one DB07 format
+  dplyr::mutate(cvr = clean_cvr(cvr)) |>   # strips DK and separators
   lazer::write_excel(f("companies_{nowf()}.xlsx"))
 ```
 
@@ -97,10 +101,6 @@ formatted timestamp.
 | `%??%` | Null-coalescing operator that returns a default when `x` is `NULL`, empty, all-`NA`, or all-`""` |
 | `%like%` | Regex matching that preserves `NA` (unlike `grepl`) |
 | [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md) | Standardise CVR numbers: strip separators and the DK VAT prefix |
-| [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md) | Automatically handle mixed DB07 input; choose dotted (`01.11.00`) or compact (`011100`) output |
-| [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md) | Look up Danish industry labels with an explicit DB07 or DB25 version |
-| [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md) | Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels |
-| [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) / [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md) | Convert full industry codes using DST’s bundled keys; strict or simplified mapping |
 | [`drop_empty_rows()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop rows empty across selected columns; optionally include blank text |
 | [`drop_empty_cols()`](https://dataniel.github.io/daos/reference/drop_empty_rows.md) | Drop entirely empty selected columns |
 | [`f()`](https://dataniel.github.io/daos/reference/f.md) | String interpolation shorthand ([`glue::glue`](https://glue.tidyverse.org/reference/glue.html) alias) |
@@ -116,5 +116,6 @@ formatted timestamp.
 
 The readers and writers (`read_files()`, `read_workbook()`,
 `inspect_excel()`, `write_excel()`, `read_access()` and the SUT
-functions) are in [lazer](https://github.com/dataniel/lazer), and the
-CPR functions in [pnrr](https://github.com/dataniel/pnrr).
+functions) are in [lazer](https://github.com/dataniel/lazer), the CPR
+functions in [pnrr](https://github.com/dataniel/pnrr), and the industry
+codes in [brch](https://github.com/dataniel/brch).

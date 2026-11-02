@@ -2,6 +2,14 @@
 
 ## daos (development version)
 
+- The industry code functions have moved to their own package, brch:
+  `format_db07()`, `db_label()`, `inspect_db()`,
+  `convert_db07_to_db25()` and `convert_db25_to_db07()`, unchanged and
+  with the bundled Statistics Denmark keys and labels. They are removed
+  from daos, with no forwarding; use
+  [`library(brch)`](https://rdrr.io/r/base/library.html). daos no longer
+  bundles data.
+
 - `clean_cpr()`, `add_cpr_info()` and `age()` have moved to their own
   package, pnrr, unchanged and with their native C kernel. pnrr adds
   `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with
@@ -97,27 +105,21 @@
   writing. `mode = "replace"` matches sheet names ignoring case and
   preserves replaced sheets’ positions.
 
-- Add
-  [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)
-  to diagnose mixed full DB07/DB25 codes, returning key membership and
-  both labels. Shared codes remain unresolved, even if labels match;
-  unknown and missing codes receive explicit statuses.
+- Add `inspect_db()` to diagnose mixed full DB07/DB25 codes, returning
+  key membership and both labels. Shared codes remain unresolved, even
+  if labels match; unknown and missing codes receive explicit statuses.
 
-- Add
-  [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)
-  to look up Danish industry titles from bundled DST tables for DB25 or
-  DB07, including hierarchy codes. Requires an explicit `version`.
-  Accepts dotted or compact input; unknown codes warn and return `NA`.
+- Add `db_label()` to look up Danish industry titles from bundled DST
+  tables for DB25 or DB07, including hierarchy codes. Requires an
+  explicit `version`. Accepts dotted or compact input; unknown codes
+  warn and return `NA`.
 
-- Add
-  [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
-  and
-  [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
-  using bundled DST keys (source page updated 26 February 2026). Both
-  accept mixed code formatting and offer dotted or compact output. The
-  default strict method warns and returns `NA` for splits;
-  `method = "simple"` uses DST’s separate approximate matrix for each
-  direction. Invalid or unknown full codes also warn and return `NA`.
+- Add `convert_db07_to_db25()` and `convert_db25_to_db07()` using
+  bundled DST keys (source page updated 26 February 2026). Both accept
+  mixed code formatting and offer dotted or compact output. The default
+  strict method warns and returns `NA` for splits; `method = "simple"`
+  uses DST’s separate approximate matrix for each direction. Invalid or
+  unknown full codes also warn and return `NA`.
 
 - `add_cpr_info()` now accepts selections such as `sex`, `bday`, and
   `alder = age(year, "ultimo")`. Multiple age references work in one

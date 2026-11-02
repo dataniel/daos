@@ -31,7 +31,6 @@ otherwise untouched, so malformed numbers stay visibly malformed.
 
 ## See also
 
-[`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md);
 `clean_cpr()` in the pnrr package for CPR numbers.
 
 ## Examples

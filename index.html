@@ -11,8 +11,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Utility Functions for Statistical Work">
-<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, the register structure checks and spell conversions to the lustrum package, the readers and writers to the lazer package, and the CPR functions to the pnrr package.">
-<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, the register structure checks and spell conversions to the lustrum package, the readers and writers to the lazer package, and the CPR functions to the pnrr package.">
+<meta name="description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, the register structure checks and spell conversions to the lustrum package, the readers and writers to the lazer package, the CPR functions to the pnrr package, and the industry codes to the brch package.">
+<meta property="og:description" content="A collection of utility functions for day-to-day statistical work. Includes helpers for duplicate detection, column type comparison, Danish identifier cleaning, interactive time-series screening, and various convenience shortcuts for common tidyverse patterns. The data validation checkpoints have moved to the expectr package, the register structure checks and spell conversions to the lustrum package, the readers and writers to the lazer package, the CPR functions to the pnrr package, and the industry codes to the brch package.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -95,6 +95,10 @@
 <td><a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a></td>
 <td>Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise</td>
 </tr>
+<tr>
+<td><a href="https://github.com/dataniel/brch" class="external-link">brch</a></td>
+<td>Danish industry codes DB07 and DB25: format, label, inspect, convert</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -122,11 +126,11 @@
 <span>  <span class="fu">expect_none</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">customer_id</span><span class="op">)</span>, abort_msg <span class="op">=</span> <span class="st">"Sales without a customer id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">expect_unique</span><span class="op">(</span><span class="va">order_id</span><span class="op">)</span></span></code></pre></div>
 <p><strong>CPR numbers</strong> now live in their own package, <a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a>: <code>clean_cpr()</code>, <code>add_cpr_info()</code> and <code>age()</code>, plus <code>diagnose_cpr()</code> for what is wrong with a CPR column and <code>pseudo_cpr()</code> for serial numbers in place of the CPR number.</p>
-<p><strong>Danish and Greenlandic identifiers, and a file a colleague can read.</strong></p>
+<p><strong>Industry codes</strong> now live in their own package, <a href="https://github.com/dataniel/brch" class="external-link">brch</a>: <code>format_db07()</code>, <code>db_label()</code>, <code>inspect_db()</code>, <code>convert_db07_to_db25()</code> and <code>convert_db25_to_db07()</code>.</p>
+<p><strong>A clean key, and a file a colleague can read.</strong></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">companies</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="fu"><a href="reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="va">cvr</span><span class="op">)</span>,                 <span class="co"># strips DK and separators</span></span>
-<span>                branche <span class="op">=</span> <span class="fu"><a href="reference/format_db07.html">format_db07</a></span><span class="op">(</span><span class="va">branche</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span>    <span class="co"># one DB07 format</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>cvr <span class="op">=</span> <span class="fu"><a href="reference/clean_cvr.html">clean_cvr</a></span><span class="op">(</span><span class="va">cvr</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span>   <span class="co"># strips DK and separators</span></span>
 <span>  <span class="fu">lazer</span><span class="fu">::</span><span class="fu">write_excel</span><span class="op">(</span><span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="st">"companies_{nowf()}.xlsx"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code>lazer::write_excel()</code> writes an xlsx meant to be opened by a person: bold frozen header, thousand separators, blank cells for <code>NA</code>. <code><a href="reference/f.html">f()</a></code> is <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> under a shorter name, and <code><a href="reference/nowf.html">nowf()</a></code> is a formatted timestamp.</p>
 </div>
@@ -155,24 +159,6 @@
 <tr>
 <td><code><a href="reference/clean_cvr.html">clean_cvr()</a></code></td>
 <td>Standardise CVR numbers: strip separators and the DK VAT prefix</td>
-</tr>
-<tr>
-<td><code><a href="reference/format_db07.html">format_db07()</a></code></td>
-<td>Automatically handle mixed DB07 input; choose dotted (<code>01.11.00</code>) or compact (<code>011100</code>) output</td>
-</tr>
-<tr>
-<td><code><a href="reference/db_label.html">db_label()</a></code></td>
-<td>Look up Danish industry labels with an explicit DB07 or DB25 version</td>
-</tr>
-<tr>
-<td><code><a href="reference/inspect_db.html">inspect_db()</a></code></td>
-<td>Inspect mixed full DB07/DB25 codes; flag shared codes and show both labels</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/convert_db07_to_db25.html">convert_db07_to_db25()</a></code> / <code><a href="reference/convert_db07_to_db25.html">convert_db25_to_db07()</a></code>
-</td>
-<td>Convert full industry codes using DST’s bundled keys; strict or simplified mapping</td>
 </tr>
 <tr>
 <td><code><a href="reference/drop_empty_rows.html">drop_empty_rows()</a></code></td>
@@ -224,7 +210,7 @@
 </tr>
 </tbody>
 </table>
-<p>The readers and writers (<code>read_files()</code>, <code>read_workbook()</code>, <code>inspect_excel()</code>, <code>write_excel()</code>, <code>read_access()</code> and the SUT functions) are in <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a>, and the CPR functions in <a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a>.</p>
+<p>The readers and writers (<code>read_files()</code>, <code>read_workbook()</code>, <code>inspect_excel()</code>, <code>write_excel()</code>, <code>read_access()</code> and the SUT functions) are in <a href="https://github.com/dataniel/lazer" class="external-link">lazer</a>, the CPR functions in <a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a>, and the industry codes in <a href="https://github.com/dataniel/brch" class="external-link">brch</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

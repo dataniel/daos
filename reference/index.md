@@ -46,18 +46,7 @@
 - [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
   : Interactive time-series screening dashboard
 
-## Danish and Greenlandic data
+## Danish identifiers
 
 - [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   : Standardise CVR numbers
-- [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md)
-  : Format DB07 industry codes
-- [`convert_db07_to_db25()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
-  [`convert_db25_to_db07()`](https://dataniel.github.io/daos/reference/convert_db07_to_db25.md)
-  : Convert industry codes between DB07 and DB25 using Statistics
-  Denmark's keys
-- [`db_label()`](https://dataniel.github.io/daos/reference/db_label.md)
-  : Look up Danish industry labels for DB07 or DB25 codes
-- [`inspect_db()`](https://dataniel.github.io/daos/reference/inspect_db.md)
-  : Inspect possible classifications of mixed DB07 and DB25 industry
-  codes

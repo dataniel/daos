@@ -73,9 +73,8 @@ management, statbank for the Greenland and Faroese statbanks (both
 private for now), <a href="https://github.com/dataniel/cvrr" class="external-link">cvrr</a>
 for published Danish annual reports, <a href="https://github.com/dataniel/taxmill" class="external-link">taxmill</a> for milling PDF
 financial statements into data, <a href="https://github.com/dataniel/pathr" class="external-link">pathr</a> for the file browser
-and the RStudio addins that take the friction out of Windows paths, and
-<a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a> for CPR numbers.
-None of them depends on daos, or daos on them.</p>
+and the RStudio addins that take the friction out of Windows paths, <a href="https://github.com/dataniel/pnrr" class="external-link">pnrr</a> for CPR numbers, and <a href="https://github.com/dataniel/brch" class="external-link">brch</a> for DB07 and DB25
+industry codes. None of them depends on daos, or daos on them.</p>
 <hr>
 <div class="section level2">
 <h2 id="convenience-shorthands">Convenience shorthands<a class="anchor" aria-label="anchor" href="#convenience-shorthands"></a>
@@ -106,7 +105,7 @@ inline without stopping to look up the
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># default: YYYYMMDD</span></span>
 <span><span class="co">#&gt; [1] "20261102"</span></span>
 <span><span class="fu"><a href="../reference/nowf.html">nowf</a></span><span class="op">(</span><span class="st">"%Y-%m-%d %H:%M"</span><span class="op">)</span>  <span class="co"># custom format</span></span>
-<span><span class="co">#&gt; [1] "2026-11-02 00:20"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-11-02 00:25"</span></span></code></pre></div>
 <p>A typical use is timestamping an export file:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">iris</span> <span class="op">|&gt;</span></span>
@@ -460,7 +459,7 @@ to <a href="https://github.com/dataniel/lustrum" class="external-link">lustrum</
 </div>
 </div>
 <div class="section level2">
-<h2 id="domain-specific">Domain-specific<a class="anchor" aria-label="anchor" href="#domain-specific"></a>
+<h2 id="danish-identifiers">Danish identifiers<a class="anchor" aria-label="anchor" href="#danish-identifiers"></a>
 </h2>
 <div class="section level3">
 <h3 id="clean_cvr-standardise-cvr-numbers">
@@ -483,98 +482,6 @@ malformed.</p>
 <code>clean_cpr()</code> does pad nine-digit values: birth days 01 to 09
 make that padding unambiguous.</p>
 </div>
-<div class="section level3">
-<h3 id="format_db07-choose-the-format-of-db07-industry-codes">
-<code>format_db07()</code>: choose the format of DB07 industry
-codes<a class="anchor" aria-label="anchor" href="#format_db07-choose-the-format-of-db07-industry-codes"></a>
-</h3>
-<p>DB07 industry codes appear both as <code>011100</code> and
-<code>01.11.00</code> depending on the source.
-<code><a href="../reference/format_db07.html">format_db07()</a></code> automatically handles mixed input with dots,
-whitespace, or digits only. Choose <code>"dotted"</code> (the default)
-or <code>"compact"</code> output without specifying the input format.
-Any aggregation level works:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/format_db07.html">format_db07</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.1100"</span>, <span class="st">"0111"</span>, <span class="st">"011"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "01.11.00" "01.11.00" "01.11"    "01.1"</span></span>
-<span><span class="fu"><a href="../reference/format_db07.html">format_db07</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.11.00"</span>, <span class="st">"01 11 00"</span><span class="op">)</span>, format <span class="op">=</span> <span class="st">"compact"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "011100" "011100" "011100"</span></span></code></pre></div>
-<p>Like the <code>clean_*</code> functions, <code><a href="../reference/format_db07.html">format_db07()</a></code>
-never invents digits: a code that lost its leading zero in Excel is
-ambiguous (<code>111</code> could be group <code>11.1</code> or class
-<code>01.11</code>), so keep industry codes as character columns.</p>
-</div>
-<div class="section level3">
-<h3 id="db_label-add-danish-industry-labels">
-<code>db_label()</code>: add Danish industry labels<a class="anchor" aria-label="anchor" href="#db_label-add-danish-industry-labels"></a>
-</h3>
-<p>Use <code><a href="../reference/db_label.html">db_label()</a></code> to add a label column from a DB code.
-Always specify <code>version = "DB07"</code> or
-<code>version = "DB25"</code>; identical codes can have different
-meanings in the two classifications.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>dbkode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011200"</span>, <span class="st">"01.49.10"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>branche_label <span class="op">=</span> <span class="fu"><a href="../reference/db_label.html">db_label</a></span><span class="op">(</span><span class="va">dbkode</span>, version <span class="op">=</span> <span class="st">"DB07"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     dbkode   branche_label</span></span>
-<span><span class="co">#&gt; 1   011200 Dyrkning af ris</span></span>
-<span><span class="co">#&gt; 2 01.49.10        Kenneler</span></span>
-<span><span class="co">#&gt; 3     &lt;NA&gt;            &lt;NA&gt;</span></span>
-<span><span class="fu"><a href="../reference/db_label.html">db_label</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"01"</span>, <span class="st">"01.1"</span>, <span class="st">"01.11"</span><span class="op">)</span>, version <span class="op">=</span> <span class="st">"DB25"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "LANDBRUG, JAGT, SKOVBRUG OG FISKERI"                              </span></span>
-<span><span class="co">#&gt; [2] "Plante- og husdyravl, jagt og serviceydelser i forbindelse hermed"</span></span>
-<span><span class="co">#&gt; [3] "Dyrkning af etårige afgrøder"                                     </span></span>
-<span><span class="co">#&gt; [4] "Dyrkning af korn (undtagen ris), bælgfrugter og olieholdige frø"</span></span></code></pre></div>
-<p>Labels come from the bundled DST tables and work offline. Input can
-contain dots or whitespace. Unknown codes return <code>NA</code> with a
-warning; missing values stay missing. Keep leading zeroes in character
-codes.</p>
-</div>
-<div class="section level3">
-<h3 id="convert-industry-codes-between-db07-and-db25">Convert industry codes between DB07 and DB25<a class="anchor" aria-label="anchor" href="#convert-industry-codes-between-db07-and-db25"></a>
-</h3>
-<p>For mixed data, inspect the source codes before converting:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/inspect_db.html">inspect_db</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"014910"</span>, <span class="st">"014800"</span>, <span class="st">"253000"</span>, <span class="st">"011200"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
-<span><span class="co">#&gt;   input  code   status    label_db07                                  label_db25</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 014910 014910 db07_only Kenneler                                    <span style="color: #BB0000;">NA</span>        </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 014800 014800 db25_only <span style="color: #BB0000;">NA</span>                                          Avl af an…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 253000 253000 both      Fremstilling af dampkedler undtagen centra… Fremstill…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 011200 011200 both      Dyrkning af ris                             Dyrkning …</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>     missing   <span style="color: #BB0000;">NA</span>                                          <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
-<p><code>db07_only</code> and <code>db25_only</code> indicate membership
-in just one classification. <code>both</code> means the version cannot
-be determined from the code alone: <code>253000</code> has different
-meanings in DB07 and DB25. Both labels are returned for review.
-Identical labels also leave the version unresolved. Use source metadata
-and the original industry text and time context to investigate these
-rows. The inspection supports full six-digit codes only.</p>
-<p><code><a href="../reference/convert_db07_to_db25.html">convert_db07_to_db25()</a></code> and
-<code><a href="../reference/convert_db07_to_db25.html">convert_db25_to_db07()</a></code> use bundled keys from <a href="https://www.dst.dk/da/Statistik/dokumentation/dansk-branchekode-er-gaeldende" class="external-link">Statistics
-Denmark</a> (source page updated 26 February 2026), so no internet
-connection is needed. Both accept full six-digit codes with or without
-dots and whitespace:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db07_to_db25</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"011100"</span>, <span class="st">"01.49.10"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "01.11.00" "01.48.00" NA</span></span>
-<span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db25_to_db07</a></span><span class="op">(</span><span class="st">"25.30.00"</span>, format <span class="op">=</span> <span class="st">"compact"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "254000"</span></span></code></pre></div>
-<p>By default, a code with multiple possible destinations returns
-<code>NA</code> with a warning. To choose DST’s simplified mapping
-explicitly:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db07_to_db25</a></span><span class="op">(</span><span class="st">"01.19.00"</span>, method <span class="op">=</span> <span class="st">"simple"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "01.19.00"</span></span>
-<span><span class="fu"><a href="../reference/convert_db07_to_db25.html">convert_db25_to_db07</a></span><span class="op">(</span><span class="st">"01.48.00"</span>, method <span class="op">=</span> <span class="st">"simple"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "01.49.10"</span></span></code></pre></div>
-<p>The simplified matrices are specific to each direction and use
-numbers of units, not economic activity. They are approximate and should
-not be used as weights to distribute turnover. A round trip need not
-recover the original code. Invalid lengths and unknown codes return
-<code>NA</code> with a warning; missing values remain missing. Leading
-zeroes are not guessed.</p>
-</div>
 </div>
 <div class="section level2">
 <h2 id="interactive-tools">Interactive tools<a class="anchor" aria-label="anchor" href="#interactive-tools"></a>
@@ -594,7 +501,7 @@ without writing any filtering code.</p>
 Requires <code>shiny</code> and <code>plotly</code>. Group row indices
 are prepared once, and plots are built directly with Plotly for fast
 navigation.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  year    <span class="op">=</span> <span class="fl">2010</span><span class="op">:</span><span class="fl">2020</span>,</span>
 <span>  country <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DK"</span>, <span class="st">"SE"</span>, <span class="st">"NO"</span>, <span class="st">"FI"</span><span class="op">)</span></span>
@@ -638,7 +545,7 @@ navigation.</p>
 Y-axis bounds globally across all groups. The <code>.title</code>
 argument sets a title shown in the app header and in downloaded
 figures:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/screen_timeseries.html">screen_timeseries</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">year</span>, <span class="va">gdp</span>,</span>
 <span>                  .y_min <span class="op">=</span> <span class="fl">0</span>, .y_max <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>                  .title <span class="op">=</span> <span class="st">"GDP by country"</span><span class="op">)</span></span></code></pre></div>
@@ -707,7 +614,7 @@ corrections.</p>
 <p>The same diagnostic engine is available outside Shiny. Group
 explicitly by the columns identifying <strong>one</strong> time
 series:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/diagnose_timeseries.html">diagnose_timeseries</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">gdp</span>, .features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"stationarity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
