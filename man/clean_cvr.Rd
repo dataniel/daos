@@ -19,7 +19,7 @@ dashes and spaces are stripped (\code{"12 34 56 78"} -> \code{"12345678"}), and 
 leading \code{"DK"} VAT prefix is removed (\code{"DK12345678"} -> \code{"12345678"}).
 }
 \details{
-Unlike \code{pnr::clean_cpr()}, seven-digit values are \emph{not} zero-padded:
+Unlike \code{pnrr::clean_cpr()}, seven-digit values are \emph{not} zero-padded:
 a lost leading zero cannot be distinguished from a typo, and inventing
 a digit would let a malformed number slip past downstream checks such
 as a \code{cvr \%like\% "^\\\\d{8}$"} checkpoint. Values are returned cleaned
@@ -33,6 +33,6 @@ clean_cvr(c("DK12345678", "12 34 56 78", "12345678", NA))
 
 }
 \seealso{
-\code{\link[=format_db07]{format_db07()}}; \code{clean_cpr()} in the pnr package for
+\code{\link[=format_db07]{format_db07()}}; \code{clean_cpr()} in the pnrr package for
 CPR numbers.
 }

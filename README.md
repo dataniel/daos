@@ -25,7 +25,7 @@ own. They are standalone — none of them depends on `daos`, or `daos` on them.
 | [cvrr](https://github.com/dataniel/cvrr) | Published Danish annual reports: the CVR distribution service, XBRL, and sign reconciliation |
 | [taxmill](https://github.com/dataniel/taxmill) | PDF financial statements milled into a tidy Excel dataset, locally |
 | [pathr](https://github.com/dataniel/pathr) | Frictionless file paths: a file browser, open-in-explorer, and RStudio addins for pasted Windows paths |
-| [pnr](https://github.com/dataniel/pnr) | Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise |
+| [pnrr](https://github.com/dataniel/pnrr) | Danish CPR numbers: clean, derive birth date, age and sex, diagnose a column, pseudonymise |
 
 ## Installation
 
@@ -65,7 +65,7 @@ sales |>
 ```
 
 **CPR numbers** now live in their own package,
-[pnr](https://github.com/dataniel/pnr): `clean_cpr()`, `add_cpr_info()` and
+[pnrr](https://github.com/dataniel/pnrr): `clean_cpr()`, `add_cpr_info()` and
 `age()`, plus `diagnose_cpr()` for what is wrong with a CPR column and
 `pseudo_cpr()` for serial numbers in place of the CPR number.
 
@@ -109,4 +109,4 @@ frozen header, thousand separators, blank cells for `NA`. `f()` is
 The readers and writers (`read_files()`, `read_workbook()`,
 `inspect_excel()`, `write_excel()`, `read_access()` and the SUT functions)
 are in [lazer](https://github.com/dataniel/lazer), and the CPR functions in
-[pnr](https://github.com/dataniel/pnr).
+[pnrr](https://github.com/dataniel/pnrr).

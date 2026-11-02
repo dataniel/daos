@@ -10,7 +10,7 @@ Description: A collection of utility functions for day-to-day statistical
     tidyverse patterns. The data validation checkpoints have moved to the
     expectr package, the register structure checks and spell conversions
     to the lustrum package, the readers and writers to the lazer
-    package, and the CPR functions to the pnr package.
+    package, and the CPR functions to the pnrr package.
 License: MIT + file LICENSE
 URL: https://dataniel.github.io/daos, https://github.com/dataniel/daos
 BugReports: https://github.com/dataniel/daos/issues
