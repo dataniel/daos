@@ -3,10 +3,10 @@
 ## daos (development version)
 
 - `clean_cpr()`, `add_cpr_info()` and `age()` have moved to their own
-  package, pnr, unchanged and with their native C kernel. pnr adds
+  package, pnrr, unchanged and with their native C kernel. pnrr adds
   `diagnose_cpr()` and `pseudo_cpr()`. They are removed from daos, with
   no forwarding; use
-  [`library(pnr)`](https://rdrr.io/r/base/library.html). daos no longer
+  [`library(pnrr)`](https://rdrr.io/r/base/library.html). daos no longer
   has compiled code.
   [`clean_cvr()`](https://dataniel.github.io/daos/reference/clean_cvr.md)
   stays in daos.

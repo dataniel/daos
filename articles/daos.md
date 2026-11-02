@@ -12,7 +12,7 @@ reports, [taxmill](https://github.com/dataniel/taxmill) for milling PDF
 financial statements into data,
 [pathr](https://github.com/dataniel/pathr) for the file browser and the
 RStudio addins that take the friction out of Windows paths, and
-[pnr](https://github.com/dataniel/pnr) for CPR numbers. None of them
+[pnrr](https://github.com/dataniel/pnrr) for CPR numbers. None of them
 depends on daos, or daos on them.
 
 ------------------------------------------------------------------------
@@ -46,7 +46,7 @@ so you can timestamp an export inline without stopping to look up the
 nowf()                  # default: YYYYMMDD
 #> [1] "20261102"
 nowf("%Y-%m-%d %H:%M")  # custom format
-#> [1] "2026-11-02 00:09"
+#> [1] "2026-11-02 00:20"
 ```
 
 A typical use is timestamping an export file:
@@ -455,8 +455,9 @@ typo, and padding it would let a malformed number slip past a later
 `cvr %like% "^\\d{8}$"` checkpoint. It does not validate either.
 Malformed values come back cleaned but still visibly malformed.
 
-CPR numbers are handled by the pnr package, where `clean_cpr()` does pad
-nine-digit values: birth days 01 to 09 make that padding unambiguous.
+CPR numbers are handled by the pnrr package, where `clean_cpr()` does
+pad nine-digit values: birth days 01 to 09 make that padding
+unambiguous.
 
 ### `format_db07()`: choose the format of DB07 industry codes
 

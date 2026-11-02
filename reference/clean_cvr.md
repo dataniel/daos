@@ -23,7 +23,7 @@ A character vector of the same length.
 
 ## Details
 
-Unlike `pnr::clean_cpr()`, seven-digit values are *not* zero-padded: a
+Unlike `pnrr::clean_cpr()`, seven-digit values are *not* zero-padded: a
 lost leading zero cannot be distinguished from a typo, and inventing a
 digit would let a malformed number slip past downstream checks such as a
 `cvr %like% "^\\d{8}$"` checkpoint. Values are returned cleaned but
@@ -32,7 +32,7 @@ otherwise untouched, so malformed numbers stay visibly malformed.
 ## See also
 
 [`format_db07()`](https://dataniel.github.io/daos/reference/format_db07.md);
-`clean_cpr()` in the pnr package for CPR numbers.
+`clean_cpr()` in the pnrr package for CPR numbers.
 
 ## Examples
 
