@@ -393,12 +393,16 @@ figures or a small diagnostic plot. **Overview** gathers the main findings;
 click a finding to open that analysis. Data quality, full outlier tables and
 method notes open in dialogs. On desktop screens, the graph adjusts its height
 to keep the active results in view. Keys **1** to **6** toggle tools in sidebar
-order; arrow keys on a focused result tab switch tabs.
+order. After clicking with the mouse, Space and the arrow keys still flag and
+navigate groups; a control reached with Tab keeps its native keys, so arrow
+keys switch between result tabs.
 
 - **Seasonality** adds a dashed trend-plus-season line to the main plot and
   a seasonal profile alongside it. The profile is in the original units.
 - **Outliers** marks unusual residual observations on the main plot.
-- **Autocorrelation** displays ACF and PACF plots below the main plot.
+- **Autocorrelation** displays ACF and PACF plots below the main plot. Its
+  conclusion comes from a Ljung--Box test across all scanned lags, because a
+  single lag crossing its limit is common even in white noise.
 - **Stationarity** shows KPSS and Phillips--Perron results, including their
   different null hypotheses and interpretations.
 - **Structural breaks** marks candidate dates on the main plot and displays

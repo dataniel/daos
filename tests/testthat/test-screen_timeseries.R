@@ -19,6 +19,34 @@ test_that("indexed groups preserve types, NA keys and sorted row identity", {
   expect_error(screen_ts_prepare(d[FALSE, ], "t", "y", c("a", "b")), "at least one")
 })
 
+test_that("group columns named like paste() arguments are ordinary groups", {
+  for (nm in c("sep", "collapse", "recycle0")) {
+    d <- data.frame(t = rep(1:3, 2), y = 1:6)
+    d[[nm]] <- rep(c("a", "b"), each = 3)
+    p <- screen_ts_prepare(d, "t", "y", nm)
+    expect_equal(nrow(p$keys), 2)
+    expect_identical(screen_ts_lookup(p, list("2")), 2L)
+  }
+})
+
+test_that("tsibble indices reach plotly as dates, overlays included", {
+  skip_if_not_installed("plotly")
+  skip_if_not_installed("tsibble")
+  # getExportedValue(): tsibble is optional here and not worth a Suggests entry.
+  yearmonth <- getExportedValue("tsibble", "yearmonth")
+  d <- data.frame(y = sin(2 * pi * (1:48) / 12) + c(rep(0, 24), 25, rep(0, 23)))
+  d$t <- yearmonth(seq(as.Date("2020-01-01"), by = "month", length.out = 48))
+  r <- screen_ts_diagnose(d$t, d$y, 12, features = c("seasonality", "outliers"))
+  r$breakpoints[[1]] <- tibble::tibble(time = d$t[10], lower = d$t[9], upper = d$t[11])
+  b <- plotly::plotly_build(screen_ts_plot(d, "t", "y", diagnostics = r, breaks = r, seasonality = TRUE))
+  expect_gt(length(b$x$data), 1)
+  for (trace in b$x$data) expect_s3_class(trace$x, "Date")
+  expect_s3_class(b$x$data[[1]]$x, "Date")
+  expect_equal(b$x$data[[1]]$x[1], as.Date("2020-01-01"))
+  expect_s3_class(b$x$layout$shapes[[1]]$x0, "Date")
+  expect_equal(screen_ts_plot_time(1:3), 1:3)
+})
+
 test_that("server keeps diagnostics off until selected and caches revisits", {
   skip_if_not_installed("shiny")
   skip_if_not_installed("plotly")
@@ -151,6 +179,9 @@ test_that("pasteable output reconstructs flagged keys including classes and quot
   expect_identical(env$flagged, keys)
   eval(parse(text = screen_ts_result_code(NULL)), envir = env)
   expect_null(env$flagged)
+  doubles <- tibble::tibble(k = c(0.1 + 0.2, 1234567.1234567891, 1/3))
+  eval(parse(text = screen_ts_result_code(doubles)), envir = env)
+  expect_identical(env$flagged, doubles)
 })
 
 test_that("closing the session returns flags once", {

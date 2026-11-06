@@ -36,6 +36,10 @@
 #' Unit root tests require at least 20 nonconstant observations and run on
 #' observed values: KPSS has level stationarity as its null; Phillips-Perron
 #' has a unit root as its null. Failure to reject is not proof of either null.
+#' Autocorrelation is summarised by a Ljung-Box test across all scanned lags,
+#' because a check of whether any single lag crosses its 5% limit fires on most
+#' white noise once many lags are scanned. It runs on observed values, so trend
+#' and seasonality count as dependence.
 #' These are exploratory diagnostics, not automatic data corrections.
 #'
 #' @return A tibble with one row per group (one row for ungrouped input).
@@ -45,7 +49,8 @@
 #'   confidence limits use the same convention. Unavailable diagnostics are
 #'   empty tables with an explanation in `notes`.
 #'   `n_breaks` is `NA` when break detection is unavailable or not requested,
-#'   and zero when the fitted model selects no break dates.
+#'   and zero when the fitted model selects no break dates. `ljung_box_p` is
+#'   `NA` when autocorrelation diagnostics are unavailable or not requested.
 #'
 #' @examples
 #' d <- data.frame(year = 2001:2040, value = sin(1:40) + (1:40) / 10)
@@ -128,7 +133,7 @@ screen_ts_diagnose <- function(x, y, period = NULL, breaks = "none",
     last = if (n && is.finite(y[n])) y[n] else NA_real_,
     change = difference, change_pct = percentage,
     trend_strength = NA_real_, seasonal_strength = NA_real_,
-    n_outliers = NA_integer_, n_breaks = NA_integer_)
+    n_outliers = NA_integer_, n_breaks = NA_integer_, ljung_box_p = NA_real_)
 
   usable <- info$regular && all(is.finite(y)) && !anyNA(x) && !anyDuplicated(x)
   constant <- length(finite) > 0 && length(unique(finite)) == 1L
@@ -148,6 +153,10 @@ screen_ts_diagnose <- function(x, y, period = NULL, breaks = "none",
       p <- attempt(stats::pacf(y, lag.max = lag_max, plot = FALSE), "PACF")
       if (!is.null(a) && !is.null(p)) correlation <- tibble::tibble(
         lag = 0:lag_max, acf = as.numeric(a$acf), pacf = c(NA_real_, as.numeric(p$acf)))
+      if (lag_max >= 1L) {
+        box <- attempt(stats::Box.test(y, lag = lag_max, type = "Ljung-Box"), "Ljung-Box")
+        if (!is.null(box)) result$ljung_box_p <- box$p.value
+      }
     }
     decompose <- any(c("outliers", "seasonality") %in% features) ||
       (breaks != "none" && period > 1)

@@ -1,8 +1,11 @@
 # Presentation helpers keep interpretation testable without a browser.
 screen_ts_format <- function(value, digits = 4) {
   if (!length(value) || is.na(value) || !is.finite(value)) return("\u2014")
-  format(signif(value, digits), trim = TRUE, big.mark = ",",
-    scientific = abs(value) >= 1e7 || (value != 0 && abs(value) < 0.001))
+  # Decimals may be rounded, whole digits may not: 12345 observations stay 12345.
+  # Same separators as the plot (`separators = ",."`), so 1.234,5 reads alike.
+  digits <- max(digits, floor(log10(abs(value))) + 1)
+  format(signif(value, digits), trim = TRUE, big.mark = ".", decimal.mark = ",",
+    scientific = abs(value) >= 1e15 || (value != 0 && abs(value) < 0.001))
 }
 
 screen_ts_findings <- function(r, features) {
@@ -79,16 +82,20 @@ screen_ts_findings <- function(r, features) {
   if ("autocorrelation" %in% features) {
     d <- r$correlation[[1]]
     d <- d[d$lag > 0 & is.finite(d$acf), , drop = FALSE]
-    if (!nrow(d)) {
+    if (!nrow(d) || !is.finite(r$ljung_box_p)) {
       unavailable("Autocorrelation")
     } else {
+      # The joint test decides the headline. "Any lag beyond the limits" would
+      # fire on most white noise, because many lags are scanned at 5% each.
       limit <- 1.96 / sqrt(r$n)
       beyond <- abs(d$acf) > limit
+      dependent <- r$ljung_box_p < .05
       add("Autocorrelation",
-        if (any(beyond)) "Dependence across observations" else "No scanned lags exceed the reference limits",
-        paste0(sum(beyond), " of ", nrow(d), " ACF lags exceed approximate white-noise limits. ",
+        if (dependent) "Dependence across observations" else "No joint evidence of dependence",
+        paste0("Ljung–Box across ", nrow(d), " lags: p = ", fmt(r$ljung_box_p, 3), ". ",
+          sum(beyond), " of ", nrow(d), " ACF lags exceed approximate white-noise limits. ",
           "Trend and seasonality can contribute."),
-        if (any(beyond)) "pattern" else "neutral")
+        if (dependent) "pattern" else "neutral")
     }
   }
   if ("breaks" %in% features) {
@@ -222,7 +229,7 @@ screen_ts_outlier_results <- function(r, compact = FALSE) {
     if (compact) shiny::actionButton("show_outliers",
       if (r$n_outliers > 4) paste("All", r$n_outliers, "candidates & method \u2197") else "Screening method \u2197",
       class = "link-btn") else
-      shiny::p(class = "result-footnote", "Residual scores use the median absolute deviation (MAD). Candidate threshold: absolute score > 4.5; numerical tolerance is used when MAD is negligible."))
+      shiny::p(class = "result-footnote", "Residual scores use the median absolute deviation (MAD). Candidate threshold: absolute score > 4,5; numerical tolerance is used when MAD is negligible."))
 }
 
 screen_ts_test_results <- function(r) {

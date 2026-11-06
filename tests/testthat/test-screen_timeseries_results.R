@@ -59,5 +59,35 @@ test_that("compact outlier results retain access to every candidate", {
   expect_match(compact, "observation-4")
   expect_false(grepl("observation-5", compact, fixed = TRUE))
   expect_match(full, "observation-8")
-  expect_match(full, "absolute score &gt; 4.5", fixed = TRUE)
+  expect_match(full, "absolute score &gt; 4,5", fixed = TRUE)
+})
+
+test_that("number format keeps whole digits and matches the plot's separators", {
+  expect_equal(screen_ts_format(9999), "9.999")
+  expect_equal(screen_ts_format(12345), "12.345")
+  expect_equal(screen_ts_format(1234567), "1.234.567")
+  expect_equal(screen_ts_format(12345678), "12.345.678")
+  expect_equal(screen_ts_format(1234567.8), "1.234.568")
+  expect_equal(screen_ts_format(1.23456), "1,235")
+  expect_equal(screen_ts_format(0.012345, 3), "0,0123")
+  r <- screen_ts_diagnose(seq_len(12345), rep(1:2, length.out = 12345), features = "summary")
+  expect_match(screen_ts_findings(r, "summary")[[1]]$title, "^12\\.345 observations")
+})
+
+test_that("autocorrelation conclusion follows the joint test, not single lags", {
+  d <- screen_ts_diagnose(1:100, sin(1:100 / 5), features = "autocorrelation")
+  expect_lt(d$ljung_box_p, .05)
+  expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$title, "Dependence")
+  expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$detail, "Ljung")
+  # One lag beyond its limit is not enough on its own.
+  n <- 100
+  d$ljung_box_p <- .5
+  d$correlation[[1]]$acf[2] <- 2 * 1.96 / sqrt(n)
+  f <- screen_ts_findings(d, "autocorrelation")[[1]]
+  expect_match(f$title, "No joint evidence")
+  expect_equal(f$tone, "neutral")
+  d$ljung_box_p <- NA_real_
+  expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$title, "unavailable")
+  skipped <- screen_ts_diagnose(1:100, sin(1:100 / 5), features = "summary")
+  expect_true(is.na(skipped$ljung_box_p))
 })

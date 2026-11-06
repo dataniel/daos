@@ -319,6 +319,19 @@ screen_ts_head <- function() {
           }).tab('show');
         });
       });
+      // A mouse click leaves focus on the control it hit. Only focus reached with
+      // Tab keeps a key's native meaning, so Space still flags after clicking an
+      // arrow. Tracked by hand: :focus-visible also turns true on any key press.
+      var screenPointerFocus = false;
+      document.addEventListener('pointerdown', function() { screenPointerFocus = true; }, true);
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') screenPointerFocus = false;
+      }, true);
+      // Bootstrap's accessibility plugin claims arrow keys on a focused tab, so
+      // a clicked tab must let go of focus for the arrows to reach the groups.
+      $(document).on('click', '#diagnostic_view a', function() {
+        if (screenPointerFocus) this.blur();
+      });
       $(document).on('keydown.screening', function(e) {
         if ($('.modal.in, .modal.show').length) return;
         var focusedTab = $(e.target).closest('#diagnostic_view a');
@@ -345,8 +358,12 @@ screen_ts_head <- function() {
           checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
           return;
         }
-        // Keep native Space activation on focused buttons, checkboxes and links.
-        if (e.key === ' ' && $(e.target).closest('button, a, summary, input[type=checkbox], input[type=radio], [role=button]').length) return;
+        // Keep native Space activation for keyboard users. After a mouse click,
+        // blur so the key release cannot activate the control as well.
+        if (e.key === ' ' && $(e.target).closest('button, a, summary, input[type=checkbox], input[type=radio], [role=button]').length) {
+          if (!screenPointerFocus) return;
+          e.target.blur();
+        }
         var target = { ArrowLeft: '#prev', ArrowRight: '#next_btn', ' ': '#flag_btn',
           r: '#reset_zoom', R: '#reset_zoom', q: '#finish_btn', Q: '#finish_btn' }[e.key];
         if (!target) return;

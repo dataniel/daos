@@ -44,7 +44,8 @@ Break dates denote the first observation in the new segment; their
 confidence limits use the same convention. Unavailable diagnostics are
 empty tables with an explanation in \code{notes}.
 \code{n_breaks} is \code{NA} when break detection is unavailable or not requested,
-and zero when the fitted model selects no break dates.
+and zero when the fitted model selects no break dates. \code{ljung_box_p} is
+\code{NA} when autocorrelation diagnostics are unavailable or not requested.
 }
 \description{
 Computes descriptive statistics, checks the time grid, and screens for
@@ -66,6 +67,10 @@ seasonal decomposition needs more than two complete seasons.
 Unit root tests require at least 20 nonconstant observations and run on
 observed values: KPSS has level stationarity as its null; Phillips-Perron
 has a unit root as its null. Failure to reject is not proof of either null.
+Autocorrelation is summarised by a Ljung-Box test across all scanned lags,
+because a check of whether any single lag crosses its 5\% limit fires on most
+white noise once many lags are scanned. It runs on observed values, so trend
+and seasonality count as dependence.
 These are exploratory diagnostics, not automatic data corrections.
 }
 \examples{

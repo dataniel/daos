@@ -5,7 +5,7 @@ screen_ts_result_code <- function(result) {
   if (is.null(result) || !nrow(result)) return(c("# No groups were flagged.", "flagged <- NULL"))
   columns <- lapply(seq_along(result), function(i) {
     value <- deparse(result[[i]], width.cutoff = 75L,
-      control = c("keepNA", "keepInteger", "showAttributes"))
+      control = c("keepNA", "keepInteger", "showAttributes", "digits17"))
     lines <- c(paste0("  ", encodeString(names(result)[i], quote = '"'), " = ", value[1]),
                if (length(value) > 1L) paste0("    ", value[-1]))
     if (i < length(result)) lines[length(lines)] <- paste0(lines[length(lines)], ",")
@@ -31,7 +31,8 @@ screen_ts_prepare <- function(data, x, y, by, series = NULL) {
   })
   values <- lapply(keys, unique)
   codes <- Map(match, keys, values)
-  tokens <- do.call(paste, c(codes, sep = ":"))
+  # unname(): a column called `sep` or `collapse` must not become an argument.
+  tokens <- do.call(paste, c(unname(codes), sep = ":"))
   lookup <- new.env(hash = TRUE, parent = emptyenv())
   for (i in seq_along(tokens)) lookup[[tokens[i]]] <- i
   choices <- lapply(values, function(v) {
@@ -141,6 +142,11 @@ screen_ts_yaxis <- function(y, lower = NULL, upper = NULL) {
   c(axis, list(autorange = FALSE, range = limits))
 }
 
+# Plotly serialises tsibble indices as bare day counts; it understands dates.
+screen_ts_plot_time <- function(x) {
+  if (inherits(x, c("yearmonth", "yearquarter", "yearweek"))) as.Date(x) else x
+}
+
 screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
                            filename = "timeseries", lower = NULL, upper = NULL,
                            diagnostics = NULL, breaks = NULL, seasonality = FALSE) {
@@ -156,7 +162,7 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
     if (is.na(label)) label <- "(missing)"
     values <- d[[y]]
     values[!is.finite(values)] <- NA_real_
-    p <- plotly::add_trace(p, x = d[[x]], y = values, type = "scatter",
+    p <- plotly::add_trace(p, x = screen_ts_plot_time(d[[x]]), y = values, type = "scatter",
       mode = if (nrow(d) <= 1500) "lines+markers" else "lines",
       name = label, showlegend = !is.null(series), connectgaps = FALSE,
       line = list(color = palette[(i - 1L) %% length(palette) + 1L], width = 1.5),
@@ -165,7 +171,7 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
   }
   if (!is.null(diagnostics) && nrow(diagnostics$outliers[[1]])) {
     outliers <- diagnostics$outliers[[1]]
-    p <- plotly::add_trace(p, x = outliers$time, y = outliers$value,
+    p <- plotly::add_trace(p, x = screen_ts_plot_time(outliers$time), y = outliers$value,
       type = "scatter", mode = "markers", name = "Possible outlier",
       marker = list(color = "#ef4444", size = 10, symbol = "circle-open"),
       hovertemplate = "%{x}<br>%{y}<extra>Possible outlier</extra>", inherit = FALSE)
@@ -173,14 +179,14 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
   if (seasonality && !is.null(diagnostics) && diagnostics$period > 1 &&
       nrow(diagnostics$decomposition[[1]])) {
     d <- diagnostics$decomposition[[1]]
-    p <- plotly::add_trace(p, x = d$time, y = d$trend + d$seasonal,
+    p <- plotly::add_trace(p, x = screen_ts_plot_time(d$time), y = d$trend + d$seasonal,
       type = "scatter", mode = "lines", name = "Trend + season",
       line = list(color = "#6366f1", width = 3, dash = "dash"),
       hovertemplate = "%{x}<br>%{y}<extra>Trend + season</extra>", inherit = FALSE)
   }
   shapes <- if (!is.null(breaks) && nrow(breaks$breakpoints[[1]])) {
     lapply(seq_len(nrow(breaks$breakpoints[[1]])), function(i) {
-      at <- breaks$breakpoints[[1]]$time[i]
+      at <- screen_ts_plot_time(breaks$breakpoints[[1]]$time[i])
       list(type = "line", x0 = at, x1 = at, y0 = 0, y1 = 1,
            yref = "paper", line = list(color = "#f59e0b", dash = "dash"))
     })

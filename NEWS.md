@@ -1,5 +1,17 @@
 # daos (development version)
 
+* `screen_timeseries()` fixes: `tsibble` indices such as `yearmonth` are shown
+  as dates, not day counts; grouping columns named `sep`, `collapse` or
+  `recycle0` no longer abort; the printed `flagged` code keeps doubles exact;
+  counts and whole digits are no longer rounded (12.345 stayed 12.340); the
+  results panel uses the same number format as the plot (`1.234,5`); and after
+  a mouse click, Space and the arrow keys still flag and navigate groups.
+
+* `diagnose_timeseries()` gains a `ljung_box_p` column, and the autocorrelation
+  conclusion in `screen_timeseries()` now follows that joint test. The old
+  headline fired whenever one scanned lag crossed its limit, which in
+  simulations happened on 25-68% of white-noise series.
+
 * `nowf()` takes named formats: `"date"` (the default, `20261102`),
   `"datetime"`, `"iso"`, `"month"`, `"year"`, `"time"` and `"stamp"`. Any
   other string is still a `strftime()` format, so existing calls are
