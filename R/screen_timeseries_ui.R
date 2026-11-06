@@ -1,12 +1,10 @@
 # Shared presentation for the screening app; no additional runtime dependencies.
 screen_ts_head <- function() {
   shiny::tags$head(
-    shiny::tags$link(rel = "stylesheet",
-      href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"),
     shiny::tags$style(shiny::HTML("
       :root { --screen-ink: #202024; --screen-muted: #67676f;
         --screen-border: #e4e4e8; --screen-accent: #5550cb; }
-      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         background: #f7f7f8; color: var(--screen-ink); margin: 0;
         -webkit-font-smoothing: antialiased; }
       .container-fluid { max-width: 1600px; margin: 0 auto; padding: 18px 24px;

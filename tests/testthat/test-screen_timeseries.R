@@ -47,6 +47,48 @@ test_that("tsibble indices reach plotly as dates, overlays included", {
   expect_equal(screen_ts_plot_time(1:3), 1:3)
 })
 
+test_that("a series keeps its colour across groups and time ranges", {
+  skip_if_not_installed("shiny")
+  skip_if_not_installed("plotly")
+  d <- data.frame(t = c(1:3, 1:3, 1:3), y = 1:9, g = rep(c("one", "two"), c(6, 3)),
+    line = rep(c("a", "b", "b"), each = 3))
+  colour <- function(data, ...) {
+    b <- plotly::plotly_build(screen_ts_plot(data, "t", "y", "line", ...))
+    stats::setNames(vapply(b$x$data, function(tr) tr$line$color, ""),
+      vapply(b$x$data, function(tr) tr$name, ""))
+  }
+  levels <- unique(d$line)
+  both <- colour(d[d$g == "one", ], series_levels = levels)
+  only_b <- colour(d[d$g == "two", ], series_levels = levels)
+  expect_false(both[["a"]] == both[["b"]])
+  expect_identical(only_b[["b"]], both[["b"]])
+  # Beyond the palette colours repeat rather than going missing.
+  many <- data.frame(t = 1, y = 1, line = letters[1:9])
+  expect_identical(colour(many)[["i"]], colour(many)[["a"]])
+  # Missing series have a colour too.
+  gaps <- data.frame(t = 1:2, y = 1:2, line = c(NA, "a"))
+  expect_false(anyNA(colour(gaps)))
+  # The app passes the levels for the whole data set.
+  p <- screen_ts_prepare(d, "t", "y", "g", "line")
+  shiny::testServer(screen_ts_server(p, "t", "y", "line"), {
+    session$setInputs(prev = 0, next_btn = 0, diagnostics = character())
+    expect_match(output$plot, both[["a"]], fixed = TRUE)
+    session$setInputs(next_btn = 1)
+    expect_match(output$plot, both[["b"]], fixed = TRUE)
+    expect_false(grepl(both[["a"]], output$plot, fixed = TRUE))
+  })
+})
+
+test_that("the app uses system fonts and loads nothing external", {
+  skip_if_not_installed("shiny")
+  # as.character() on a head tag is empty, so render its children instead.
+  head <- paste(vapply(screen_ts_head()$children, as.character, ""), collapse = "\n")
+  expect_match(head, "keydown.screening", fixed = TRUE)
+  expect_false(grepl("googleapis|@font-face|<link|https?://", head))
+  expect_false(grepl("Inter", screen_ts_font, fixed = TRUE))
+  expect_match(head, screen_ts_font, fixed = TRUE)
+})
+
 test_that("server keeps diagnostics off until selected and caches revisits", {
   skip_if_not_installed("shiny")
   skip_if_not_installed("plotly")

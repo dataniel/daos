@@ -142,6 +142,11 @@ screen_ts_yaxis <- function(y, lower = NULL, upper = NULL) {
   c(axis, list(autorange = FALSE, range = limits))
 }
 
+# System fonts only: nothing is bundled or downloaded, so the package and the
+# page stay small and the app also renders on machines without internet access.
+# Keep in step with `body` in screen_ts_head().
+screen_ts_font <- "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif"
+
 # Plotly serialises tsibble indices as bare day counts; it understands dates.
 screen_ts_plot_time <- function(x) {
   if (inherits(x, c("yearmonth", "yearquarter", "yearweek"))) as.Date(x) else x
@@ -149,9 +154,13 @@ screen_ts_plot_time <- function(x) {
 
 screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
                            filename = "timeseries", lower = NULL, upper = NULL,
-                           diagnostics = NULL, breaks = NULL, seasonality = FALSE) {
+                           diagnostics = NULL, breaks = NULL, seasonality = FALSE,
+                           series_levels = NULL) {
   palette <- c("#18181b", "#6366f1", "#10b981", "#f59e0b",
                "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
+  # Colour follows the series across all groups, not its place in this one, so
+  # a line keeps its colour when you browse groups or narrow the time range.
+  if (!is.null(series) && is.null(series_levels)) series_levels <- unique(data[[series]])
   groups <- if (is.null(series)) list(seq_len(nrow(data))) else {
     split(seq_len(nrow(data)), match(data[[series]], unique(data[[series]])))
   }
@@ -160,13 +169,15 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
     d <- data[groups[[i]], , drop = FALSE]
     label <- if (is.null(series)) y else as.character(d[[series]][1])
     if (is.na(label)) label <- "(missing)"
+    position <- if (is.null(series)) 1L else match(d[[series]][1], series_levels)
+    colour <- palette[(position - 1L) %% length(palette) + 1L]
     values <- d[[y]]
     values[!is.finite(values)] <- NA_real_
     p <- plotly::add_trace(p, x = screen_ts_plot_time(d[[x]]), y = values, type = "scatter",
       mode = if (nrow(d) <= 1500) "lines+markers" else "lines",
       name = label, showlegend = !is.null(series), connectgaps = FALSE,
-      line = list(color = palette[(i - 1L) %% length(palette) + 1L], width = 1.5),
-      marker = list(size = 4, color = palette[(i - 1L) %% length(palette) + 1L]),
+      line = list(color = colour, width = 1.5),
+      marker = list(size = 4, color = colour),
       hovertemplate = "%{x}<br>%{y}<extra>%{fullData.name}</extra>")
   }
   if (!is.null(diagnostics) && nrow(diagnostics$outliers[[1]])) {
@@ -192,7 +203,7 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
     })
   } else list()
   p <- plotly::layout(p, title = if (!is.null(title)) list(text = title, font = list(size = 14)) else NULL,
-    font = list(family = "Inter, sans-serif", size = 12, color = "#52525b"),
+    font = list(family = screen_ts_font, size = 12, color = "#52525b"),
     paper_bgcolor = "rgba(0,0,0,0)", plot_bgcolor = "rgba(0,0,0,0)",
     separators = ",.", margin = list(l = 65, r = 20, t = if (is.null(title)) 20 else 40, b = 40),
     xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE),
@@ -222,7 +233,7 @@ screen_ts_season_plot <- function(result) {
     text = labels, textposition = "none",
     hovertemplate = "%{text}<br>%{y}<extra>Seasonal effect</extra>") |>
     plotly::layout(showlegend = FALSE, paper_bgcolor = "rgba(0,0,0,0)",
-      font = list(family = "Inter, sans-serif", size = 11, color = "#52525b"),
+      font = list(family = screen_ts_font, size = 11, color = "#52525b"),
       plot_bgcolor = "rgba(0,0,0,0)", margin = list(l = 55, r = 10, t = 15, b = 55),
       xaxis = list(title = "Position in season", tickvals = seq_len(period), ticktext = labels),
       yaxis = list(title = "Effect in original units", gridcolor = "#f4f4f5")) |>
@@ -244,7 +255,7 @@ screen_ts_correlation_plot <- function(result) {
   }
   plotly::subplot(panel(d$acf, "ACF"), panel(d$pacf, "PACF"), titleX = TRUE, titleY = TRUE) |>
     plotly::layout(paper_bgcolor = "rgba(0,0,0,0)", plot_bgcolor = "rgba(0,0,0,0)",
-      font = list(family = "Inter, sans-serif", size = 11, color = "#52525b"),
+      font = list(family = screen_ts_font, size = 11, color = "#52525b"),
       annotations = list(list(text = "Dashed lines: approximate 95% white-noise limits",
         x = 0.5, y = 1.12, xref = "paper", yref = "paper", showarrow = FALSE))) |>
     plotly::config(displayModeBar = FALSE)

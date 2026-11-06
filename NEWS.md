@@ -1,5 +1,10 @@
 # daos (development version)
 
+* `screen_timeseries()` keeps each series' colour when you browse groups or
+  narrow the time range. It now uses system fonts instead of downloading Inter
+  from Google Fonts: nothing is bundled, and the page no longer depends on
+  internet access.
+
 * `screen_timeseries()` fixes: `tsibble` indices such as `yearmonth` are shown
   as dates, not day counts; grouping columns named `sep`, `collapse` or
   `recycle0` no longer abort; the printed `flagged` code keeps doubles exact;

@@ -201,7 +201,7 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
         title = .title, filename = gsub("[^[:alnum:]_.-]+", "_", key_label()),
         lower = limits$lower, upper = limits$upper,
         diagnostics = overlay, breaks = if ("breaks" %in% features()) overlay else NULL,
-        seasonality = "seasonality" %in% features())
+        seasonality = "seasonality" %in% features(), series_levels = series_values)
     })
     diagnostic_label <- shiny::reactive({
       label <- if (!has_series) y_col else as.character(series_values[selected_series()])
