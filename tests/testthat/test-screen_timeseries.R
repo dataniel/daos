@@ -47,6 +47,101 @@ test_that("tsibble indices reach plotly as dates, overlays included", {
   expect_equal(screen_ts_plot_time(1:3), 1:3)
 })
 
+test_that("column errors name the problem in the user's terms", {
+  skip_if_not_installed("shiny")
+  skip_if_not_installed("plotly")
+  d <- data.frame(year = 1:3, gdp = 1:3, label = "a", g = "x")
+  expect_error(screen_timeseries(d, yr, gdp), "\"yr\".*`x`.*not found")
+  expect_error(screen_timeseries(d, yr, gdp), "Did you mean \"year\"", fixed = FALSE)
+  expect_error(screen_timeseries(d, year, zzzzzz), "Available columns.*\"year\"")
+  expect_error(screen_timeseries(d, year, gdp, series = lne), "`series`")
+  expect_error(screen_timeseries(d, year + 1, gdp), "not the expression `year \\+ 1`")
+  expect_error(screen_timeseries(d, y = gdp), "`x` is required")
+  expect_error(screen_timeseries(d, year, label), "\"label\" is <character>")
+  listy <- d
+  listy$items <- list(1, 2, 3)
+  expect_error(screen_timeseries(listy, items, gdp), "list column \"items\"")
+  expect_error(diagnose_timeseries(d, yr, gdp), "Did you mean \"year\"")
+  expect_error(diagnose_timeseries(d, year, label), "\"label\" is <character>")
+  # The error points at the function the user called.
+  caught <- tryCatch(screen_timeseries(d, yr, gdp), error = identity)
+  expect_match(deparse(caught$call)[1], "screen_timeseries", fixed = TRUE)
+  # Quoted names keep working, in every position.
+  local_mocked_bindings(runApp = function(...) NULL, .package = "shiny")
+  expect_output(screen_timeseries(d, "year", "gdp", series = "label"), "No groups")
+})
+
+test_that("merged tool results equal a single run with the same tools", {
+  y <- sin(2 * pi * (1:60) / 12) + (1:60) / 30
+  y[30] <- 25
+  tools <- c("autocorrelation", "outliers", "seasonality", "summary")
+  whole <- screen_ts_diagnose(1:60, y, 12, "none", tools)
+  merged <- screen_ts_merge_diagnostics(lapply(tools, function(tool) {
+    screen_ts_diagnose(1:60, y, 12, "none", tool)
+  }))
+  expect_setequal(merged$notes[[1]], whole$notes[[1]])
+  merged$notes <- whole$notes
+  expect_equal(merged, whole)
+  # Nothing to fill in must leave an unavailable tool unavailable.
+  expect_true(is.na(merged$n_breaks))
+})
+
+test_that("switching tools repeats no work and redraws only for overlays", {
+  skip_if_not_installed("shiny")
+  skip_if_not_installed("plotly")
+  d <- data.frame(t = 1:40, y = sin(1:40), group = "a")
+  p <- screen_ts_prepare(d, "t", "y", "group")
+  tools_run <- character()
+  draws <- 0L
+  diagnose <- screen_ts_diagnose
+  plot <- screen_ts_plot
+  local_mocked_bindings(
+    screen_ts_diagnose = function(x, y, period = NULL, breaks = "none", features = character()) {
+      tools_run <<- c(tools_run, if (breaks != "none") "breaks" else features)
+      diagnose(x, y, period, breaks, features)
+    },
+    screen_ts_plot = function(...) {
+      draws <<- draws + 1L
+      plot(...)
+    })
+  shiny::testServer(screen_ts_server(p, "t", "y"), {
+    session$setInputs(diagnostics = "outliers", y_min = NA_real_, y_max = NA_real_)
+    output$plot
+    expect_equal(draws, 1L)
+    session$setInputs(diagnostics = c("outliers", "summary"))
+    diagnostics()
+    output$plot
+    expect_equal(draws, 1L)
+    session$setInputs(diagnostics = c("autocorrelation", "outliers", "summary"))
+    diagnostics()
+    output$plot
+    expect_equal(draws, 1L)
+    expect_equal(tools_run, c("outliers", "summary", "autocorrelation"))
+    # A tool that draws on the plot does redraw it, and keeps the same revision.
+    session$setInputs(diagnostics = c("outliers", "seasonality"))
+    output$plot
+    expect_equal(draws, 2L)
+    expect_equal(sum(tools_run == "outliers"), 1L)
+    # Turning a tool off and on again uses the cache.
+    session$setInputs(diagnostics = "outliers")
+    diagnostics()
+    session$setInputs(diagnostics = c("outliers", "seasonality"))
+    diagnostics()
+    expect_equal(sum(tools_run == "seasonality"), 1L)
+  })
+})
+
+test_that("zoom revision is sent to plotly and left out when not asked for", {
+  skip_if_not_installed("plotly")
+  d <- data.frame(t = 1:3, y = 1:3)
+  kept <- plotly::plotly_build(screen_ts_plot(d, "t", "y", ui_revision = "1"))$x$layout
+  expect_equal(kept$uirevision, "1")
+  expect_equal(kept$transition$duration, 0)
+  plain <- plotly::plotly_build(screen_ts_plot(d, "t", "y"))$x$layout
+  expect_null(plain$uirevision)
+  expect_null(plain$transition)
+})
+
 test_that("a series keeps its colour across groups and time ranges", {
   skip_if_not_installed("shiny")
   skip_if_not_installed("plotly")

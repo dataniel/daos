@@ -92,7 +92,8 @@ screen_ts_findings <- function(r, features) {
       dependent <- r$ljung_box_p < .05
       add("Autocorrelation",
         if (dependent) "Dependence across observations" else "No joint evidence of dependence",
-        paste0("Ljung–Box across ", nrow(d), " lags: p = ", fmt(r$ljung_box_p, 3), ". ",
+        paste0("Ljung–Box across ", nrow(d), " lags: ",
+          if (r$ljung_box_p < .001) "p < 0,001" else paste("p =", fmt(r$ljung_box_p, 3)), ". ",
           sum(beyond), " of ", nrow(d), " ACF lags exceed approximate white-noise limits. ",
           "Trend and seasonality can contribute."),
         if (dependent) "pattern" else "neutral")

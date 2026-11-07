@@ -87,20 +87,21 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
     cli::cli_abort("Package {.pkg plotly} is required for {.fn screen_timeseries}.")
   }
 
-  x_var       <- rlang::enquo(x)
-  y_var       <- rlang::enquo(y)
   series_var  <- rlang::enquo(series)
   exclude_var <- rlang::enquo(.exclude)
 
   has_series <- !rlang::quo_is_null(series_var)
+  x_col <- screen_ts_column(rlang::enquo(x), "x", data)
+  y_col <- screen_ts_column(rlang::enquo(y), "y", data)
+  series_col <- if (has_series) screen_ts_column(series_var, "series", data) else NULL
+  screen_ts_check_numeric(data, y_col)
 
   list_cols <- names(data)[vapply(data, is.list, logical(1))]
   if (length(list_cols) > 0) {
     data <- data |> dplyr::select(-dplyr::all_of(list_cols))
   }
 
-  used_cols <- c(rlang::as_label(x_var), rlang::as_label(y_var))
-  if (has_series) used_cols <- c(used_cols, rlang::as_label(series_var))
+  used_cols <- c(x_col, y_col, series_col)
 
   excluded_cols <- character(0)
   if (!rlang::quo_is_null(exclude_var)) {
@@ -128,10 +129,7 @@ screen_timeseries <- function(data, x, y, series = NULL, .exclude = NULL,
   if (!is.null(.y_min) && !is.null(.y_max) && .y_min >= .y_max) {
     cli::cli_abort("{.arg .y_min} must be smaller than {.arg .y_max}.")
   }
-  x_col <- rlang::as_name(x_var)
-  y_col <- rlang::as_name(y_var)
-  series_col <- if (has_series) rlang::as_name(series_var) else NULL
-  prepared <- screen_ts_prepare(data, x_col, y_col, by_names, series_col)
+  prepared <-screen_ts_prepare(data, x_col, y_col, by_names, series_col)
   result <- shiny::runApp(screen_ts_app(prepared, x_col, y_col, series_col,
                                        .title, .y_min, .y_max, .period))
   if (.print) cat(paste(screen_ts_result_code(result), collapse = "\n"), "\n")

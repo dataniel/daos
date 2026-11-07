@@ -128,8 +128,13 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
         choices = stats::setNames(as.character(available), make.unique(labels)),
         selected = as.character(selected_series()))
     })
+    # Only these tools draw on the main plot. A reactiveVal does not invalidate
+    # when set to the same value, so toggling the others cannot redraw the plot.
+    overlay_features <- shiny::reactiveVal(character())
+    shiny::observe(overlay_features(intersect(features(), c("seasonality", "outliers", "breaks"))),
+      priority = 10)
     diagnostic_period <- shiny::reactive({
-      if (!any(c("seasonality", "outliers", "breaks") %in% features())) return(NULL)
+      if (!length(overlay_features())) return(NULL)
       p <- input$diagnostic_period
       if (is.null(p) || is.na(p)) return(NULL)
       shiny::validate(shiny::need(is.finite(p) && p >= 1 && p == floor(p),
@@ -137,7 +142,7 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
       p
     })
     break_type <- shiny::reactive({
-      if (!"breaks" %in% features()) return("none")
+      if (!"breaks" %in% overlay_features()) return("none")
       if (identical(input$break_type, "trend")) "trend" else "level"
     })
     diagnostic_data <- shiny::reactive({
@@ -145,14 +150,27 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
       if (has_series) d <- d[match(d[[series_col]], series_values) == selected_series(), , drop = FALSE]
       d
     })
-    cached_diagnostics <- shiny::bindCache(shiny::reactive({
-      d <- diagnostic_data()
-      screen_ts_diagnose(d[[x_col]], d[[y_col]], diagnostic_period(),
-        break_type(), setdiff(features(), "breaks"))
-    }), idx(), current_rows(), selected_series(), diagnostic_period(), features(), break_type(), cache = "session")
+    # One cache entry per tool, so switching a cheap tool on or off never repeats
+    # an expensive one such as the break search.
+    tools <- c("summary", "seasonality", "outliers", "stationarity", "autocorrelation", "breaks")
+    cached_tools <- lapply(stats::setNames(tools, tools), function(tool) {
+      tool_breaks <- function() if (tool == "breaks") break_type() else "none"
+      shiny::bindCache(shiny::reactive({
+        d <- diagnostic_data()
+        screen_ts_diagnose(d[[x_col]], d[[y_col]], diagnostic_period(),
+          tool_breaks(), setdiff(tool, "breaks"))
+      }), tool, idx(), current_rows(), selected_series(), diagnostic_period(), tool_breaks(),
+      cache = "session")
+    })
+    run_tools <- function(selected) {
+      screen_ts_merge_diagnostics(lapply(selected, function(tool) cached_tools[[tool]]()))
+    }
     diagnostics <- shiny::reactive({
       shiny::req(length(features()) > 0)
-      cached_diagnostics()
+      run_tools(features())
+    })
+    overlay_diagnostics <- shiny::reactive({
+      if (length(overlay_features())) run_tools(overlay_features())
     })
     nullify <- function(v) if (is.null(v) || !length(v) || is.na(v)) NULL else v
     axis_limits <- shiny::reactive({
@@ -192,16 +210,15 @@ screen_ts_server <- function(prepared, x_col, y_col, series_col = NULL,
         if (r[1] == r[2]) paste(r[1], "observations each") else paste0(r[1], "-", r[2], " observations"))
     })
     output$plot <- plotly::renderPlotly({
-      overlay <- NULL
-      if (any(c("seasonality", "outliers", "breaks") %in% features())) {
-        overlay <- tryCatch(diagnostics(), shiny.silent.error = function(e) NULL)
-      }
+      overlay <- tryCatch(overlay_diagnostics(), shiny.silent.error = function(e) NULL)
       limits <- shiny::isolate(axis_limits())
       screen_ts_plot(current_data(), x_col, y_col, series_col,
         title = .title, filename = gsub("[^[:alnum:]_.-]+", "_", key_label()),
         lower = limits$lower, upper = limits$upper,
-        diagnostics = overlay, breaks = if ("breaks" %in% features()) overlay else NULL,
-        seasonality = "seasonality" %in% features(), series_levels = series_values)
+        diagnostics = overlay, breaks = if ("breaks" %in% overlay_features()) overlay else NULL,
+        seasonality = "seasonality" %in% overlay_features(), series_levels = series_values,
+        # Zoom survives redraws of the same view, and resets for new data.
+        ui_revision = paste(c(idx(), as.numeric(input$time_scope)), collapse = " "))
     })
     diagnostic_label <- shiny::reactive({
       label <- if (!has_series) y_col else as.character(series_values[selected_series()])

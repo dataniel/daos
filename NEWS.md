@@ -1,5 +1,13 @@
 # daos (development version)
 
+* `screen_timeseries()` keeps your zoom when you switch diagnostic tools, and
+  caches each tool separately, so switching on a cheap tool no longer repeats
+  a slow one such as the break search.
+
+* `screen_timeseries()` and `diagnose_timeseries()` name the problem when a
+  column argument is wrong: which argument, which column, and the closest match
+  (`Did you mean "year"?`). Quoted column names work throughout.
+
 * `screen_timeseries()` keeps each series' colour when you browse groups or
   narrow the time range. It now uses system fonts instead of downloading Inter
   from Google Fonts: nothing is bundled, and the page no longer depends on

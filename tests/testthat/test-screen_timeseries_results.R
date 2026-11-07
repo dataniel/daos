@@ -78,7 +78,7 @@ test_that("autocorrelation conclusion follows the joint test, not single lags", 
   d <- screen_ts_diagnose(1:100, sin(1:100 / 5), features = "autocorrelation")
   expect_lt(d$ljung_box_p, .05)
   expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$title, "Dependence")
-  expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$detail, "Ljung")
+  expect_match(screen_ts_findings(d, "autocorrelation")[[1]]$detail, "Ljung.*p < 0,001")
   # One lag beyond its limit is not enough on its own.
   n <- 100
   d$ljung_box_p <- .5

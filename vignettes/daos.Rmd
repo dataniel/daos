@@ -383,8 +383,9 @@ browser also ends its session, so restart `screen_timeseries()` to begin again.
 All diagnostic tools start switched off. Select any combination of
 **Statistics**, **Seasonality**, **Outliers**, **Stationarity**,
 **Autocorrelation**, and **Structural breaks** using the checkboxes.
-Only selected tools run; results are cached within the session. Your choices
-remain active as you navigate through groups. With multiple lines, use
+Only selected tools run, and each tool's results are cached within the session.
+Your zoom stays while you switch tools, and resets when you change group or time
+range. Your choices remain active as you navigate through groups. With multiple lines, use
 **Series to diagnose** to choose one line for analysis.
 
 Results share a compact panel inside the main graph card. Switch between

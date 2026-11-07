@@ -20,7 +20,7 @@ screen_ts_prepare <- function(data, x, y, by, series = NULL) {
   if (!nrow(data)) cli::cli_abort("{.arg data} must contain at least one row.")
   cols <- c(x, y, by, series)
   if (!all(cols %in% names(data))) cli::cli_abort("Unknown time-series column.")
-  if (!is.numeric(data[[y]])) cli::cli_abort("{.arg y} must be numeric.")
+  screen_ts_check_numeric(data, y)
   if (any(vapply(data[cols], is.list, logical(1)))) {
     cli::cli_abort("Time-series columns must not be list columns.")
   }
@@ -76,6 +76,59 @@ screen_ts_lookup <- function(prepared, selected) {
   token <- paste(unlist(selected, use.names = FALSE), collapse = ":")
   found <- prepared$lookup[[token]]
   if (is.null(found)) NA_integer_ else found
+}
+
+# Combine results from tools that ran separately on the same series. Every tool
+# computes the same descriptive values; each only fills in its own diagnostics.
+screen_ts_merge_diagnostics <- function(parts) {
+  out <- parts[[1]]
+  for (part in parts[-1]) {
+    for (column in names(out)) {
+      if (column == "notes") {
+        out$notes <- list(unique(c(out$notes[[1]], part$notes[[1]])))
+      } else if (is.list(out[[column]])) {
+        if (!nrow(out[[column]][[1]])) out[[column]] <- part[[column]]
+      } else if (is.na(out[[column]])) {
+        out[[column]] <- part[[column]]
+      }
+    }
+  }
+  out
+}
+
+# Resolve a captured column argument to its name, or say what is wrong with it
+# in the user's terms. Shared by screen_timeseries() and diagnose_timeseries().
+screen_ts_column <- function(quo, arg, data, call = rlang::caller_env()) {
+  if (rlang::quo_is_missing(quo)) cli::cli_abort("{.arg {arg}} is required.", call = call)
+  expr <- rlang::quo_get_expr(quo)
+  if (!rlang::is_symbol(expr) && !rlang::is_string(expr)) {
+    label <- rlang::as_label(quo)
+    cli::cli_abort(c("{.arg {arg}} must be a column name, not the expression {.code {label}}.",
+      i = "Create the column first, for example with {.fn dplyr::mutate}."), call = call)
+  }
+  name <- rlang::as_name(quo)
+  if (!name %in% names(data)) {
+    available <- names(data)
+    distance <- utils::adist(name, available, ignore.case = TRUE)[1, ]
+    closest <- available[which.min(distance)]
+    similar <- length(available) && min(distance) <= 2 &&
+      min(distance) < max(nchar(name), nchar(closest))
+    cli::cli_abort(c("Column {.val {name}} given to {.arg {arg}} was not found in {.arg data}.",
+      i = if (similar) "Did you mean {.val {closest}}?" else "Available columns: {.val {available}}."),
+      call = call)
+  }
+  if (is.list(data[[name]])) {
+    cli::cli_abort("{.arg {arg}} can't be the list column {.val {name}}.", call = call)
+  }
+  name
+}
+
+screen_ts_check_numeric <- function(data, y, call = rlang::caller_env()) {
+  if (!is.numeric(data[[y]])) {
+    cli::cli_abort("{.arg y} must be numeric, but column {.val {y}} is {.cls {class(data[[y]])}}.",
+      call = call)
+  }
+  invisible(y)
 }
 
 screen_ts_validate_period <- function(period) {
@@ -155,7 +208,7 @@ screen_ts_plot_time <- function(x) {
 screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
                            filename = "timeseries", lower = NULL, upper = NULL,
                            diagnostics = NULL, breaks = NULL, seasonality = FALSE,
-                           series_levels = NULL) {
+                           series_levels = NULL, ui_revision = NULL) {
   palette <- c("#18181b", "#6366f1", "#10b981", "#f59e0b",
                "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899")
   # Colour follows the series across all groups, not its place in this one, so
@@ -208,7 +261,10 @@ screen_ts_plot <- function(data, x, y, series = NULL, title = NULL,
     separators = ",.", margin = list(l = 65, r = 20, t = if (is.null(title)) 20 else 40, b = 40),
     xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE),
     yaxis = screen_ts_yaxis(data[[y]], lower, upper),
-    legend = list(orientation = "h", y = -0.16, x = 0, xanchor = "left"), shapes = shapes)
+    legend = list(orientation = "h", y = -0.16, x = 0, xanchor = "left"), shapes = shapes,
+    # plotly's widget only updates in place when `transition` is set; otherwise
+    # it purges the plot and `uirevision` has nothing to preserve zoom from.
+    uirevision = ui_revision, transition = if (!is.null(ui_revision)) list(duration = 0))
   plotly::config(p, displayModeBar = "hover",
     modeBarButtonsToRemove = list("select2d", "lasso2d"),
     toImageButtonOptions = list(format = "png", filename = filename))

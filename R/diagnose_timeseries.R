@@ -66,10 +66,9 @@ diagnose_timeseries <- function(data, x, y, .period = NULL,
                                .features = c("summary", "outliers", "seasonality",
                                              "stationarity", "autocorrelation")) {
   if (!is.data.frame(data)) cli::cli_abort("{.arg data} must be a data frame.")
-  x <- rlang::as_name(rlang::enquo(x))
-  y <- rlang::as_name(rlang::enquo(y))
-  if (!all(c(x, y) %in% names(data))) cli::cli_abort("Unknown time-series column.")
-  if (!is.numeric(data[[y]])) cli::cli_abort("{.arg y} must be numeric.")
+  x <- screen_ts_column(rlang::enquo(x), "x", data)
+  y <- screen_ts_column(rlang::enquo(y), "y", data)
+  screen_ts_check_numeric(data, y)
   screen_ts_validate_period(.period)
   .breaks <- match.arg(.breaks)
   if (length(.features)) .features <- match.arg(.features,
