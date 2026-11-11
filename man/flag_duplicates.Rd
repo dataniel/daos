@@ -30,16 +30,16 @@ flag_duplicates(ggplot2::mpg)
 # Specific columns
 flag_duplicates(ggplot2::mpg, manufacturer, model, year)
 
-# Combined with a checkpoint from expectr for a validation pipeline:
+# Combined with a checkpoint from inshape for a validation pipeline:
 \dontrun{
 ggplot2::mpg |>
   flag_duplicates() |>
   dplyr::filter(isdup) |>
-  expectr::expect_empty(warn_msg = "Duplicate rows found")
+  inshape::ensure_empty(warn_msg = "Duplicate rows found")
 }
 
 }
 \seealso{
-\code{expectr::expect_unique()} to check a key,
-\code{expectr::expect_empty()}
+\code{inshape::ensure_unique()} to check a key,
+\code{inshape::ensure_empty()}
 }

@@ -20,16 +20,16 @@
 #' # Specific columns
 #' flag_duplicates(ggplot2::mpg, manufacturer, model, year)
 #'
-#' # Combined with a checkpoint from expectr for a validation pipeline:
+#' # Combined with a checkpoint from inshape for a validation pipeline:
 #' \dontrun{
 #' ggplot2::mpg |>
 #'   flag_duplicates() |>
 #'   dplyr::filter(isdup) |>
-#'   expectr::expect_empty(warn_msg = "Duplicate rows found")
+#'   inshape::ensure_empty(warn_msg = "Duplicate rows found")
 #' }
 #'
-#' @seealso `expectr::expect_unique()` to check a key,
-#'   `expectr::expect_empty()`
+#' @seealso `inshape::ensure_unique()` to check a key,
+#'   `inshape::ensure_empty()`
 #'
 #' @importFrom cli cli_abort
 #' @importFrom dplyr select
@@ -84,7 +84,7 @@ dup_ids <- function(data, cols) {
 # string once, and data.table::chmatch() uses that to find, for every row,
 # the first row with the same string in one linear pass. The ids below are
 # built from that: dense integers 1..k in order of first appearance, with
-# NA as a value of its own, as in duplicated(). expectr has the same engine
+# NA as a value of its own, as in duplicated(). inshape has the same engine
 # for its key-based checkpoints.
 
 # Dense ids from "index of the first row with this value", in one pass.

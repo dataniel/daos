@@ -230,32 +230,32 @@ flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
 ```
 
 Both functions inspect data before you settle on a rule. Turning a rule
-into a checkpoint is the job of the expectr package, below.
+into a checkpoint is the job of the inshape package, below.
 
 ---
 
-## Data validation: the expectr package
+## Data validation: the inshape package
 
-The validation checkpoints, `expect_empty()`, `expect_none()` and
-`tally_violations()`, have moved to their own package,
-[expectr](https://github.com/dataniel/expectr). They share an engine and
-a contract the rest of daos does not: each states an expectation about
-data as "the set of violations must be empty". The checks on the
-structure of register data, unique keys, balanced panels and overlapping
-spells, are in [lustrum](https://github.com/dataniel/lustrum), together
+The validation checkpoints have moved to their own package,
+[inshape](https://github.com/dataniel/inshape). They share an engine and
+a contract the rest of daos does not: each states a rule about the data,
+warns or aborts with the rows that break it, and returns the data.
+`ensure_none()`, `ensure_all()` and `ensure_empty()` take any rule dplyr
+can express, `tally_violations()` counts many at once, and the structure
+checks cover unique keys, balanced panels and overlapping spells, together
 with `spells_to_panel()` and `add_spell_status()`.
 
-Load expectr to use them:
+Load inshape to use them:
 
 ```{r, eval = FALSE}
-library(expectr)
+library(inshape)
 
 lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   view_types(diff = TRUE) |>
-  expect_empty(warn_msg = "The files do not bind")
+  ensure_empty(warn_msg = "The files do not bind")
 ```
 
-See `vignette("expectr", package = "expectr")`.
+See `vignette("inshape", package = "inshape")`.
 
 ---
 
@@ -319,7 +319,7 @@ names(parts2)[1:4]
 
 `spells_to_panel()` and `add_spell_status()`, which turn spells into a
 panel with primo and ultimo status, have moved to
-[lustrum](https://github.com/dataniel/lustrum).
+[inshape](https://github.com/dataniel/inshape).
 
 ---
 

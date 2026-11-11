@@ -71,6 +71,6 @@ view_types(list(a = df1, b = df2))
 
 }
 \seealso{
-\code{lazer::read_files()}, and \code{expectr::expect_empty()} to use
+\code{lazer::read_files()}, and \code{inshape::ensure_empty()} to use
 \code{view_types(diff = TRUE)} or \code{focus} as a checkpoint
 }

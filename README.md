@@ -53,16 +53,16 @@ When `read_files()` warns about type mismatches, something changed
 upstream, and `view_types()` in daos shows which column, in which file.
 
 **Checkpoints instead of silent assumptions** now live in their own package,
-[expectr](https://github.com/dataniel/expectr): `expect_empty()`,
-`expect_none()`, `expect_unique()`, `expect_balanced()`,
-`expect_no_overlap()` and `tally_violations()`.
+[inshape](https://github.com/dataniel/inshape): `ensure_empty()`,
+`ensure_none()`, `ensure_unique()`, `ensure_balanced()`,
+`ensure_no_overlap()`, `tally_violations()` and more.
 
 ```r
-library(expectr)
+library(inshape)
 
 sales |>
-  expect_none(is.na(customer_id), abort_msg = "Sales without a customer id") |>
-  expect_unique(order_id)
+  ensure_none(is.na(customer_id), abort_msg = "Sales without a customer id") |>
+  ensure_unique(order_id)
 ```
 
 **CPR numbers** now live in their own package,

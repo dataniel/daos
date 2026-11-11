@@ -57,7 +57,7 @@
 #' # A named list of data frames, e.g. from read_files():
 #' view_types(list(a = df1, b = df2))
 #'
-#' @seealso `lazer::read_files()`, and `expectr::expect_empty()` to use
+#' @seealso `lazer::read_files()`, and `inshape::ensure_empty()` to use
 #'   `view_types(diff = TRUE)` or `focus` as a checkpoint
 #'
 #' @importFrom rlang list2 enexprs names2 as_label
