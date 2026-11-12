@@ -7,9 +7,9 @@ Description: A collection of utility functions for day-to-day statistical
     work. Includes helpers for duplicate detection, column type comparison,
     Danish identifier cleaning, interactive
     time-series screening, and various convenience shortcuts for common
-    tidyverse patterns. The data validation checkpoints have moved to the
-    expectr package, the register structure checks and spell conversions
-    to the lustrum package, the readers and writers to the lazer
+    tidyverse patterns. The data validation checkpoints, register
+    structure checks and spell conversions have moved to the inshape
+    package, the readers and writers to the lazer
     package, the CPR functions to the pnrr package, and the industry
     codes to the brch package.
 License: MIT + file LICENSE
