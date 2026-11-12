@@ -109,7 +109,8 @@ Break dates denote the first observation in the new segment; their
 confidence limits use the same convention. Unavailable diagnostics are
 empty tables with an explanation in <code>notes</code>.
 <code>n_breaks</code> is <code>NA</code> when break detection is unavailable or not requested,
-and zero when the fitted model selects no break dates.</p>
+and zero when the fitted model selects no break dates. <code>ljung_box_p</code> is
+<code>NA</code> when autocorrelation diagnostics are unavailable or not requested.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -125,6 +126,10 @@ seasonal decomposition needs more than two complete seasons.
 Unit root tests require at least 20 nonconstant observations and run on
 observed values: KPSS has level stationarity as its null; Phillips-Perron
 has a unit root as its null. Failure to reject is not proof of either null.
+Autocorrelation is summarised by a Ljung-Box test across all scanned lags,
+because a check of whether any single lag crosses its 5% limit fires on most
+white noise once many lags are scanned. It runs on observed values, so trend
+and seasonality count as dependence.
 These are exploratory diagnostics, not automatic data corrections.</p>
     </div>
 
@@ -132,16 +137,16 @@ These are exploratory diagnostics, not automatic data corrections.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2001</span><span class="op">:</span><span class="fl">2040</span>, value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">40</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">40</span><span class="op">)</span> <span class="op">/</span> <span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">diagnose_timeseries</span><span class="op">(</span><span class="va">d</span>, <span class="va">year</span>, <span class="va">value</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 32</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 33</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       n n_finite missing non_finite missing_time duplicate_times start end  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    40       40       0          0            0               0 2001  2040 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 24 more variables: interval &lt;chr&gt;, regular &lt;lgl&gt;, missing_periods &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 25 more variables: interval &lt;chr&gt;, regular &lt;lgl&gt;, missing_periods &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   period &lt;int&gt;, mean &lt;dbl&gt;, median &lt;dbl&gt;, sd &lt;dbl&gt;, min &lt;dbl&gt;, q25 &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   q75 &lt;dbl&gt;, max &lt;dbl&gt;, last &lt;dbl&gt;, change &lt;dbl&gt;, change_pct &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   trend_strength &lt;dbl&gt;, seasonal_strength &lt;dbl&gt;, n_outliers &lt;int&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   n_breaks &lt;int&gt;, tests &lt;list&gt;, outliers &lt;list&gt;, breakpoints &lt;list&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   correlation &lt;list&gt;, decomposition &lt;list&gt;, notes &lt;list&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   n_breaks &lt;int&gt;, ljung_box_p &lt;dbl&gt;, tests &lt;list&gt;, outliers &lt;list&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   breakpoints &lt;list&gt;, correlation &lt;list&gt;, decomposition &lt;list&gt;, notes &lt;list&gt;</span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">data</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">variable</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>

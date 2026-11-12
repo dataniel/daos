@@ -2,6 +2,40 @@
 
 ## daos (development version)
 
+- [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+  keeps your zoom when you switch diagnostic tools, and caches each tool
+  separately, so switching on a cheap tool no longer repeats a slow one
+  such as the break search.
+
+- [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+  and
+  [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
+  name the problem when a column argument is wrong: which argument,
+  which column, and the closest match (`Did you mean "year"?`). Quoted
+  column names work throughout.
+
+- [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+  keeps each series’ colour when you browse groups or narrow the time
+  range. It now uses system fonts instead of downloading Inter from
+  Google Fonts: nothing is bundled, and the page no longer depends on
+  internet access.
+
+- [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+  fixes: `tsibble` indices such as `yearmonth` are shown as dates, not
+  day counts; grouping columns named `sep`, `collapse` or `recycle0` no
+  longer abort; the printed `flagged` code keeps doubles exact; counts
+  and whole digits are no longer rounded (12.345 stayed 12.340); the
+  results panel uses the same number format as the plot (`1.234,5`); and
+  after a mouse click, Space and the arrow keys still flag and navigate
+  groups.
+
+- [`diagnose_timeseries()`](https://dataniel.github.io/daos/reference/diagnose_timeseries.md)
+  gains a `ljung_box_p` column, and the autocorrelation conclusion in
+  [`screen_timeseries()`](https://dataniel.github.io/daos/reference/screen_timeseries.md)
+  now follows that joint test. The old headline fired whenever one
+  scanned lag crossed its limit, which in simulations happened on 25-68%
+  of white-noise series.
+
 - [`nowf()`](https://dataniel.github.io/daos/reference/nowf.md) takes
   named formats: `"date"` (the default, `20261102`), `"datetime"`,
   `"iso"`, `"month"`, `"year"`, `"time"` and `"stamp"`. Any other string

@@ -67,7 +67,8 @@ denote the first observation in the new segment; their confidence limits
 use the same convention. Unavailable diagnostics are empty tables with
 an explanation in `notes`. `n_breaks` is `NA` when break detection is
 unavailable or not requested, and zero when the fitted model selects no
-break dates.
+break dates. `ljung_box_p` is `NA` when autocorrelation diagnostics are
+unavailable or not requested.
 
 ## Details
 
@@ -84,24 +85,28 @@ screening, and seasonal decomposition needs more than two complete
 seasons. Unit root tests require at least 20 nonconstant observations
 and run on observed values: KPSS has level stationarity as its null;
 Phillips-Perron has a unit root as its null. Failure to reject is not
-proof of either null. These are exploratory diagnostics, not automatic
-data corrections.
+proof of either null. Autocorrelation is summarised by a Ljung-Box test
+across all scanned lags, because a check of whether any single lag
+crosses its 5% limit fires on most white noise once many lags are
+scanned. It runs on observed values, so trend and seasonality count as
+dependence. These are exploratory diagnostics, not automatic data
+corrections.
 
 ## Examples
 
 ``` r
 d <- data.frame(year = 2001:2040, value = sin(1:40) + (1:40) / 10)
 diagnose_timeseries(d, year, value)
-#> # A tibble: 1 × 32
+#> # A tibble: 1 × 33
 #>       n n_finite missing non_finite missing_time duplicate_times start end  
 #>   <int>    <int>   <int>      <int>        <int>           <int> <chr> <chr>
 #> 1    40       40       0          0            0               0 2001  2040 
-#> # ℹ 24 more variables: interval <chr>, regular <lgl>, missing_periods <dbl>,
+#> # ℹ 25 more variables: interval <chr>, regular <lgl>, missing_periods <dbl>,
 #> #   period <int>, mean <dbl>, median <dbl>, sd <dbl>, min <dbl>, q25 <dbl>,
 #> #   q75 <dbl>, max <dbl>, last <dbl>, change <dbl>, change_pct <dbl>,
 #> #   trend_strength <dbl>, seasonal_strength <dbl>, n_outliers <int>,
-#> #   n_breaks <int>, tests <list>, outliers <list>, breakpoints <list>,
-#> #   correlation <list>, decomposition <list>, notes <list>
+#> #   n_breaks <int>, ljung_box_p <dbl>, tests <list>, outliers <list>,
+#> #   breakpoints <list>, correlation <list>, decomposition <list>, notes <list>
 if (FALSE) { # \dontrun{
 data |>
   dplyr::group_by(country, variable) |>

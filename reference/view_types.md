@@ -72,7 +72,7 @@ so the classification follows the same rules as
 
 ## See also
 
-`lazer::read_files()`, and `expectr::expect_empty()` to use
+`lazer::read_files()`, and `inshape::ensure_empty()` to use
 `view_types(diff = TRUE)` or `focus` as a checkpoint
 
 ## Examples

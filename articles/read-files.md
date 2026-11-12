@@ -145,11 +145,11 @@ a visual diff.
 For pipelines, the `focus` argument turns the inspection into a check:
 it returns only the datasets where critical columns do *not* have the
 expected type, and an empty result on success. That plugs straight into
-the checkpoint pattern from the expectr package:
+the checkpoint pattern from the inshape package:
 
 ``` r
 view_types(dat2023, dat2024, focus = c(cvr = "chr", amount = "dbl")) |>
-  expectr::expect_empty(warn_msg = "cvr or amount has the wrong type")
+  inshape::ensure_empty(warn_msg = "cvr or amount has the wrong type")
 ```
 
 ## Other shapes of output

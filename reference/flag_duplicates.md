@@ -30,7 +30,7 @@ A tibble with `isdup` and `dupid` prepended.
 
 ## See also
 
-`expectr::expect_unique()` to check a key, `expectr::expect_empty()`
+`inshape::ensure_unique()` to check a key, `inshape::ensure_empty()`
 
 ## Examples
 
@@ -71,11 +71,11 @@ flag_duplicates(ggplot2::mpg, manufacturer, model, year)
 #> # ℹ 224 more rows
 #> # ℹ 2 more variables: fl <chr>, class <chr>
 
-# Combined with a checkpoint from expectr for a validation pipeline:
+# Combined with a checkpoint from inshape for a validation pipeline:
 if (FALSE) { # \dontrun{
 ggplot2::mpg |>
   flag_duplicates() |>
   dplyr::filter(isdup) |>
-  expectr::expect_empty(warn_msg = "Duplicate rows found")
+  inshape::ensure_empty(warn_msg = "Duplicate rows found")
 } # }
 ```

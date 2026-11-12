@@ -47,15 +47,15 @@ The common formats have names, so the code says what it gives:
 
 ``` r
 nowf()            # "date", the default: YYYYMMDD
-#> [1] "20261102"
+#> [1] "20261112"
 nowf("datetime")  # YYYYMMDD_HHMMSS
-#> [1] "20261102_003511"
+#> [1] "20261112_085849"
 nowf("iso")       # YYYY-MM-DD
-#> [1] "2026-11-02"
+#> [1] "2026-11-12"
 nowf("month")     # YYYYMM
 #> [1] "202611"
 nowf("stamp")     # for logs, with colons
-#> [1] "2026-11-02 00:35:11"
+#> [1] "2026-11-12 08:58:49"
 ```
 
 `"year"` and `"time"` complete the set. Any other
@@ -64,7 +64,7 @@ and a name typo is an error rather than a file name:
 
 ``` r
 nowf("%Y-%m-%d %H:%M")
-#> [1] "2026-11-02 00:35"
+#> [1] "2026-11-12 08:58"
 ```
 
 A typical use is timestamping an export file:
@@ -320,32 +320,32 @@ flag_duplicates(ggplot2::mpg, manufacturer, model, year) |>
 ```
 
 Both functions inspect data before you settle on a rule. Turning a rule
-into a checkpoint is the job of the expectr package, below.
+into a checkpoint is the job of the inshape package, below.
 
 ------------------------------------------------------------------------
 
-## Data validation: the expectr package
+## Data validation: the inshape package
 
-The validation checkpoints, `expect_empty()`, `expect_none()` and
-`tally_violations()`, have moved to their own package,
-[expectr](https://github.com/dataniel/expectr). They share an engine and
-a contract the rest of daos does not: each states an expectation about
-data as “the set of violations must be empty”. The checks on the
-structure of register data, unique keys, balanced panels and overlapping
-spells, are in [lustrum](https://github.com/dataniel/lustrum), together
-with `spells_to_panel()` and `add_spell_status()`.
+The validation checkpoints have moved to their own package,
+[inshape](https://github.com/dataniel/inshape). They share an engine and
+a contract the rest of daos does not: each states a rule about the data,
+warns or aborts with the rows that break it, and returns the data.
+`ensure_none()`, `ensure_all()` and `ensure_empty()` take any rule dplyr
+can express, `tally_violations()` counts many at once, and the structure
+checks cover unique keys, balanced panels and overlapping spells,
+together with `spells_to_panel()` and `add_spell_status()`.
 
-Load expectr to use them:
+Load inshape to use them:
 
 ``` r
-library(expectr)
+library(inshape)
 
 lazer::read_files("data/dat{2020:2023}.parquet", names = 2020:2023) |>
   view_types(diff = TRUE) |>
-  expect_empty(warn_msg = "The files do not bind")
+  ensure_empty(warn_msg = "The files do not bind")
 ```
 
-See `vignette("expectr", package = "expectr")`.
+See `vignette("inshape", package = "inshape")`.
 
 ------------------------------------------------------------------------
 
@@ -447,7 +447,7 @@ names(parts2)[1:4]
 
 `spells_to_panel()` and `add_spell_status()`, which turn spells into a
 panel with primo and ultimo status, have moved to
-[lustrum](https://github.com/dataniel/lustrum).
+[inshape](https://github.com/dataniel/inshape).
 
 ------------------------------------------------------------------------
 
@@ -516,9 +516,11 @@ to begin again.
 All diagnostic tools start switched off. Select any combination of
 **Statistics**, **Seasonality**, **Outliers**, **Stationarity**,
 **Autocorrelation**, and **Structural breaks** using the checkboxes.
-Only selected tools run; results are cached within the session. Your
-choices remain active as you navigate through groups. With multiple
-lines, use **Series to diagnose** to choose one line for analysis.
+Only selected tools run, and each tool’s results are cached within the
+session. Your zoom stays while you switch tools, and resets when you
+change group or time range. Your choices remain active as you navigate
+through groups. With multiple lines, use **Series to diagnose** to
+choose one line for analysis.
 
 Results share a compact panel inside the main graph card. Switch between
 enabled analyses using the tabs; each shows its conclusion alongside the
@@ -526,14 +528,18 @@ figures or a small diagnostic plot. **Overview** gathers the main
 findings; click a finding to open that analysis. Data quality, full
 outlier tables and method notes open in dialogs. On desktop screens, the
 graph adjusts its height to keep the active results in view. Keys **1**
-to **6** toggle tools in sidebar order; arrow keys on a focused result
-tab switch tabs.
+to **6** toggle tools in sidebar order. After clicking with the mouse,
+Space and the arrow keys still flag and navigate groups; a control
+reached with Tab keeps its native keys, so arrow keys switch between
+result tabs.
 
 - **Seasonality** adds a dashed trend-plus-season line to the main plot
   and a seasonal profile alongside it. The profile is in the original
   units.
 - **Outliers** marks unusual residual observations on the main plot.
 - **Autocorrelation** displays ACF and PACF plots below the main plot.
+  Its conclusion comes from a Ljung–Box test across all scanned lags,
+  because a single lag crossing its limit is common even in white noise.
 - **Stationarity** shows KPSS and Phillips–Perron results, including
   their different null hypotheses and interpretations.
 - **Structural breaks** marks candidate dates on the main plot and
